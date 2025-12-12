@@ -1,0 +1,367 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkincareSavvy - Home - </title>
+    <!-- Google Fonts - Lato Light -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+        }
+        
+        body {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .hero {
+            margin-top: -120px; /* equal to your header height */
+            padding-top: 120px; /* pushes content back down inside */
+            height: 120vh;
+            width: 100vw;
+            /* Use Django's static tag so the correct URL is generated */
+            background: 
+                
+            url("{% static 'images/HeroSection.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+            color: white;
+
+            padding: 0;
+        }
+
+        .hero h1,
+        .hero p,
+        .hero a {
+            color: black;
+        }
+
+        .highlight {
+            font-family: 'Allura', cursive; 
+            font-size: 1.3em;
+            font-weight: 400;     /* lighter */
+            color: #0b3b17;       /* elegant deep green */
+            position: relative;
+            padding: 0 4px;
+        }
+
+        .highlight::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 4px;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 215, 0, 0.35);      /* soft golden underline highlight */
+            z-index: -1;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 100;
+            margin: 0;
+            padding: 0;
+        }
+        
+        header {
+    background: rgba(11, 59, 23, 0.15); /* subtle green-tinted transparency */
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+
+    border: 2px solid rgba(11, 59, 23, 0.4); /* soft green border */
+    border-radius: 40px;
+
+    padding: 12px 20px;
+
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+    margin: 10px auto;
+    width: 90%;             /* makes the header look like a floating glass bar */
+    max-width: 1200px;      /* keeps it neat */
+}
+
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 20px;   /* pushes logo inward */
+    padding-right: 20px;  /* optional */
+        }
+
+        .logo {
+            
+            display: flex;
+            align-items: center;   /* vertically center */
+        }
+        
+        .logo img {
+            
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-links li {
+            list-style: none;
+        }
+        
+        .nav-links a {
+            position: relative;
+            text-decoration: none;
+            color: inherit; 
+        }
+        
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;          /* distance under the text */
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff;  /* underline color */
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+        width: 100%;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 5px;
+            top: 100%;          /* Positions it below the parent */
+left: 0;            /* Aligns it to the left edge */
+margin-top: 5px;    /* Adds a small gap below */
+margin-left: 0;     /* Remove sideways spacing */
+
+        }
+        
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f0f0f0;
+            color: #0b3b17ff;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown > a {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+       
+        .hero {
+            text-align: center;
+            color: white;
+            padding: 80px 20px;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .hero p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .btn {
+           display: inline-block;
+            padding: 14px 36px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+
+            color: #0b3b17;
+            background: transparent;
+            border: 2px solid rgba(11, 59, 23, 0.5);
+            border-radius: 40px;
+
+            backdrop-filter: blur(6px); /* subtle glass */
+            -webkit-backdrop-filter: blur(6px);
+
+            transition:
+                transform 0.3s ease,
+                box-shadow 0.35s ease,
+                border-color 0.3s ease,
+                color 0.3s ease;
+
+            animation: breathe 3s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 6px 18px rgba(11, 59, 23, 0.35); }
+            50% { box-shadow: 0 10px 28px rgba(11, 59, 23, 0.45); }
+    }
+        
+        .btn:hover {
+            transform: translateY(-4px);
+            border-color: #0b3b17;
+            color: #0b3b17;
+
+            box-shadow: 0 10px 25px rgba(11, 59, 23, 0.25);
+        }
+
+        .btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(11, 59, 23, 0.35);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .feature-card h3 a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .feature-card h3 a:hover {
+            color: #5568d3;
+            text-decoration: underline;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo"><img src="{% static 'images/Skincare.png' %}" alt="Logo"></div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'face_analysis_index' %}">Skin Analysis</a>
+                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
+                            <a href="#routine-builder">Routine Builder</a>
+                        </div>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'profile' %}">Profile</a></li>
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}">Login</a></li>
+                        <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="hero">
+            <h1>Find the <span class ="highlight">Right</span> skincare for you</h1>
+            <p><i>Discover trusted products and affordable dupes that really work.</i></p>
+            <a href="{% url 'recommendations:home' %}" class="btn">Find My Skin Match</a>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <h3><a href="{% url 'recommendations:home' %}" style="text-decoration: none; color: inherit;">Personalized Recommendations</a></h3>
+                <p>Get skincare product recommendations tailored to your skin type and concerns.</p>
+            </div>
+            <div class="feature-card">
+                <h3><a href="{% url 'face_analysis_index' %}" style="text-decoration: none; color: inherit;">Skin Analysis</a></h3>
+                <p>Analyze your skin using our upcoming CNN-based face analysis.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Expert Advice</h3>
+                <p>Access expert tips and guidance for healthy, glowing skin.</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 SkincareSavvy. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
+

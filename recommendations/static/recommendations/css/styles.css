@@ -1,0 +1,442 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f5f6;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Glass‑style header + navigation in line with landing page - Glassmorphic effect */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11, 59, 23, 0.15); /* subtle green-tinted transparency */
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    border: 2px solid rgba(11, 59, 23, 0.4); /* soft green border */
+    border-radius: 40px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    margin: 10px auto;
+    width: 90%; /* makes the header look like a floating glass bar */
+    max-width: 1200px; /* keeps it neat */
+}
+
+.nav-container {
+    padding: 12px 20px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    width: 100px; /* matches homepage */
+    height: auto;
+    object-fit: contain;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 30px; /* matches homepage */
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-links li {
+    list-style: none;
+}
+
+.nav-links a {
+    position: relative;
+    text-decoration: none;
+    color: inherit; /* matches homepage */
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+.nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px; /* distance under the text */
+    width: 0%;
+    height: 2px;
+    background-color: #0b3b17ff; /* underline color */
+    transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 210px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    border-radius: 6px;
+    top: 0;
+    left: 100%;
+    margin-left: 10px;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 10px 14px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dropdown-content a:hover {
+    background-color: #f0f5f3;
+    color: #0b3b17;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown > a {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+main {
+    padding: 2.5rem 0 3.5rem;
+}
+
+.page-container {
+    max-width: 1100px;
+}
+
+.page-intro {
+    text-align: center;
+    margin-bottom: 2.25rem;
+}
+
+.page-title {
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
+    color: #0b3b17;
+    letter-spacing: 0.4px;
+}
+
+.page-subtitle {
+    max-width: 640px;
+    margin: 0 auto;
+    font-size: 1rem;
+    color: #555;
+}
+
+.highlight {
+    font-family: 'Allura', cursive;
+    font-size: 1.35em;
+    font-weight: 400;
+    color: #0b3b17;
+    position: relative;
+    padding: 0 4px;
+}
+
+.highlight::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 4px;
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 215, 0, 0.35);
+    z-index: -1;
+    border-radius: 6px;
+}
+
+/* Form Section */
+.form-section {
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 18px;
+    padding: 2rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #0b3b17;
+    font-size: 1rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #0b3b17;
+    box-shadow: 0 0 0 3px rgba(11, 59, 23, 0.1);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #f5f8f6;
+    border-radius: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #0b3b17;
+}
+
+.checkbox-item label {
+    margin: 0;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+}
+
+.help-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 0.95rem 2rem;
+    background: transparent;
+    color: #0b3b17;
+    border: 2px solid rgba(11, 59, 23, 0.5);
+    border-radius: 40px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.35s ease,
+        border-color 0.3s ease,
+        color 0.3s ease,
+        background-color 0.3s ease;
+    box-shadow: 0 6px 18px rgba(11, 59, 23, 0.25);
+    margin-top: 1.25rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-4px);
+    border-color: #0b3b17;
+    color: #0b3b17;
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 10px 25px rgba(11, 59, 23, 0.25);
+}
+
+.btn-primary:active {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(11, 59, 23, 0.35);
+}
+
+/* Results Section */
+.results-section {
+    margin-top: 2rem;
+}
+
+.results-section h2 {
+    text-align: center;
+    color: #0b3b17;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.recommendation-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e0e0e0;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.recommendation-card h3 {
+    margin: 0 0 1rem 0;
+    color: #0b3b17;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.recommendation-card .similarity-score {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    background: rgba(11, 59, 23, 0.08);
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.recommendation-card .similarity-label {
+    color: #0b3b17;
+    font-weight: 500;
+}
+
+.recommendation-card .similarity-value {
+    color: #0b3b17;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.recommendation-card .price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0b3b17;
+    margin: 0.5rem 0;
+}
+
+.recommendation-card .description {
+    color: #555;
+    line-height: 1.6;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.product-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.6rem 1.2rem;
+    background: #0b3b17;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.product-link:hover {
+    background: #145a28;
+    transform: translateX(3px);
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.no-results p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* Footer */
+.app-footer {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 2rem 0;
+    margin-top: 3rem;
+    text-align: center;
+}
+
+.app-footer p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .form-section {
+        padding: 1.5rem;
+    }
+    
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+    
+    .recommendations-grid {
+        grid-template-columns: 1fr;
+    }
+}

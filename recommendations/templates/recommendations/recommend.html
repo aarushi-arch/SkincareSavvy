@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+
+    <!-- Brand fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap" rel="stylesheet">
+
+    <!-- Recommendations styling -->
+    <link rel="stylesheet" href="{% static 'recommendations/css/styles.css' %}">
+</head>
+<body>
+    <!-- Shared glass‑style navigation, aligned with the landing page theme -->
+    <header class="app-header">
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="logo">
+                    <img src="{% static 'images/Skincare.png' %}" alt="SkincareSavvy logo">
+                </div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'recommendations:home' %}">Skin Recommendations</a>
+                            <a href="#routine-builder">Routine Builder</a>
+                        </div>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'profile' %}">Profile</a></li>
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}">Login</a></li>
+                        <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container page-container">
+            <section class="page-intro">
+                <h1 class="page-title">
+                    Find products that truly suit your
+                    <span class="highlight">skin</span>
+                </h1>
+                <p class="page-subtitle">
+                    Refine your preferences and discover similar skincare products that match your
+                    skin type, concerns, and desired results.
+                </p>
+            </section>
+
+            <section class="form-section">
+                {% if error_message %}
+                    <div class="alert alert-danger" role="alert" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                        {{ error_message }}
+                    </div>
+                {% endif %}
+                <form method="post" action="{% url 'recommendations:recommend' %}" id="recommendationForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.product_category.id_for_label }}">{{ form.product_category.label }}</label>
+                            {{ form.product_category }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.skin_type.id_for_label }}">{{ form.skin_type.label }}</label>
+                            {{ form.skin_type }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ form.skin_problems.label }}</label>
+                        <div class="checkbox-group">
+                            {% for checkbox in form.skin_problems %}
+                                <div class="checkbox-item">
+                                    {{ checkbox.tag }}
+                                    <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ form.notable_effects.label }}</label>
+                        <div class="checkbox-group" id="notableEffectsGroup">
+                            {% if form.notable_effects.field.choices %}
+                                {% for choice in form.notable_effects.field.choices %}
+                                    {% if choice.0 %}
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" name="notable_effects" value="{{ choice.0 }}" id="id_notable_effects_{{ forloop.counter }}" 
+                                                   {% if choice.0 in form.notable_effects.value %}checked{% endif %} class="form-check-input">
+                                            <label for="id_notable_effects_{{ forloop.counter }}">{{ choice.1 }}</label>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p class="help-text">Select a product category and skin type first</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.selected_product.id_for_label }}">{{ form.selected_product.label }}</label>
+                        {{ form.selected_product }}
+                    </div>
+
+                    <button type="submit" class="btn-primary">Find More Product Recommendations</button>
+                </form>
+            </section>
+
+            <section class="results-section">
+                {% if recommendations %}
+                    <h2>Other products you might also love</h2>
+                    <div class="recommendations-grid">
+                        {% for item in recommendations %}
+                            <div class="recommendation-card">
+                                <h3>{{ item.product_name }}</h3>
+                                {% if item.similarity_score %}
+                                    <div class="similarity-score">
+                                        <span class="similarity-label">Similarity:</span>
+                                        <span class="similarity-value">{{ item.similarity_score }}%</span>
+                                    </div>
+                                {% endif %}
+                                {% if item.price %}
+                                    <p class="price">{{ item.price }}</p>
+                                {% endif %}
+                                {% if item.description %}
+                                    <p class="description">{{ item.description }}</p>
+                                {% endif %}
+                                {% if item.product_href %}
+                                    <a href="{{ item.product_href }}" target="_blank" rel="noopener" class="product-link">
+                                        View product
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <p>No recommendations yet. Select a product and click the button to explore similar options.</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <div class="container">
+            <p>&copy; 2025 SkincareSavvy. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Dynamic form updates (same as home.html)
+        document.addEventListener('DOMContentLoaded', function() {
+            const productCategorySelect = document.getElementById('id_product_category');
+            const skinTypeSelect = document.getElementById('id_skin_type');
+            const notableEffectsGroup = document.getElementById('notableEffectsGroup');
+            const selectedProductSelect = document.getElementById('id_selected_product');
+            
+            function updateOptions() {
+                const productCategory = productCategorySelect.value;
+                const skinType = skinTypeSelect.value;
+                
+                if (productCategory && skinType) {
+                    fetch('{% url "recommendations:filtered-options" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            product_category: productCategory,
+                            skin_type: skinType
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Check for error in response
+                        if (data.error) {
+                            console.error('Server error:', data.error);
+                            notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
+                            return;
+                        }
+                        
+                        if (data.notable_effects && data.notable_effects.length > 0) {
+                            let html = '';
+                            data.notable_effects.forEach((effect, index) => {
+                                html += `
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" name="notable_effects" value="${effect}" id="id_notable_effects_${index}" class="form-check-input">
+                                        <label for="id_notable_effects_${index}">${effect}</label>
+                                    </div>
+                                `;
+                            });
+                            notableEffectsGroup.innerHTML = html;
+                        } else {
+                            notableEffectsGroup.innerHTML = '<p class="help-text">No benefits available for this combination</p>';
+                        }
+                        
+                        updateProducts();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
+                    });
+                }
+            }
+            
+            function updateProducts() {
+                const productCategory = productCategorySelect.value;
+                const skinType = skinTypeSelect.value;
+                const notableEffects = Array.from(document.querySelectorAll('input[name="notable_effects"]:checked')).map(cb => cb.value);
+                
+                if (productCategory && skinType) {
+                    fetch('{% url "recommendations:filtered-options" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            product_category: productCategory,
+                            skin_type: skinType,
+                            notable_effects: notableEffects
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.product_names && data.product_names.length > 0) {
+                            selectedProductSelect.innerHTML = '<option value="">Select a product</option>';
+                            data.product_names.forEach(product => {
+                                const option = document.createElement('option');
+                                option.value = product;
+                                option.textContent = product;
+                                if ('{{ form.selected_product.value }}' === product) {
+                                    option.selected = true;
+                                }
+                                selectedProductSelect.appendChild(option);
+                            });
+                        }
+                    });
+                }
+            }
+            
+            productCategorySelect.addEventListener('change', updateOptions);
+            skinTypeSelect.addEventListener('change', updateOptions);
+            
+            document.addEventListener('change', function(e) {
+                if (e.target.name === 'notable_effects') {
+                    updateProducts();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

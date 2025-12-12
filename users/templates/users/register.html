@@ -1,0 +1,228 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %} Register Page {% endblock title %}
+
+{% block header %}{% endblock header %}
+
+{% block content %}
+
+
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Allura&display=swap" rel="stylesheet">
+
+
+<style>
+/* ----------------------------- */
+/*   SkincareSavvy Register UI   */
+/* ----------------------------- */
+
+body {
+    background: 
+        
+        url("{% static 'images/Registration.jpg' %}");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* CARD */
+.card {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+
+    border-radius: 22px;
+    padding: 10px;
+
+    border: 1.5px solid rgba(11, 59, 23, 0.35);  
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* TITLE */
+.card-header h3 {
+    font-family: 'Lato';
+    font-size: 2.3rem;
+    color: #0b3b17;
+    letter-spacing: 1px;
+}
+
+/* LABELS */
+label.small {
+    font-weight: 400;
+    color: #0b3b17;
+    letter-spacing: 0.5px;
+}
+
+/* INPUTS (Soft Theme) */
+input {
+    border-radius: 14px !important;
+    padding: 10px 14px !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+
+    border: 1.8px solid rgba(11, 59, 23, 0.4) !important;
+
+    transition: 0.3s ease;
+}
+
+input:focus {
+    border-color: #0b3b17 !important;
+    box-shadow: 0 0 10px rgba(11, 59, 23, 0.35);
+    background: white !important;
+}
+
+/* ERROR MESSAGE */
+.alert-danger {
+    border-radius: 14px;
+    border-left: 5px solid #b71c1c;
+    background: rgba(255, 224, 224, 0.85);
+    color: #b71c1c;
+}
+
+/* CTA BUTTON (Same Style as Homepage Button) */
+.btn-dark {
+    display: inline-block;
+    padding: 14px 36px;
+    font-size: 1.08rem;
+    font-weight: 600;
+
+    color: #0b3b17;
+    background: transparent;
+    border: 2px solid rgba(11, 59, 23, 0.5);
+    border-radius: 40px;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    width: 100%;
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease,
+        border-color 0.3s ease;
+
+    animation: breathe 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { box-shadow: 0 6px 18px rgba(11, 59, 23, 0.25); }
+    50%      { box-shadow: 0 12px 26px rgba(11, 59, 23, 0.35); }
+}
+
+.btn-dark:hover {
+    transform: translateY(-4px);
+    border-color: #0b3b17;
+    box-shadow: 0 10px 25px rgba(11, 59, 23, 0.35);
+}
+
+.btn-dark:active {
+    transform: translateY(-2px);
+}
+
+/* FOOTER LINK */
+.card-footer a {
+    text-decoration: none;
+    color: #0b3b17;
+    font-weight: 500;
+}
+
+.card-footer a:hover {
+    text-decoration: underline;
+}
+</style>
+
+
+<div class="form-content my-3 p-3">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card shadow-lg border-0 rounded-lg mt-0 mb-5">
+                    <div class="card-header justify-content-center">
+                        <h3 class="font-weight-light my-4 text-center">Create Account</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            {% csrf_token %}
+                            {% if form.errors %}
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <div id="form_errors">
+                                        {% for key, value in form.errors.items %}
+                                            <strong>{{ value }}</strong>
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+
+                            <div class="form-row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">First Name</label>
+                                        {{ form.first_name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">Last Name</label>
+                                        {{ form.last_name }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">Username</label>
+                                        {{ form.username }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">Email</label>
+                                        {{ form.email }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">Password</label>
+                                        {{ form.password1 }}
+                                        {{ form.errors.password }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="small mb-1">Confirm Password</label>
+                                        {{ form.password2 }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mt-4 mb-0">
+                                <button type="submit" class="col-md-12 btn btn-dark">Sign Up</button><br><br>
+                            </div>
+
+                        </form>
+                    </div>
+
+                    <div class="card-footer text-center">
+                        <div class="small">
+                            <a href="{% url 'login' %}">Have an account? Go to Sign in</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

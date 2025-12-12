@@ -1,0 +1,216 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          crossorigin="anonymous">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet"
+          href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+          integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay"
+          crossorigin="anonymous">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(11, 59, 23, 0.15); /* subtle green-tinted transparency */
+            backdrop-filter: blur(8px) saturate(150%);
+            -webkit-backdrop-filter: blur(8px) saturate(150%);
+            border: 2px solid rgba(11, 59, 23, 0.4); /* soft green border */
+            border-radius: 40px;
+            padding: 12px 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin: 10px auto;
+            width: 90%; /* makes the header look like a floating glass bar */
+            max-width: 1200px; /* keeps it neat */
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px; /* distance under the text */
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff; /* underline color */
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 5px;
+            top: 0;
+            left: 100%;
+            margin-left: 10px;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 14px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f0f5f3;
+            color: #0b3b17;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+
+    <title>{% block title %}{% endblock %}</title>
+</head>
+
+<body>
+
+    {# ---------------------- #}
+    {#   GLASSMORPHIC NAVBAR  #}
+    {# ---------------------- #}
+    {% block header %}
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo"><img src="{% static 'images/Skincare.png' %}" alt="Logo"></div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'face_analysis_index' %}">Skin Analysis</a>
+                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
+                            <a href="#routine-builder">Routine Builder</a>
+                        </div>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'profile' %}">Profile</a></li>
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}">Login</a></li>
+                        <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+    {% endblock header %}
+
+<div class="container p-3 my-3">
+    <div class="row">
+        <div class="col-md-12">
+
+            {# ---------------------- #}
+            {#   FLASH MESSAGES       #}
+            {# ---------------------- #}
+            {% if messages %}
+                <div class="alert alert-dismissible" role="alert">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endif %}
+
+            {# ---------------------- #}
+            {#     MAIN CONTENT       #}
+            {# ---------------------- #}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+<!-- Password Show/Hide Plugin -->
+<script src="https://unpkg.com/bootstrap-show-password@1.2.1/dist/bootstrap-show-password.min.js"></script>
+
+</body>
+</html>
