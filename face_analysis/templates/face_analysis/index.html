@@ -5,124 +5,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Analysis | SkincareSavvy</title>
+
+    <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="{% static 'face_analysis/css/styles.css' %}">
 </head>
 <body>
-    <header class="app-header">
-        <div class="nav-container">
-            <nav class="nav">
-                <div class="logo">
-                    <img src="{% static 'images/Skincare.png' %}" alt="SkincareSavvy logo">
-                </div>
-                <ul class="nav-links">
-                    <li><a href="{% url 'users-home' %}">Home</a></li>
-                    <li><a href="#how-it-works">How it works</a></li>
-                    <li class="dropdown">
-                        <a href="#features">Features</a>
-                        <div class="dropdown-content">
-                            <a href="{% url 'face_analysis_index' %}">Skin Analysis</a>
-                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
-                        </div>
-                    </li>
-                    {% if user.is_authenticated %}
-                        <li><a href="{% url 'profile' %}">Profile</a></li>
-                        <li><a href="{% url 'logout' %}">Logout</a></li>
-                    {% else %}
-                        <li><a href="{% url 'login' %}">Login</a></li>
-                        <li><a href="{% url 'users-register' %}">Sign Up</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-    </header>
 
-    <main class="container">
-        <section class="hero">
-            <div>
-                <p class="eyebrow">CNN-powered</p>
-                <h1>Face & Skin Analysis</h1>
-                <p class="subtitle">Upload a clear selfie to detect your skin type and top concerns using our upcoming CNN models.</p>
-                <div class="hero-actions">
-                    <a href="#uploader" class="btn primary">Start Analysis</a>
-                    <a href="#how-it-works" class="btn ghost">Learn more</a>
-                </div>
+<header class="app-header">
+    <div class="nav-container">
+        <nav class="nav">
+            <div class="logo">
+                <img src="{% static 'images/Skincare.png' %}" alt="SkincareSavvy logo">
             </div>
-            <div class="hero-card">
-                <div class="card-title">Preview</div>
-                <div class="card-body">
-                    <p class="muted">Sample output (placeholder)</p>
-                    <pre class="output">{{ analysis_result|safe }}</pre>
-                </div>
-            </div>
-        </section>
-
-        <section id="uploader" class="panel upload-panel">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="panel-head">
-                    <div>
-                        <p class="eyebrow">Step 1</p>
-                        <h2>Upload your photo</h2>
-                        <p class="muted">Use natural lighting and keep your face centered.</p>
+            <ul class="nav-links">
+                <li><a href="{% url 'users-home' %}">Home</a></li>
+                <li><a href="#how-it-works">How it works</a></li>
+                <li class="dropdown">
+                    <a href="#features">Features</a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
+                        <a href="{% url 'recommendations:home' %}">Recommendations</a>
                     </div>
-                    <div class="tag">JPG / PNG</div>
-                </div>
-                <label class="upload-drop">
-                    <input type="file" name="face_image" accept="image/*" class="file-input" required>
-                    <p class="muted">Drag & drop or click to choose a file.</p>
-                    <p class="fine-print">Max size 10MB. Your image is processed securely.</p>
-                </label>
-                <div class="upload-actions">
-                    <button type="submit" class="btn primary">Scan Photo</button>
-                    <p class="fine-print">We do not store your uploads; they are used only for analysis.</p>
-                </div>
-            </form>
-            {% if error %}
-            <div class="alert error">{{ error }}</div>
-            {% endif %}
-        </section>
+                </li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'profile' %}">Profile</a></li>
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</header>
 
-        {% if analysis_result %}
-        <section class="panel result-panel">
+<main class="container">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div>
+            <p class="eyebrow">CNN-powered</p>
+            <h1>Face & Skin Analysis</h1>
+            <p class="subtitle">
+                Upload a clear selfie to detect your skin type and top concerns using our CNN models.
+            </p>
+            <div class="hero-actions">
+                <a href="#uploader" class="btn primary">Start Analysis</a>
+                <a href="#how-it-works" class="btn ghost">Learn more</a>
+            </div>
+        </div>
+
+        <div class="hero-card">
+            <div class="card-title">Preview</div>
+            <div class="card-body">
+                {% if analysis_result %}
+                    <p class="muted">Latest prediction</p>
+                    <p>
+                        <strong>Skin Type:</strong>
+                        {{ analysis_result.skin_type.top_prediction.class|title }}
+                    </p>
+                {% else %}
+                    <p class="muted">Upload an image to see results here</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- UPLOAD PANEL -->
+    <section id="uploader" class="panel upload-panel">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
             <div class="panel-head">
                 <div>
-                    <p class="eyebrow">Results</p>
-                    <h2>Your analysis</h2>
-                    <p class="muted">Top predictions for skin type and concerns.</p>
+                    <p class="eyebrow">Step 1</p>
+                    <h2>Upload your photo</h2>
+                    <p class="muted">Use natural lighting and keep your face centered.</p>
                 </div>
+                <div class="tag">JPG / PNG</div>
             </div>
-            <pre class="output">{{ analysis_result|safe }}</pre>
-        </section>
+
+            <label class="upload-drop">
+                <input type="file" name="face_image" accept="image/*" class="file-input" required>
+                <p class="muted">Drag & drop or click to choose a file.</p>
+                <p class="fine-print">Max size 10MB. Image is processed securely.</p>
+            </label>
+
+            <div class="upload-actions">
+                <button type="submit" class="btn primary">Scan Photo</button>
+            </div>
+        </form>
+
+        {% if error %}
+            <div class="alert error">{{ error }}</div>
+        {% endif %}
+    </section>
+
+    <!-- RESULTS -->
+    {% if analysis_result %}
+    <section class="panel result-panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Results</p>
+                <h2>Your Analysis</h2>
+                <p class="muted">CNN predictions with confidence scores.</p>
+            </div>
+        </div>
+
+        <!-- Skin Type -->
+        {% if analysis_result.skin_type %}
+            <h3>Skin Type</h3>
+            <p class="result-item">
+                <strong>{{ analysis_result.skin_type.top_prediction.class|title }}</strong>
+                — {{ analysis_result.skin_type.top_prediction.confidence|floatformat:2 }}
+            </p>
         {% endif %}
 
-        <section id="how-it-works" class="panel steps-panel">
-            <div class="panel-head">
-                <div>
-                    <p class="eyebrow">How it works</p>
-                    <h2>From upload to insights</h2>
-                    <p class="muted">A simple three-step pipeline tuned for skin types and concerns.</p>
-                </div>
+        <!-- Skin Concerns -->
+        {% if analysis_result.skin_concerns %}
+            <h3>Skin Concerns</h3>
+            <ul class="result-list">
+                {% for pred in analysis_result.skin_concerns.predictions %}
+                    <li>
+                        {{ pred.class|title }}
+                        — {{ pred.confidence|floatformat:2 }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="panel steps-panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">How it works</p>
+                <h2>From upload to insights</h2>
+                <p class="muted">A simple CNN-based pipeline.</p>
             </div>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Preprocess</h3>
-                    <p>We normalize, resize to 224×224, and prepare the image for the CNN.</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Detect skin type</h3>
-                    <p>Model predicts your most likely skin type with confidence scores.</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Identify concerns</h3>
-                    <p>Secondary model ranks top concerns like acne, redness, texture, and more.</p>
-                </div>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Preprocess</h3>
+                <p>Image is resized, normalized, and prepared for the CNN.</p>
             </div>
-        </section>
-    </main>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Skin Type Detection</h3>
+                <p>Model predicts the most likely skin type.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Concern Identification</h3>
+                <p>Top skin concerns are ranked with confidence scores.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
 </body>
 </html>
-
