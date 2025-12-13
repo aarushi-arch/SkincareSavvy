@@ -25,15 +25,15 @@ class FaceAnalysisPipeline:
         self.skin_concerns_classes: list[str] = []
         self._models_loaded = False
 
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
     # MODEL LOADING
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
     def load_models_from_db(self) -> None:
         """Load active models from the database (only once)."""
         if self._models_loaded:
             return
 
-        # ---------- SKIN CONCERNS ----------
+        # ---------------- SKIN CONCERNS ----------------
         concerns = CNNModel.objects.filter(
             model_type="skin_concerns",
             is_active=True
@@ -44,23 +44,12 @@ class FaceAnalysisPipeline:
                 self.skin_concerns_model = tf.keras.models.load_model(
                     concerns.model_file.path
                 )
-
-                # ✅ FIX: convert dict → list safely
-                classes = concerns.class_names
-                if isinstance(classes, dict):
-                    self.skin_concerns_classes = [
-                        classes[k] for k in sorted(classes, key=int)
-                    ]
-                elif isinstance(classes, list):
-                    self.skin_concerns_classes = classes
-                else:
-                    self.skin_concerns_classes = []
-
+                self.skin_concerns_classes = self._parse_class_names(concerns)
                 print("✔ Skin concerns model loaded")
             except Exception as e:
                 print(f"❌ Skin concerns model load failed: {e}")
 
-        # ---------- SKIN TYPES ----------
+        # ---------------- SKIN TYPES ----------------
         skin_types = CNNModel.objects.filter(
             model_type="skin_types",
             is_active=True
@@ -71,42 +60,66 @@ class FaceAnalysisPipeline:
                 self.skin_types_model = tf.keras.models.load_model(
                     skin_types.model_file.path
                 )
-
-                classes = skin_types.class_names
-                if isinstance(classes, dict):
-                    self.skin_types_classes = [
-                        classes[k] for k in sorted(classes, key=int)
-                    ]
-                elif isinstance(classes, list):
-                    self.skin_types_classes = classes
-                else:
-                    self.skin_types_classes = []
-
+                self.skin_types_classes = self._parse_class_names(skin_types)
                 print("✔ Skin types model loaded")
             except Exception as e:
                 print(f"❌ Skin types model load failed: {e}")
 
         self._models_loaded = True
 
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
+    # CLASS NAME HANDLING (FIXES Class_0 BUG)
+    # ------------------------------------------------------------------
+    def _parse_class_names(self, model: CNNModel) -> list[str]:
+        """
+        Converts JSON class file into ordered class list.
+
+        Supports:
+        - {"acne": 0, "pores": 1}
+        - ["acne", "pores"]
+        """
+        raw = model.class_names
+
+        if isinstance(raw, dict):
+            # Convert index-mapped dict → ordered list
+            return [k for k, v in sorted(raw.items(), key=lambda x: x[1])]
+
+        if isinstance(raw, list):
+            return raw
+
+        return []
+
+    # ------------------------------------------------------------------
     # PREPROCESSING
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
     def preprocess(
         self,
         image_bytes: bytes | np.ndarray,
-        target_size: tuple[int, int],
     ) -> np.ndarray:
+        """
+        Preprocess image according to model input size.
+        """
+        # Detect input size dynamically
+        if self.skin_concerns_model is not None:
+            h, w = self.skin_concerns_model.input_shape[1:3]
+        elif self.skin_types_model is not None:
+            h, w = self.skin_types_model.input_shape[1:3]
+        else:
+            h, w = (224, 224)
+
         return preprocess_image(
             image_bytes,
-            target_size=target_size,
+            target_size=(h, w),
             normalize=True,
         )
 
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
     # PREDICTIONS
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
     def predict_skin_type(
-        self, processed: np.ndarray, top_k: int = 3
+        self,
+        processed: np.ndarray,
+        top_k: int = 3
     ) -> dict[str, Any]:
         if self.skin_types_model is None:
             return {"error": "Skin types model not loaded"}
@@ -117,9 +130,7 @@ class FaceAnalysisPipeline:
         return {
             "predictions": [
                 {
-                    "class": self.skin_types_classes[i]
-                    if i < len(self.skin_types_classes)
-                    else f"class_{i}",
+                    "class": self.skin_types_classes[i],
                     "confidence": float(preds[i]),
                 }
                 for i in top
@@ -127,7 +138,9 @@ class FaceAnalysisPipeline:
         }
 
     def predict_skin_concerns(
-        self, processed: np.ndarray, top_k: int = 3
+        self,
+        processed: np.ndarray,
+        top_k: int = 3
     ) -> dict[str, Any]:
         if self.skin_concerns_model is None:
             return {"error": "Skin concerns model not loaded"}
@@ -138,34 +151,25 @@ class FaceAnalysisPipeline:
         return {
             "predictions": [
                 {
-                    "class": self.skin_concerns_classes[i]
-                    if i < len(self.skin_concerns_classes)
-                    else f"class_{i}",
+                    "class": self.skin_concerns_classes[i],
                     "confidence": float(preds[i]),
                 }
                 for i in top
             ]
         }
 
-    # --------------------------------------------------
-    # MAIN PIPELINE
-    # --------------------------------------------------
+    # ------------------------------------------------------------------
+    # MAIN ENTRY POINT
+    # ------------------------------------------------------------------
     def analyze(self, image_bytes: bytes | np.ndarray) -> dict[str, Any]:
+        """
+        Run full analysis (skin type + concerns).
+        """
         self.load_models_from_db()
 
-        results: dict[str, Any] = {}
+        processed = self.preprocess(image_bytes)
 
-        # ⚠ IMPORTANT: each model may need DIFFERENT input size
-        if self.skin_types_model:
-            processed_types = self.preprocess(image_bytes, target_size=(128, 128))
-            results["skin_type"] = self.predict_skin_type(processed_types)
-        else:
-            results["skin_type"] = {"error": "Model not loaded"}
-
-        if self.skin_concerns_model:
-            processed_concerns = self.preprocess(image_bytes, target_size=(128, 128))
-            results["skin_concerns"] = self.predict_skin_concerns(processed_concerns)
-        else:
-            results["skin_concerns"] = {"error": "Model not loaded"}
-
-        return results
+        return {
+            "skin_type": self.predict_skin_type(processed),
+            "skin_concerns": self.predict_skin_concerns(processed),
+        }
