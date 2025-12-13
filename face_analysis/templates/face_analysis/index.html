@@ -87,19 +87,38 @@
                 <div class="tag">JPG / PNG</div>
             </div>
 
-            <label class="upload-drop">
-                <input type="file" name="face_image" accept="image/*" class="file-input" required>
-                <p class="muted">Drag & drop or click to choose a file.</p>
-                <p class="fine-print">Max size 10MB. Image is processed securely.</p>
+            <label class="upload-drop" id="upload-drop">
+                <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input" required>
+                <div id="upload-placeholder">
+                    <p class="muted">Drag & drop or click to choose a file.</p>
+                    <p class="fine-print">Max size 10MB. Image is processed securely.</p>
+                </div>
+                <div id="image-preview" style="display: none;">
+                    <img id="preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem;">
+                    <p class="muted" id="file-name"></p>
+                    <button type="button" id="remove-image" class="btn ghost" style="margin-top: 0.5rem;">Remove Image</button>
+                </div>
             </label>
 
             <div class="upload-actions">
-                <button type="submit" class="btn primary">Scan Photo</button>
+                <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
+                <div id="loading-indicator" style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600;">
+                    <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle;"></span>
+                    Processing...
+                </div>
             </div>
         </form>
 
         {% if error %}
-            <div class="alert error">{{ error }}</div>
+            <div class="alert error" style="margin-top: 1rem;">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+        
+        {% if analysis_result %}
+            <div class="alert success" style="margin-top: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+                <strong>✓ Analysis Complete!</strong> Scroll down to see results.
+            </div>
         {% endif %}
     </section>
 
@@ -168,6 +187,153 @@
     </section>
 
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('face_image_input');
+    const uploadDrop = document.getElementById('upload-drop');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const fileName = document.getElementById('file-name');
+    const removeImageBtn = document.getElementById('remove-image');
+    const scanButton = document.getElementById('scan-button');
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                fileInput.value = '';
+                return;
+            }
+
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB.');
+                fileInput.value = '';
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
+                uploadPlaceholder.style.display = 'none';
+                imagePreview.style.display = 'block';
+                scanButton.disabled = false;
+                uploadDrop.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Remove image
+    removeImageBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        uploadPlaceholder.style.display = 'block';
+        imagePreview.style.display = 'none';
+        scanButton.disabled = true;
+        uploadDrop.classList.remove('has-image');
+    });
+
+    // Drag and drop handlers
+    uploadDrop.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadDrop.classList.add('drag-over');
+    });
+
+    uploadDrop.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadDrop.classList.remove('drag-over');
+    });
+
+    uploadDrop.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadDrop.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Show loading state on form submit
+    const form = uploadDrop.closest('form');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const originalButtonText = scanButton.textContent;
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Don't prevent default - let form submit normally
+            // Keep button visible but show loading
+            scanButton.disabled = true;
+            loadingIndicator.style.display = 'inline-flex';
+            scanButton.style.opacity = '0.6';
+            scanButton.textContent = 'Processing...';
+        });
+    }
+    
+    // Restore button state if page reloads with results or error
+    {% if analysis_result or error %}
+        // If we have results or error, re-enable the button
+        scanButton.disabled = false;
+        scanButton.style.opacity = '1';
+        scanButton.textContent = originalButtonText || 'Scan Photo';
+        loadingIndicator.style.display = 'none';
+        
+        // Keep the image preview visible if file input has a file
+        if (fileInput && fileInput.files.length > 0) {
+            // Image should already be visible from previous selection
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
+                    uploadPlaceholder.style.display = 'none';
+                    imagePreview.style.display = 'block';
+                    uploadDrop.classList.add('has-image');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Scroll to results if they exist
+        {% if analysis_result %}
+            setTimeout(function() {
+                const resultsSection = document.querySelector('.result-panel');
+                if (resultsSection) {
+                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 300);
+        {% endif %}
+        
+        // Scroll to error if it exists
+        {% if error %}
+            setTimeout(function() {
+                const errorAlert = document.querySelector('.alert.error');
+                if (errorAlert) {
+                    errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        {% endif %}
+    {% endif %}
+});
+
+// Add spinning animation for loading indicator
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
 
 </body>
 </html>

@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,9 +11,8 @@ from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
 
 
-pipeline = FaceAnalysisPipeline(
-    models_dir=Path("face_analysis/models/ml")
-)
+# Initialize pipeline - will load models if they exist
+pipeline = FaceAnalysisPipeline()
 
 
 def index(request):
@@ -34,14 +34,32 @@ def index(request):
                 uploaded_file.seek(0)
 
                 image_bytes = uploaded_file.read()
-                analysis_result = pipeline.analyze(image_bytes)
+                
+                # Try to analyze the image
+                try:
+                    analysis_result = pipeline.analyze(image_bytes)
+                    
+                    # Check if analysis returned errors
+                    if analysis_result and isinstance(analysis_result, dict):
+                        if analysis_result.get("skin_type", {}).get("error"):
+                            error = f"Skin type analysis error: {analysis_result['skin_type']['error']}"
+                        if analysis_result.get("skin_concerns", {}).get("error"):
+                            if error:
+                                error += f" | Skin concerns error: {analysis_result['skin_concerns']['error']}"
+                            else:
+                                error = f"Skin concerns error: {analysis_result['skin_concerns']['error']}"
+                    
+                    # If no results and no errors, provide a message
+                    if not analysis_result or (not analysis_result.get("skin_type") and not analysis_result.get("skin_concerns")):
+                        error = "Analysis completed but no results were returned. Models may not be loaded."
+                        
+                except Exception as analysis_exc:
+                    error = f"Analysis failed: {str(analysis_exc)}"
 
             except UnidentifiedImageError:
                 error = "Uploaded file is not a valid image."
             except Exception as exc:
-                error = f"Could not analyze the image: {exc}"
-
-    # REMOVE THE FALLBACK THAT WAS CAUSING THE ERROR
+                error = f"Could not process the image: {str(exc)}"
 
     context = {
         "analysis_result": analysis_result,

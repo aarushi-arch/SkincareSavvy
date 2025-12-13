@@ -278,10 +278,49 @@ body {
   background: #f7f9f8;
   cursor: pointer;
   display: block;
+  transition: all 0.3s ease;
+}
+
+.upload-drop:hover {
+  border-color: var(--primary);
+  background: #f0f5f2;
+}
+
+.upload-drop.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  border-style: solid;
+}
+
+.upload-drop.has-image {
+  border-color: var(--primary);
+  background: #ffffff;
+  border-style: solid;
 }
 
 .file-input {
   display: none;
+}
+
+#image-preview {
+  text-align: center;
+}
+
+#image-preview img {
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#file-name {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .upload-actions {
