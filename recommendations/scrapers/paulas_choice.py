@@ -1,4 +1,5 @@
 import time
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -19,6 +20,7 @@ CATEGORY_URLS = {
     "masks": "/skincare/masks/",
 }
 
+
 class PaulasChoiceScraper:
     def __init__(self):
         chrome_options = Options()
@@ -33,70 +35,68 @@ class PaulasChoiceScraper:
         )
 
     def scrape_category(self, category, max_products=None):
-    if category not in CATEGORY_URLS:
-        return []
+        if category not in CATEGORY_URLS:
+            return []
 
-    collected = {}
-    page = 1
+        collected = {}
+        page = 1
 
-    try:
-        while True:
-            url = BASE + CATEGORY_URLS[category] + f"?page={page}"
-            self.driver.get(url)
-            time.sleep(2)
+        try:
+            while True:
+                url = BASE + CATEGORY_URLS[category] + f"?page={page}"
+                self.driver.get(url)
+                time.sleep(2)
 
-            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+                soup = BeautifulSoup(self.driver.page_source, "html.parser")
 
-            links = soup.find_all("a", href=True)
-            page_products = 0
+                links = soup.find_all("a", href=True)
+                page_products = 0
 
-            for a in links:
-                href = a["href"]
+                for a in links:
+                    href = a["href"]
 
-                # ✅ STRICT Paula's Choice product URLs
-                if not re.match(r"^/[^/]+/\d+\.html$", href):
-                    continue
+                    # ✅ STRICT Paula's Choice product URLs
+                    if not re.match(r"^/[^/]+/\d+\.html$", href):
+                        continue
 
-                full_url = BASE + href
+                    full_url = BASE + href
 
-                raw_name = a.get_text(" ", strip=True)
+                    raw_name = a.get_text(" ", strip=True)
 
-                # Clean name
-                JUNK_PHRASES = ["shop now", "new", "sale"]
-                name = raw_name
-                for junk in JUNK_PHRASES:
-                    name = name.replace(junk, "").replace(junk.title(), "").strip()
+                    # Clean name
+                    JUNK_PHRASES = ["shop now", "new", "sale"]
+                    name = raw_name
+                    for junk in JUNK_PHRASES:
+                        name = name.replace(junk, "").replace(junk.title(), "").strip()
 
-                # Skip garbage
-                BAD_KEYWORDS = [
-                    "affiliate", "privacy", "policy",
-                    "terms", "reward", "program"
-                ]
+                    # Skip garbage
+                    BAD_KEYWORDS = [
+                        "affiliate", "privacy", "policy",
+                        "terms", "reward", "program"
+                    ]
+                    if any(bad in name.lower() for bad in BAD_KEYWORDS):
+                        continue
 
-                if any(bad in name.lower() for bad in BAD_KEYWORDS):
-                    continue
+                    if full_url not in collected:
+                        collected[full_url] = {
+                            "url": full_url,
+                            "name": name,
+                            "product_id": href.split("/")[-1].replace(".html", ""),
+                        }
+                        page_products += 1
 
-                if full_url not in collected:
-                    collected[full_url] = {
-                        "url": full_url,
-                        "name": name,
-                        "product_id": href.split("/")[-1].replace(".html", ""),
-                    }
-                    page_products += 1
+                if page_products == 0:
+                    break
 
-            if page_products == 0:
-                break
+                if max_products and len(collected) >= max_products:
+                    break
 
-            if max_products and len(collected) >= max_products:
-                break
+                page += 1
 
-            page += 1
+            return list(collected.values())[:max_products]
 
-        return list(collected.values())[:max_products]
-
-    finally:
-        pass
-
+        finally:
+            pass  # keep browser open for detail scraping
 
     def scrape_product_details(self, url):
         self.driver.get(url)
@@ -111,10 +111,7 @@ class PaulasChoiceScraper:
         ingredients = []
         ing_section = soup.find("div", {"id": "ingredients"})
         if ing_section:
-            ingredients = [
-                li.get_text(strip=True)
-                for li in ing_section.find_all("li")
-            ]
+            ingredients = [li.get_text(strip=True) for li in ing_section.find_all("li")]
 
         return {
             "description": text("div.product-description"),
