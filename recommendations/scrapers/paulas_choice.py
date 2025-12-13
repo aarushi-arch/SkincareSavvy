@@ -33,54 +33,70 @@ class PaulasChoiceScraper:
         )
 
     def scrape_category(self, category, max_products=None):
-        if category not in CATEGORY_URLS:
-            return []
+    if category not in CATEGORY_URLS:
+        return []
 
-        collected = {}
-        page = 1
+    collected = {}
+    page = 1
 
-        try:
-            while True:
-                url = BASE + CATEGORY_URLS[category] + f"?page={page}"
-                self.driver.get(url)
-                time.sleep(2)
+    try:
+        while True:
+            url = BASE + CATEGORY_URLS[category] + f"?page={page}"
+            self.driver.get(url)
+            time.sleep(2)
 
-                soup = BeautifulSoup(self.driver.page_source, "html.parser")
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
 
-                links = soup.find_all("a", href=True)
-                page_products = 0
+            links = soup.find_all("a", href=True)
+            page_products = 0
 
-                for a in links:
-                    href = a["href"]
+            for a in links:
+                href = a["href"]
 
-                    # ✅ REAL Paula's Choice product URLs
-                    if (
-                        href.startswith("/")
-                        and href.endswith(".html")
-                        and href.count("/") == 2
-                    ):
-                        full_url = BASE + href
+                # ✅ STRICT Paula's Choice product URLs
+                if not re.match(r"^/[^/]+/\d+\.html$", href):
+                    continue
 
-                        if full_url not in collected:
-                            collected[full_url] = {
-                                "url": full_url,
-                                "name": a.get_text(strip=True),
-                                "product_id": href.split("/")[-1].replace(".html", ""),
-                            }
-                            page_products += 1
+                full_url = BASE + href
 
-                if page_products == 0:
-                    break  # no more pages
+                raw_name = a.get_text(" ", strip=True)
 
-                if max_products and len(collected) >= max_products:
-                    break
+                # Clean name
+                JUNK_PHRASES = ["shop now", "new", "sale"]
+                name = raw_name
+                for junk in JUNK_PHRASES:
+                    name = name.replace(junk, "").replace(junk.title(), "").strip()
 
-                page += 1
+                # Skip garbage
+                BAD_KEYWORDS = [
+                    "affiliate", "privacy", "policy",
+                    "terms", "reward", "program"
+                ]
 
-            return list(collected.values())[:max_products]
+                if any(bad in name.lower() for bad in BAD_KEYWORDS):
+                    continue
 
-        finally:
-            pass  # keep browser open for detail scraping
+                if full_url not in collected:
+                    collected[full_url] = {
+                        "url": full_url,
+                        "name": name,
+                        "product_id": href.split("/")[-1].replace(".html", ""),
+                    }
+                    page_products += 1
+
+            if page_products == 0:
+                break
+
+            if max_products and len(collected) >= max_products:
+                break
+
+            page += 1
+
+        return list(collected.values())[:max_products]
+
+    finally:
+        pass
+
 
     def scrape_product_details(self, url):
         self.driver.get(url)
