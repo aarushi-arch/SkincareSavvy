@@ -346,6 +346,44 @@ body {
   padding: 14px;
   border-radius: var(--radius-sm);
 }
+
+.result-panel h3 {
+  color: var(--primary);
+  margin: 1.5rem 0 0.75rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.result-panel h3:first-child {
+  margin-top: 0;
+}
+
+.result-item {
+  padding: 0.75rem;
+  background: #f8faf9;
+  border-radius: var(--radius-sm);
+  margin: 0.5rem 0;
+  border-left: 3px solid var(--primary);
+}
+
+.result-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.result-list li {
+  padding: 0.75rem;
+  background: #f8faf9;
+  border-radius: var(--radius-sm);
+  margin: 0.5rem 0;
+  border-left: 3px solid var(--primary);
+  transition: background 0.2s ease;
+}
+
+.result-list li:hover {
+  background: #f0f5f2;
+}
 /* Steps */
 .steps {
   display: grid;

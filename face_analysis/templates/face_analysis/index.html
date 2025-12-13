@@ -136,23 +136,70 @@
         <!-- Skin Type -->
         {% if analysis_result.skin_type %}
             <h3>Skin Type</h3>
-            <p class="result-item">
-                <strong>{{ analysis_result.skin_type.top_prediction.class|title }}</strong>
-                — {{ analysis_result.skin_type.top_prediction.confidence|floatformat:2 }}
-            </p>
+            {% if analysis_result.skin_type.error %}
+                <p class="result-item" style="color: #dc3545;">
+                    <strong>Error:</strong> {{ analysis_result.skin_type.error }}
+                </p>
+            {% elif analysis_result.skin_type.top_prediction %}
+                <p class="result-item">
+                    <strong>{{ analysis_result.skin_type.top_prediction.class|title }}</strong>
+                    — {{ analysis_result.skin_type.top_prediction.confidence|floatformat:2 }}
+                </p>
+                {% if analysis_result.skin_type.predictions %}
+                    <details style="margin-top: 0.5rem;">
+                        <summary style="cursor: pointer; color: var(--muted); font-size: 0.9rem;">View all predictions</summary>
+                        <ul class="result-list" style="margin-top: 0.5rem;">
+                            {% for pred in analysis_result.skin_type.predictions %}
+                                <li>
+                                    {{ pred.class|title }}
+                                    — {{ pred.confidence|floatformat:2 }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                {% endif %}
+            {% else %}
+                <p class="result-item" style="color: #dc3545;">
+                    <strong>No predictions available.</strong>
+                </p>
+            {% endif %}
         {% endif %}
 
         <!-- Skin Concerns -->
         {% if analysis_result.skin_concerns %}
             <h3>Skin Concerns</h3>
-            <ul class="result-list">
-                {% for pred in analysis_result.skin_concerns.predictions %}
-                    <li>
-                        {{ pred.class|title }}
-                        — {{ pred.confidence|floatformat:2 }}
-                    </li>
-                {% endfor %}
-            </ul>
+            {% if analysis_result.skin_concerns.error %}
+                <p class="result-item" style="color: #dc3545;">
+                    <strong>Error:</strong> {{ analysis_result.skin_concerns.error }}
+                </p>
+            {% elif analysis_result.skin_concerns.predictions %}
+                <p class="muted" style="margin-bottom: 0.5rem;">Top predictions:</p>
+                <ul class="result-list">
+                    {% for pred in analysis_result.skin_concerns.predictions %}
+                        <li>
+                            <strong>{{ pred.class|title }}</strong>
+                            — {{ pred.confidence|floatformat:2 }}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if analysis_result.skin_concerns.top_prediction %}
+                    <p class="muted" style="margin-top: 1rem; font-size: 0.9rem;">
+                        Top concern: <strong>{{ analysis_result.skin_concerns.top_prediction.class|title }}</strong> 
+                        ({{ analysis_result.skin_concerns.top_prediction.confidence|floatformat:2 }})
+                    </p>
+                {% endif %}
+            {% else %}
+                <p class="result-item" style="color: #dc3545;">
+                    <strong>No predictions available.</strong>
+                </p>
+            {% endif %}
+        {% endif %}
+        
+        <!-- Show message if no results at all -->
+        {% if not analysis_result.skin_type and not analysis_result.skin_concerns %}
+            <p class="result-item" style="color: var(--muted);">
+                No analysis results available. Please ensure models are uploaded and active.
+            </p>
         {% endif %}
     </section>
     {% endif %}
