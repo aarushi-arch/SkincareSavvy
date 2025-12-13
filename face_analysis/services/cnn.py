@@ -2,181 +2,114 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import numpy as np
+import tensorflow as tf
 from tensorflow import keras
 
+from face_analysis.models import CNNModel
 from face_analysis.utils.image_utils import preprocess_image
 
 
 class FaceAnalysisPipeline:
     """
     CNN pipeline for face analysis (skin types and skin concerns).
+    Loads ACTIVE models from the database.
     """
 
-    def __init__(
-        self,
-        skin_types_model_path: Path | str | None = None,
-        skin_concerns_model_path: Path | str | None = None,
-        models_dir: Path | str | None = None,
-    ) -> None:
-        """
-        Initialize the pipeline with trained models.
-
-        Args:
-            skin_types_model_path: Path to skin types model
-            skin_concerns_model_path: Path to skin concerns model
-            models_dir: Directory containing models (will auto-detect if not specified)
-        """
-        if models_dir:
-            models_dir = Path(models_dir)
-            if skin_types_model_path is None:
-                skin_types_model_path = models_dir / "skin_types_final_model.keras"
-            if skin_concerns_model_path is None:
-                skin_concerns_model_path = models_dir / "skin_concerns_final_model.keras"
-
-        self.skin_types_model_path = Path(skin_types_model_path) if skin_types_model_path else None
-        self.skin_concerns_model_path = Path(skin_concerns_model_path) if skin_concerns_model_path else None
-
+    def __init__(self) -> None:
         self.skin_types_model: keras.Model | None = None
         self.skin_concerns_model: keras.Model | None = None
         self.skin_types_classes: list[str] = []
         self.skin_concerns_classes: list[str] = []
+        self._models_loaded = False
 
-        # Load models if paths are provided
-        if self.skin_types_model_path and self.skin_types_model_path.exists():
-            self.load_skin_types_model()
-        if self.skin_concerns_model_path and self.skin_concerns_model_path.exists():
-            self.load_skin_concerns_model()
+    def load_models_from_db(self) -> None:
+        """Load active models from the database (only once)."""
+        if self._models_loaded:
+            return
 
-    def load_skin_types_model(self):
-        """Load the skin types classification model."""
-        if self.skin_types_model_path and self.skin_types_model_path.exists():
-            self.skin_types_model = keras.models.load_model(str(self.skin_types_model_path))
-            # Load class names
-            class_names_path = self.skin_types_model_path.parent / "skin_types_class_names.json"
-            if class_names_path.exists():
-                with open(class_names_path) as f:
-                    self.skin_types_classes = json.load(f)
-        else:
-            raise FileNotFoundError(f"Skin types model not found at {self.skin_types_model_path}")
+        # ---- SKIN CONCERNS MODEL ----
+        concerns = CNNModel.objects.filter(
+            model_type="skin_concerns",
+            is_active=True
+        ).first()
 
-    def load_skin_concerns_model(self):
-        """Load the skin concerns classification model."""
-        if self.skin_concerns_model_path and self.skin_concerns_model_path.exists():
-            self.skin_concerns_model = keras.models.load_model(str(self.skin_concerns_model_path))
-            # Load class names
-            class_names_path = self.skin_concerns_model_path.parent / "skin_concerns_class_names.json"
-            if class_names_path.exists():
-                with open(class_names_path) as f:
-                    self.skin_concerns_classes = json.load(f)
-        else:
-            raise FileNotFoundError(f"Skin concerns model not found at {self.skin_concerns_model_path}")
+        if concerns and concerns.model_file:
+            try:
+                self.skin_concerns_model = tf.keras.models.load_model(
+                    concerns.model_file.path
+                )
+                self.skin_concerns_classes = concerns.class_names or []
+                print("✔ Skin concerns model loaded")
+            except Exception as e:
+                print(f"❌ Skin concerns model load failed: {e}")
 
-    def preprocess(self, image_bytes: bytes | np.ndarray, target_size: tuple[int, int] = (224, 224)) -> np.ndarray:
-        """
-        Convert raw image bytes to a normalized NumPy array suitable for model input.
+        # ---- SKIN TYPES MODEL ----
+        skin_types = CNNModel.objects.filter(
+            model_type="skin_types",
+            is_active=True
+        ).first()
 
-        Args:
-            image_bytes: Raw image bytes or numpy array
-            target_size: Target image size (height, width)
+        if skin_types and skin_types.model_file:
+            try:
+                self.skin_types_model = tf.keras.models.load_model(
+                    skin_types.model_file.path
+                )
+                self.skin_types_classes = skin_types.class_names or []
+                print("✔ Skin types model loaded")
+            except Exception as e:
+                print(f"❌ Skin types model load failed: {e}")
 
-        Returns:
-            Preprocessed image array
-        """
+        self._models_loaded = True
+
+    def preprocess(
+        self,
+        image_bytes: bytes | np.ndarray,
+        target_size: tuple[int, int] = (224, 224),
+    ) -> np.ndarray:
         return preprocess_image(image_bytes, target_size=target_size, normalize=True)
 
     def predict_skin_type(self, processed: np.ndarray, top_k: int = 3) -> dict[str, Any]:
-        """
-        Predict skin type from preprocessed image.
-
-        Args:
-            processed: Preprocessed image array
-            top_k: Number of top predictions to return
-
-        Returns:
-            Dictionary with predictions
-        """
         if self.skin_types_model is None:
-            raise ValueError("Skin types model not loaded. Call load_skin_types_model() first.")
+            return {"error": "Skin types model not loaded"}
 
-        predictions = self.skin_types_model.predict(processed, verbose=0)[0]
-        top_indices = np.argsort(predictions)[-top_k:][::-1]
+        preds = self.skin_types_model.predict(processed, verbose=0)[0]
+        top = np.argsort(preds)[-top_k:][::-1]
 
-        results = {
+        return {
             "predictions": [
                 {
-                    "class": self.skin_types_classes[idx] if idx < len(self.skin_types_classes) else f"class_{idx}",
-                    "confidence": float(predictions[idx]),
+                    "class": self.skin_types_classes[i],
+                    "confidence": float(preds[i]),
                 }
-                for idx in top_indices
-            ],
-            "top_prediction": {
-                "class": self.skin_types_classes[top_indices[0]] if top_indices[0] < len(self.skin_types_classes) else "unknown",
-                "confidence": float(predictions[top_indices[0]]),
-            },
+                for i in top
+            ]
         }
-
-        return results
 
     def predict_skin_concerns(self, processed: np.ndarray, top_k: int = 3) -> dict[str, Any]:
-        """
-        Predict skin concerns from preprocessed image.
-
-        Args:
-            processed: Preprocessed image array
-            top_k: Number of top predictions to return
-
-        Returns:
-            Dictionary with predictions
-        """
         if self.skin_concerns_model is None:
-            raise ValueError("Skin concerns model not loaded. Call load_skin_concerns_model() first.")
+            return {"error": "Skin concerns model not loaded"}
 
-        predictions = self.skin_concerns_model.predict(processed, verbose=0)[0]
-        top_indices = np.argsort(predictions)[-top_k:][::-1]
+        preds = self.skin_concerns_model.predict(processed, verbose=0)[0]
+        top = np.argsort(preds)[-top_k:][::-1]
 
-        results = {
+        return {
             "predictions": [
                 {
-                    "class": self.skin_concerns_classes[idx] if idx < len(self.skin_concerns_classes) else f"class_{idx}",
-                    "confidence": float(predictions[idx]),
+                    "class": self.skin_concerns_classes[i],
+                    "confidence": float(preds[i]),
                 }
-                for idx in top_indices
-            ],
-            "top_prediction": {
-                "class": self.skin_concerns_classes[top_indices[0]] if top_indices[0] < len(self.skin_concerns_classes) else "unknown",
-                "confidence": float(predictions[top_indices[0]]),
-            },
+                for i in top
+            ]
         }
 
-        return results
-
     def analyze(self, image_bytes: bytes | np.ndarray) -> dict[str, Any]:
-        """
-        Analyze image for both skin type and skin concerns.
-
-        Args:
-            image_bytes: Raw image bytes or numpy array
-
-        Returns:
-            Dictionary with both skin type and skin concerns predictions
-        """
+        self.load_models_from_db()
         processed = self.preprocess(image_bytes)
 
-        results = {}
-
-        if self.skin_types_model is not None:
-            results["skin_type"] = self.predict_skin_type(processed)
-        else:
-            results["skin_type"] = {"error": "Model not loaded"}
-
-        if self.skin_concerns_model is not None:
-            results["skin_concerns"] = self.predict_skin_concerns(processed)
-        else:
-            results["skin_concerns"] = {"error": "Model not loaded"}
-
-        return results
-
+        return {
+            "skin_type": self.predict_skin_type(processed),
+            "skin_concerns": self.predict_skin_concerns(processed),
+        }
