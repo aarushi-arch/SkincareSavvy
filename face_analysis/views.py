@@ -10,7 +10,9 @@ from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
 
 
-pipeline = FaceAnalysisPipeline()
+pipeline = FaceAnalysisPipeline(
+    models_dir=Path("face_analysis/models/ml")
+)
 
 
 def index(request):
