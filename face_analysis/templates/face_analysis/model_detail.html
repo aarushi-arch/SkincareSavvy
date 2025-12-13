@@ -1,0 +1,100 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}{{ model.name }} - SkincareSavvy{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 2rem auto;">
+    <div class="card" style="background: rgba(255, 255, 255, 0.96); border-radius: 18px; padding: 2rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: #0b3b17; margin-bottom: 0.5rem; font-size: 2rem;">{{ model.name }}</h1>
+                {% if model.is_active %}
+                    <span style="background: #28a745; color: white; padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">ACTIVE MODEL</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'face_analysis:model_list' %}" style="padding: 0.5rem 1rem; text-decoration: none; color: #6c757d; border: 1px solid #dee2e6; border-radius: 6px;">← Back to List</a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <div>
+                <strong style="color: #6c757d; font-size: 0.9rem;">Model Type</strong>
+                <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.get_model_type_display }}</p>
+            </div>
+            <div>
+                <strong style="color: #6c757d; font-size: 0.9rem;">Version</strong>
+                <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.version }}</p>
+            </div>
+            {% if model.base_architecture %}
+                <div>
+                    <strong style="color: #6c757d; font-size: 0.9rem;">Base Architecture</strong>
+                    <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.base_architecture }}</p>
+                </div>
+            {% endif %}
+            {% if model.accuracy %}
+                <div>
+                    <strong style="color: #6c757d; font-size: 0.9rem;">Accuracy</strong>
+                    <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.accuracy|floatformat:4 }} ({{ model.accuracy|floatformat:2 }}%)</p>
+                </div>
+            {% endif %}
+            <div>
+                <strong style="color: #6c757d; font-size: 0.9rem;">Image Size</strong>
+                <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.image_size }}</p>
+            </div>
+            <div>
+                <strong style="color: #6c757d; font-size: 0.9rem;">Uploaded</strong>
+                <p style="color: #0b3b17; font-size: 1.1rem; margin-top: 0.25rem;">{{ model.created_at|date:"F d, Y H:i" }}</p>
+            </div>
+        </div>
+
+        {% if model.description %}
+            <div style="margin-bottom: 2rem;">
+                <strong style="color: #6c757d; font-size: 0.9rem;">Description</strong>
+                <p style="color: #333; margin-top: 0.5rem; line-height: 1.6;">{{ model.description }}</p>
+            </div>
+        {% endif %}
+
+        <div style="margin-bottom: 2rem;">
+            <strong style="color: #6c757d; font-size: 0.9rem; display: block; margin-bottom: 0.75rem;">Files</strong>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% if model.model_file %}
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Model File:</strong> 
+                        <a href="{{ model.model_file.url }}" style="color: #0b3b17; text-decoration: none; margin-left: 0.5rem;">{{ model.model_file.name|slice:"-50:" }}</a>
+                    </div>
+                {% endif %}
+                {% if model.class_names_file %}
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Class Names:</strong> 
+                        <a href="{{ model.class_names_file.url }}" style="color: #0b3b17; text-decoration: none; margin-left: 0.5rem;">{{ model.class_names_file.name|slice:"-50:" }}</a>
+                    </div>
+                {% endif %}
+                {% if model.training_data_file %}
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Training Data:</strong> 
+                        <a href="{{ model.training_data_file.url }}" style="color: #0b3b17; text-decoration: none; margin-left: 0.5rem;">{{ model.training_data_file.name|slice:"-50:" }}</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if model.class_names %}
+            <div style="margin-bottom: 2rem;">
+                <strong style="color: #6c757d; font-size: 0.9rem; display: block; margin-bottom: 0.75rem;">Class Names ({{ model.class_names|length }})</strong>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    {% for class_name in model.class_names %}
+                        <span style="padding: 0.4rem 0.75rem; background: rgba(11, 59, 23, 0.1); color: #0b3b17; border-radius: 6px; font-size: 0.875rem;">{{ class_name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="{% url 'face_analysis:delete_model' model.pk %}" style="flex: 1; padding: 0.75rem 1.5rem; text-align: center; text-decoration: none; background: #dc3545; color: white; border-radius: 6px; font-weight: 500;">
+                Delete Model
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

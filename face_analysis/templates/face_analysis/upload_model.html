@@ -1,0 +1,134 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}Upload CNN Model - SkincareSavvy{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 2rem auto;">
+    <div class="card" style="background: rgba(255, 255, 255, 0.96); border-radius: 18px; padding: 2rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);">
+        <h1 style="color: #0b3b17; margin-bottom: 1.5rem; font-size: 2rem;">Upload CNN Model</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; color: {% if message.tags == 'success' %}#155724{% else %}#721c24{% endif %}; border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% else %}#f5c6cb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.name.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.model_type.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.model_type.label }}</label>
+                {{ form.model_type }}
+                {% if form.model_type.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.model_type.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.model_file.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.model_file.label }} <span style="color: #dc3545;">*</span></label>
+                {{ form.model_file }}
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; color: #6c757d; font-size: 0.875rem;">Accepted formats: .h5, .keras, .pb (Max 500MB)</small>
+                {% if form.model_file.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.model_file.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.class_names_file.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.class_names_file.label }}</label>
+                {{ form.class_names_file }}
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; color: #6c757d; font-size: 0.875rem;">JSON file with class names array (Max 1MB)</small>
+                {% if form.class_names_file.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.class_names_file.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.training_data_file.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.training_data_file.label }}</label>
+                {{ form.training_data_file }}
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; color: #6c757d; font-size: 0.875rem;">JSON file with training history (Max 5MB)</small>
+                {% if form.training_data_file.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.training_data_file.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label for="{{ form.base_architecture.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.base_architecture.label }}</label>
+                    {{ form.base_architecture }}
+                    {% if form.base_architecture.errors %}
+                        <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.base_architecture.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.image_size.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.image_size.label }}</label>
+                    {{ form.image_size }}
+                    {% if form.image_size.errors %}
+                        <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.image_size.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label for="{{ form.version.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.version.label }}</label>
+                    {{ form.version }}
+                    {% if form.version.errors %}
+                        <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.version.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.accuracy.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.accuracy.label }}</label>
+                    {{ form.accuracy }}
+                    {% if form.accuracy.errors %}
+                        <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.accuracy.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.description.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #0b3b17;">{{ form.description.label }}</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <div class="form-check">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label" style="margin-left: 0.5rem; font-weight: 500; color: #0b3b17;">
+                        {{ form.is_active.label }}
+                    </label>
+                </div>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; color: #6c757d; font-size: 0.875rem;">Only one active model per type is allowed</small>
+                {% if form.is_active.errors %}
+                    <div class="text-danger" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.is_active.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn-primary" style="flex: 1; padding: 0.95rem 2rem; background: transparent; color: #0b3b17; border: 2px solid rgba(11, 59, 23, 0.5); border-radius: 40px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                    Upload Model
+                </button>
+                <a href="{% url 'face_analysis:model_list' %}" class="btn-secondary" style="flex: 1; padding: 0.95rem 2rem; text-align: center; text-decoration: none; background: rgba(108, 117, 125, 0.1); color: #6c757d; border: 2px solid rgba(108, 117, 125, 0.3); border-radius: 40px; font-size: 1.05rem; font-weight: 600; transition: all 0.3s ease;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

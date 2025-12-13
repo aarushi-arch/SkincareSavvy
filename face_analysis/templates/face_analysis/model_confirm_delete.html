@@ -1,0 +1,27 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}Delete Model - SkincareSavvy{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 2rem auto;">
+    <div class="card" style="background: rgba(255, 255, 255, 0.96); border-radius: 18px; padding: 2rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);">
+        <h1 style="color: #0b3b17; margin-bottom: 1rem; font-size: 1.75rem;">Delete Model</h1>
+        
+        <p style="color: #333; margin-bottom: 1.5rem;">Are you sure you want to delete <strong>{{ model.name }}</strong>? This action cannot be undone.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="flex: 1; padding: 0.75rem 1.5rem; background: #dc3545; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer;">
+                    Yes, Delete
+                </button>
+                <a href="{% url 'face_analysis:model_list' %}" style="flex: 1; padding: 0.75rem 1.5rem; text-align: center; text-decoration: none; background: #6c757d; color: white; border-radius: 6px; font-weight: 500;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

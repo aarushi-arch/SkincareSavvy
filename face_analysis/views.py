@@ -1,8 +1,12 @@
 from io import BytesIO
 
-from django.shortcuts import render
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import ListView
 from PIL import Image, UnidentifiedImageError
 
+from .forms import CNNModelUploadForm
+from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
 
 
@@ -42,3 +46,42 @@ def index(request):
         "error": error,
     }
     return render(request, "face_analysis/index.html", context)
+
+
+def upload_model(request):
+    """View for uploading CNN model files."""
+    if request.method == "POST":
+        form = CNNModelUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            model = form.save()
+            messages.success(request, f"Model '{model.name}' uploaded successfully!")
+            return redirect("face_analysis:model_list")
+    else:
+        form = CNNModelUploadForm()
+    
+    return render(request, "face_analysis/upload_model.html", {"form": form})
+
+
+class ModelListView(ListView):
+    """List view for uploaded CNN models."""
+    model = CNNModel
+    template_name = "face_analysis/model_list.html"
+    context_object_name = "models"
+    paginate_by = 10
+
+
+def model_detail(request, pk):
+    """Detail view for a CNN model."""
+    model = get_object_or_404(CNNModel, pk=pk)
+    return render(request, "face_analysis/model_detail.html", {"model": model})
+
+
+def delete_model(request, pk):
+    """Delete a CNN model."""
+    model = get_object_or_404(CNNModel, pk=pk)
+    if request.method == "POST":
+        model_name = model.name
+        model.delete()
+        messages.success(request, f"Model '{model_name}' deleted successfully!")
+        return redirect("face_analysis:model_list")
+    return render(request, "face_analysis/model_confirm_delete.html", {"model": model})

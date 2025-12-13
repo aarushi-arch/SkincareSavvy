@@ -1,0 +1,84 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}CNN Models - SkincareSavvy{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #0b3b17; font-size: 2rem;">CNN Models</h1>
+        <a href="{% url 'face_analysis:upload_model' %}" class="btn-primary" style="padding: 0.75rem 1.5rem; background: transparent; color: #0b3b17; border: 2px solid rgba(11, 59, 23, 0.5); border-radius: 40px; font-weight: 600; text-decoration: none; transition: all 0.3s ease;">
+            + Upload New Model
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; color: {% if message.tags == 'success' %}#155724{% else %}#721c24{% endif %}; border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% else %}#f5c6cb{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if models %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            {% for model in models %}
+                <div class="card" style="background: rgba(255, 255, 255, 0.98); border-radius: 14px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); border: 1px solid #e0e0e0; transition: all 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #0b3b17; font-size: 1.2rem; font-weight: 600;">{{ model.name }}</h3>
+                        {% if model.is_active %}
+                            <span style="background: #28a745; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">ACTIVE</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                        <span style="color: #6c757d; font-size: 0.9rem;">Type:</span>
+                        <strong style="color: #0b3b17; margin-left: 0.5rem;">{{ model.get_model_type_display }}</strong>
+                    </div>
+                    
+                    {% if model.base_architecture %}
+                        <div style="margin-bottom: 0.75rem;">
+                            <span style="color: #6c757d; font-size: 0.9rem;">Architecture:</span>
+                            <strong style="color: #0b3b17; margin-left: 0.5rem;">{{ model.base_architecture }}</strong>
+                        </div>
+                    {% endif %}
+                    
+                    {% if model.accuracy %}
+                        <div style="margin-bottom: 0.75rem;">
+                            <span style="color: #6c757d; font-size: 0.9rem;">Accuracy:</span>
+                            <strong style="color: #0b3b17; margin-left: 0.5rem;">{{ model.accuracy|floatformat:2 }}%</strong>
+                        </div>
+                    {% endif %}
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                        <span style="color: #6c757d; font-size: 0.9rem;">Version:</span>
+                        <strong style="color: #0b3b17; margin-left: 0.5rem;">{{ model.version }}</strong>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <span style="color: #6c757d; font-size: 0.9rem;">Uploaded:</span>
+                        <strong style="color: #0b3b17; margin-left: 0.5rem;">{{ model.created_at|date:"M d, Y" }}</strong>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                        <a href="{% url 'face_analysis:model_detail' model.pk %}" style="flex: 1; padding: 0.6rem 1rem; text-align: center; text-decoration: none; background: #0b3b17; color: white; border-radius: 6px; font-weight: 500; transition: all 0.3s ease;">
+                            View Details
+                        </a>
+                        <a href="{% url 'face_analysis:delete_model' model.pk %}" style="padding: 0.6rem 1rem; text-align: center; text-decoration: none; background: #dc3545; color: white; border-radius: 6px; font-weight: 500; transition: all 0.3s ease;">
+                            Delete
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+            <p style="color: #6c757d; font-size: 1.1rem; margin-bottom: 1.5rem;">No models uploaded yet.</p>
+            <a href="{% url 'face_analysis:upload_model' %}" class="btn-primary" style="padding: 0.95rem 2rem; background: transparent; color: #0b3b17; border: 2px solid rgba(11, 59, 23, 0.5); border-radius: 40px; font-weight: 600; text-decoration: none; display: inline-block;">
+                Upload Your First Model
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
