@@ -25,15 +25,15 @@ class FaceAnalysisPipeline:
         self.skin_concerns_classes: list[str] = []
         self._models_loaded = False
 
-    # ------------------------------------------------------------------
+    
     # MODEL LOADING
-    # ------------------------------------------------------------------
+    
     def load_models_from_db(self) -> None:
         """Load active models from the database (only once)."""
         if self._models_loaded:
             return
 
-        # ---------------- SKIN CONCERNS ----------------
+        # SKIN CONCERNS 
         concerns = CNNModel.objects.filter(
             model_type="skin_concerns",
             is_active=True
@@ -45,11 +45,11 @@ class FaceAnalysisPipeline:
                     concerns.model_file.path
                 )
                 self.skin_concerns_classes = self._parse_class_names(concerns)
-                print("✔ Skin concerns model loaded")
+                print("Skin concerns model loaded")
             except Exception as e:
-                print(f"❌ Skin concerns model load failed: {e}")
+                print(f"Skin concerns model load failed: {e}")
 
-        # ---------------- SKIN TYPES ----------------
+        # SKIN TYPES 
         skin_types = CNNModel.objects.filter(
             model_type="skin_types",
             is_active=True
@@ -61,15 +61,15 @@ class FaceAnalysisPipeline:
                     skin_types.model_file.path
                 )
                 self.skin_types_classes = self._parse_class_names(skin_types)
-                print("✔ Skin types model loaded")
+                print("Skin types model loaded")
             except Exception as e:
-                print(f"❌ Skin types model load failed: {e}")
+                print(f"Skin types model load failed: {e}")
 
         self._models_loaded = True
 
-    # ------------------------------------------------------------------
+    
     # CLASS NAME HANDLING (FIXES Class_0 BUG)
-    # ------------------------------------------------------------------
+    
     def _parse_class_names(self, model: CNNModel) -> list[str]:
         """
         Converts JSON class file into ordered class list.
@@ -89,9 +89,9 @@ class FaceAnalysisPipeline:
 
         return []
 
-    # ------------------------------------------------------------------
+    
     # PREPROCESSING
-    # ------------------------------------------------------------------
+    
     def preprocess(
         self,
         image_bytes: bytes | np.ndarray,
@@ -113,9 +113,9 @@ class FaceAnalysisPipeline:
             normalize=True,
         )
 
-    # ------------------------------------------------------------------
+    
     # PREDICTIONS
-    # ------------------------------------------------------------------
+    
     def predict_skin_type(
         self,
         processed: np.ndarray,
@@ -158,9 +158,9 @@ class FaceAnalysisPipeline:
             ]
         }
 
-    # ------------------------------------------------------------------
+    
     # MAIN ENTRY POINT
-    # ------------------------------------------------------------------
+    
     def analyze(self, image_bytes: bytes | np.ndarray) -> dict[str, Any]:
         """
         Run full analysis (skin type + concerns).
