@@ -82,6 +82,10 @@ class Command(BaseCommand):
                 product_url = product_data.get('url')
                 inci_url = product_url  # Use same URL for now
 
+                # Use rating from details if available, else from category page
+                rating = details.get('rating') if details and details.get('rating') is not None else product_data.get('rating')
+                review_count = details.get('review_count') if details and details.get('review_count') is not None else product_data.get('review_count', 0)
+
                 # Save to database
                 with transaction.atomic():
                     product, created = Product.objects.update_or_create(
@@ -93,8 +97,8 @@ class Command(BaseCommand):
                             'product_id': product_data.get('product_id'),
                             'price': product_data.get('price'),
                             'image_url': product_data.get('image'),
-                            'rating': product_data.get('rating'),
-                            'review_count': product_data.get('review_count', 0),
+                            'rating': rating,
+                            'review_count': review_count,
                             'description': details.get('description', '') if details else '',
                             'how_to_use': details.get('how_to_use', '') if details else '',
                             'size': details.get('size', '') if details else '',
