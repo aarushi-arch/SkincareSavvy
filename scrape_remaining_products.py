@@ -11,10 +11,7 @@ django.setup()
 def scrape_remaining():
     remaining_categories = [
         "serums",
-        "toners",
-        "sunscreens",
-        "eye-creams",
-        "masks"
+        "eye-creams"
     ]
     
     print(f"Starting batch scrape for: {', '.join(remaining_categories)}")

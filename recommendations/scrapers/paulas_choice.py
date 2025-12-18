@@ -12,11 +12,11 @@ BASE = "https://www.paulaschoice.com"
 CATEGORY_URLS = {
     "cleansers": "/skin-care-products/cleansers",
     "moisturizers": "/skin-care-products/moisturizers",
-    "serums": "/skin-care-products/serums",
+    "serums": "/skin-care-products/face-serums",
     "toners": "/skin-care-products/toners",
     "exfoliants": "/skin-care-products/exfoliants",
     "sunscreens": "/skin-care-products/sunscreen",
-    "eye-creams": "/skin-care-products/eye-cream",
+    "eye-creams": "/skin-care-products/eye-creams",
     "masks": "/skin-care-products/face-masks",
 }
 

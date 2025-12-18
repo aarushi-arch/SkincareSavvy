@@ -15,6 +15,12 @@ def debug_serums():
     links = scraper.driver.find_elements(By.XPATH, "//a[contains(text(), 'Serum')]")
     for l in links:
         print(f"Text: {l.text} | Href: {l.get_attribute('href')}")
+
+    print("Searching for 'Eye' links...")
+    # Find links with text "Eye"
+    links = scraper.driver.find_elements(By.XPATH, "//a[contains(text(), 'Eye')]")
+    for l in links:
+        print(f"Text: {l.text} | Href: {l.get_attribute('href')}")
         
     scraper.driver.quit()
 
