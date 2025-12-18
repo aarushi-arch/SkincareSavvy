@@ -44,23 +44,45 @@ class PaulasChoiceScraper:
         time.sleep(5)  # wait for JS to load
 
         # Scroll to load all products if max_products is not small
-        # Simple infinite scroll simulation
+        # Robust infinite scroll and Load More handling
+        print("  Starting auto-scroll and load more...")
         last_height = self.driver.execute_script("return document.body.scrollHeight")
+        no_change_count = 0
+        
         while True:
             # Scroll down to bottom
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(3) # Wait for page to load
+            
+            # Check for "Load More" buttons
+            clicked_load_more = False
+            try:
+                # Try multiple common selectors for Load More buttons
+                load_more_buttons = self.driver.find_elements(By.XPATH, 
+                    "//button[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'load more') or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'view more')]")
+                
+                for btn in load_more_buttons:
+                    if btn.is_displayed():
+                        print("  Clicking 'Load More' button...")
+                        self.driver.execute_script("arguments[0].click();", btn)
+                        clicked_load_more = True
+                        time.sleep(3)
+                        break
+            except Exception as e:
+                # print(f"  Load more click error: {e}")
+                pass
 
             # Check if we've reached the bottom
             new_height = self.driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                # Try to find "Load More" button and click it if exists
-                try:
-                    load_more = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Load More')]")
-                    load_more.click()
-                    time.sleep(3)
-                except:
-                    break # No load more, and scrolling didn't help
+            
+            if new_height == last_height and not clicked_load_more:
+                no_change_count += 1
+                if no_change_count >= 2: # Stop if height hasn't changed for 2 iterations and no button clicked
+                    print("  Reached end of page.")
+                    break
+            else:
+                no_change_count = 0 # Reset if we moved or clicked
+                
             last_height = new_height
             
             # If we have enough products (rough check), we can stop scrolling early if max_products is set
@@ -72,56 +94,93 @@ class PaulasChoiceScraper:
 
         # find product links - User's selector was a[href*='/products/'], but actual site uses .html suffix with ID
         # Adapting to actual site structure while keeping Selenium approach
-        product_links = self.driver.find_elements(By.CSS_SELECTOR, "a[href$='.html']")
-
+        
+        # Find product cards
+        cards = self.driver.find_elements(By.XPATH, "//a[contains(@class, 'ProductTileStudioOnestyles__Wrapper')]")
+        
         collected = {}
         
-        for p in product_links:
-            href = p.get_attribute("href")
+        for card in cards:
+            href = card.get_attribute("href")
             if not href:
                 continue
             
             # Verify it looks like a product URL (ends in /digits.html)
-            # e.g. https://www.paulaschoice.com/resist-optimal-results-hydrating-cleanser/760.html
             if not re.search(r'/\d+\.html$', href):
                 continue
 
             if href in collected:
                 continue
 
-            # Attempt to get a name
-            name = p.get_text() if hasattr(p, 'get_text') else p.text
-            if not name:
-                name = p.get_attribute("aria-label") or ""
-            if not name:
-                 # Fallback to URL slug
-                 parts = href.strip('/').split('/')
-                 # part before ID is the name slug usually
-                 if len(parts) >= 2:
-                     name = parts[-2].replace('-', ' ').title()
-                 else:
-                     name = "Unknown Product"
+            # Scroll into view to ensure text is rendered (crucial for lazy loaded text)
+            try:
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", card)
+                # Small sleep to allow render
+                # time.sleep(0.1) 
+            except:
+                pass
 
-            # Clean name (remove price info if stuck to it)
-            # The text often contains newlines with price, e.g. "Name\nCurrent Price..."
-            if '\n' in name:
-                name = name.split('\n')[0]
+            # Extract info from card
+            card_text = card.text
+            if not card_text:
+                # Fallback to textContent if text is empty (hidden)
+                card_text = card.get_attribute("textContent")
             
-            name = name.strip()
+            # Name extraction
+            name = "Unknown Product"
+            image_url = None
+            price = None
+            
+            try:
+                img = card.find_element(By.TAG_NAME, "img")
+                image_url = img.get_attribute("src")
+                # Title often has the name
+                name_cand = img.get_attribute("title")
+                if name_cand:
+                    name = name_cand
+            except:
+                pass
+            
+            # If name is still generic or empty, parse text
+            # Example text: "AWARD WINNER\nRESIST\nOptimal Results Hydrating Cleanser\n$20.80\n$26.00\n310"
+            if name == "Unknown Product" or not name:
+                lines = [l.strip() for l in card_text.split('\n') if l.strip()]
+                # Heuristic: Find first line starting with $ -> price. Line before is name.
+                price_idx = -1
+                for i, line in enumerate(lines):
+                    if '$' in line:
+                        price_idx = i
+                        break
+                
+                if price_idx > 0:
+                    name = lines[price_idx - 1]
+                elif lines:
+                    # Fallback: finding longest line that doesn't look like a badge
+                    candidates = [l for l in lines if len(l) > 10 and '$' not in l]
+                    if candidates:
+                        name = candidates[-1] # Usually the last text before price is the name
+                    else:
+                        name = lines[0]
+
+            # Price extraction
+            # Find first $ price in text
+            prices = re.findall(r'\$(\d+\.\d+)', card_text)
+            if prices:
+                price = prices[0] # Use first price (usually sale price if present)
             
             # Product ID
             try:
                 product_id = href.split('/')[-1].replace('.html', '')
             except:
-                continue
+                product_id = ""
 
             collected[href] = {
                 "url": href,
                 "name": name,
                 "product_id": product_id,
-                "price": None,
-                "image": None,
-                "rating": None,
+                "price": price,
+                "image": image_url,
+                "rating": None, # Will get from details
                 "review_count": 0
             }
 

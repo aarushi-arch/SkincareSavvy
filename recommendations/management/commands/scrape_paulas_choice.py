@@ -33,9 +33,23 @@ class Command(BaseCommand):
         category = options["category"]
         max_products = options["max_products"]
         skip_details = options["skip_details"]
+        
+        # Normalize category name for database storage
+        # e.g. "cleansers" -> "Cleanser"
+        CATEGORY_MAP = {
+            "cleansers": "Cleanser",
+            "moisturizers": "Moisturizer",
+            "serums": "Serum",
+            "toners": "Toner",
+            "exfoliants": "Exfoliant",
+            "sunscreens": "Sunscreen",
+            "eye-creams": "Eye Cream",
+            "masks": "Mask",
+        }
+        db_category = CATEGORY_MAP.get(category, category.title().rstrip('s'))
 
         self.stdout.write(
-            self.style.SUCCESS(f"Starting to scrape Paula's Choice {category}...")
+            self.style.SUCCESS(f"Starting to scrape Paula's Choice {category} (DB Category: {db_category})...")
         )
 
         scraper = PaulasChoiceScraper()
@@ -93,7 +107,7 @@ class Command(BaseCommand):
                         defaults={
                             'brand': "Paula's Choice",
                             'name': product_data.get('name', 'Unknown Product'),
-                            'category': category,
+                            'category': db_category,
                             'product_id': product_data.get('product_id'),
                             'price': product_data.get('price'),
                             'image_url': product_data.get('image'),
