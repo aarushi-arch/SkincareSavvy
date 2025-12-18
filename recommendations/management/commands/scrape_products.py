@@ -20,8 +20,26 @@ class Command(BaseCommand):
             "--urls",
             type=str,
             nargs="+",
-            required=True,
+            required=False,
             help="List of INCI Decoder URLs to scrape",
+        )
+        parser.add_argument(
+            "--from-index",
+            type=str,
+            default=None,
+            help="Crawl product URLs starting from an index page (e.g., https://incidecoder.com/products)",
+        )
+        parser.add_argument(
+            "--max-pages",
+            type=int,
+            default=1,
+            help="Maximum number of index pages to crawl when using --from-index",
+        )
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=None,
+            help="Maximum number of product URLs to scrape",
         )
         parser.add_argument(
             "--delay",
@@ -37,23 +55,73 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        urls = options["urls"]
+        urls = options.get("urls") or []
+        from_index = options.get("from_index")
+        max_pages = options.get("max_pages")
+        limit = options.get("limit")
         delay = options["delay"]
         timeout = options["timeout"]
         
-        if not urls:
-            raise CommandError("No URLs provided. Use --urls to specify product URLs.")
+        if not urls and not from_index:
+            raise CommandError("Provide --urls or --from-index to specify products to scrape.")
+        
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        })
+        
+        if from_index:
+            collected = []
+            base = "https://incidecoder.com"
+            next_url = from_index
+            pages_crawled = 0
+            while next_url and pages_crawled < max_pages:
+                try:
+                    resp = session.get(next_url, timeout=timeout)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.content, "html.parser")
+                    for a in soup.find_all("a", href=True):
+                        href = a["href"]
+                        if href.startswith("/products/") and href != "/products":
+                            full = base + href
+                            collected.append(full)
+                        elif href.startswith("https://incidecoder.com/products/") and href != "https://incidecoder.com/products":
+                            collected.append(href)
+                    seen = set()
+                    unique = []
+                    for u in collected:
+                        if u not in seen:
+                            seen.add(u)
+                            unique.append(u)
+                    collected = unique
+                    next_link = None
+                    candidates = []
+                    for a in soup.find_all("a", href=True):
+                        txt = a.get_text(strip=True).lower()
+                        if txt in ("next", "older"):
+                            candidates.append(a["href"])
+                        if a.get("rel") and "next" in a.get("rel"):
+                            candidates.append(a["href"])
+                    if candidates:
+                        href = candidates[0]
+                        next_url = href if href.startswith("http") else base + href
+                    else:
+                        next_url = None
+                except Exception:
+                    break
+                pages_crawled += 1
+                if pages_crawled < max_pages:
+                    time.sleep(delay)
+            if limit:
+                collected = collected[:limit]
+            urls = collected
         
         self.stdout.write(f"Starting to scrape {len(urls)} product(s)...")
         
         scraped = 0
         failed = 0
         
-        # Set up a session for connection pooling
-        session = requests.Session()
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        })
+        session = session
         
         for url in urls:
             try:

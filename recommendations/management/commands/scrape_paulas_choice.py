@@ -33,23 +33,9 @@ class Command(BaseCommand):
         category = options["category"]
         max_products = options["max_products"]
         skip_details = options["skip_details"]
-        
-        # Normalize category name for database storage
-        # e.g. "cleansers" -> "Cleanser"
-        CATEGORY_MAP = {
-            "cleansers": "Cleanser",
-            "moisturizers": "Moisturizer",
-            "serums": "Serum",
-            "toners": "Toner",
-            "exfoliants": "Exfoliant",
-            "sunscreens": "Sunscreen",
-            "eye-creams": "Eye Cream",
-            "masks": "Mask",
-        }
-        db_category = CATEGORY_MAP.get(category, category.title().rstrip('s'))
 
         self.stdout.write(
-            self.style.SUCCESS(f"Starting to scrape Paula's Choice {category} (DB Category: {db_category})...")
+            self.style.SUCCESS(f"Starting to scrape Paula's Choice {category}...")
         )
 
         scraper = PaulasChoiceScraper()
@@ -96,10 +82,6 @@ class Command(BaseCommand):
                 product_url = product_data.get('url')
                 inci_url = product_url  # Use same URL for now
 
-                # Use rating from details if available, else from category page
-                rating = details.get('rating') if details and details.get('rating') is not None else product_data.get('rating')
-                review_count = details.get('review_count') if details and details.get('review_count') is not None else product_data.get('review_count', 0)
-
                 # Save to database
                 with transaction.atomic():
                     product, created = Product.objects.update_or_create(
@@ -107,12 +89,12 @@ class Command(BaseCommand):
                         defaults={
                             'brand': "Paula's Choice",
                             'name': product_data.get('name', 'Unknown Product'),
-                            'category': db_category,
+                            'category': category,
                             'product_id': product_data.get('product_id'),
                             'price': product_data.get('price'),
                             'image_url': product_data.get('image'),
-                            'rating': rating,
-                            'review_count': review_count,
+                            'rating': product_data.get('rating'),
+                            'review_count': product_data.get('review_count', 0),
                             'description': details.get('description', '') if details else '',
                             'how_to_use': details.get('how_to_use', '') if details else '',
                             'size': details.get('size', '') if details else '',
