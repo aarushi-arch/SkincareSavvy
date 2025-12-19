@@ -16,6 +16,44 @@ from recommendations.models import Product
 
 TEMPLATE_CSV = BASE_DIR / "recommendations" / "notebooks" / "ingredient_mapping_template.csv"
 
+ingredient_defaults = {
+    "aloe barbadensis leaf extract": {"skin_type": "all", "notable_effects": "soothing, moisturizing"},
+    "hyaluronic acid": {"skin_type": "all", "notable_effects": "hydrating, plumping"},
+    "shea butter": {"skin_type": "dry", "notable_effects": "moisturizing, emollient"},
+    "jojoba oil": {"skin_type": "all", "notable_effects": "moisturizing, balancing"},
+    "glycerin": {"skin_type": "all", "notable_effects": "hydrating, humectant"},
+    "panthenol": {"skin_type": "all", "notable_effects": "hydrating, soothing"},
+    "salicylic acid": {"skin_type": "oily, acne-prone", "notable_effects": "exfoliating, anti-acne"},
+    "glycolic acid": {"skin_type": "all", "notable_effects": "exfoliating, brightening"},
+    "lactic acid": {"skin_type": "all", "notable_effects": "exfoliating, hydrating"},
+    "mandelic acid": {"skin_type": "sensitive, all", "notable_effects": "gentle exfoliating, brightening"},
+    "azelaic acid": {"skin_type": "all", "notable_effects": "anti-inflammatory, anti-acne, brightening"},
+    "niacinamide": {"skin_type": "all", "notable_effects": "brightening, anti-inflammatory"},
+    "vitamin c": {"skin_type": "all", "notable_effects": "brightening, antioxidant"},
+    "vitamin e": {"skin_type": "all", "notable_effects": "antioxidant, moisturizing"},
+    "retinol": {"skin_type": "all", "notable_effects": "anti-aging, cell turnover"},
+    "coenzyme q10": {"skin_type": "all", "notable_effects": "antioxidant, anti-aging"},
+    "argania spinosa kernel oil": {"skin_type": "dry", "notable_effects": "moisturizing, antioxidant"},
+    "rosehip oil": {"skin_type": "all", "notable_effects": "brightening, anti-aging"},
+    "squalane": {"skin_type": "all", "notable_effects": "hydrating, balancing"},
+    "coconut oil": {"skin_type": "dry", "notable_effects": "moisturizing, emollient"},
+    "benzoyl peroxide": {"skin_type": "oily, acne-prone", "notable_effects": "anti-acne, antibacterial"},
+    "tea tree oil": {"skin_type": "oily, acne-prone", "notable_effects": "antibacterial, soothing"},
+    "zinc oxide": {"skin_type": "all", "notable_effects": "sun protection, soothing"},
+    "titanium dioxide": {"skin_type": "all", "notable_effects": "sun protection, soothing"},
+    "caffeine": {"skin_type": "all", "notable_effects": "anti-inflammatory, depuffing"},
+    "camellia sinensis leaf extract": {"skin_type": "all", "notable_effects": "antioxidant, soothing"},
+    "chamomilla recutita extract": {"skin_type": "sensitive, all", "notable_effects": "soothing, anti-inflammatory"},
+    "licorice root extract": {"skin_type": "all", "notable_effects": "brightening, anti-inflammatory"},
+    "centella asiatica extract": {"skin_type": "all", "notable_effects": "soothing, healing"},
+    "cocamidopropyl betaine": {"skin_type": "all", "notable_effects": "gentle cleansing"},
+    "sodium lauryl sulfate": {"skin_type": "oily, all", "notable_effects": "cleansing, foaming"},
+    "sodium cocoyl isethionate": {"skin_type": "all", "notable_effects": "gentle cleansing, foaming"},
+    "cetyl alcohol": {"skin_type": "all", "notable_effects": "emollient, thickening"},
+    "stearyl alcohol": {"skin_type": "all", "notable_effects": "emollient, thickening"},
+    "glyceryl stearate": {"skin_type": "all", "notable_effects": "emollient, stabilizing"},
+}
+
 def iter_ingredient_names(value):
     if isinstance(value, str):
         try:
@@ -55,10 +93,29 @@ def ensure_template(ingredients: list[str]) -> None:
             w = csv.writer(f)
             w.writerow(["ingredient", "skin_type", "notable_effects"])
             for ing in ingredients:
-                w.writerow([ing, "", ""])
+                defaults = ingredient_defaults.get(ing, {})
+                w.writerow([ing, defaults.get("skin_type", ""), defaults.get("notable_effects", "")])
         print(f"Template created: {TEMPLATE_CSV}")
     else:
-        print(f"{TEMPLATE_CSV} already exists.")
+        updated = 0
+        rows = []
+        with open(TEMPLATE_CSV, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ing = clean_name(row.get("ingredient", ""))
+                if ing in ingredient_defaults:
+                    if not (row.get("skin_type") or "").strip():
+                        row["skin_type"] = ingredient_defaults[ing]["skin_type"]
+                        updated += 1
+                    if not (row.get("notable_effects") or "").strip():
+                        row["notable_effects"] = ingredient_defaults[ing]["notable_effects"]
+                        updated += 1
+                rows.append(row)
+        with open(TEMPLATE_CSV, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["ingredient", "skin_type", "notable_effects"])
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"{TEMPLATE_CSV} prefilled defaults for {updated} fields.")
 
 def load_mapping() -> dict[str, dict[str, list[str]]]:
     mapping: dict[str, dict[str, list[str]]] = {}
