@@ -39,11 +39,26 @@ def test_product_page(url):
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "html.parser")
         
-        # Dump some HTML to inspect structure
-        print("HTML Dump (partial):")
-        print(soup.prettify()[:2000])
+        # Inspect H1
+        h1 = soup.find("h1")
+        if h1:
+            print(f"H1: {h1} Text: {h1.get_text(strip=True)}")
         
-        # Name
+        # Look for brand links
+        print("Searching for links starting with /brands/...")
+        for a in soup.find_all("a", href=True):
+            if a["href"].startswith("/brands/"):
+                print(f"Brand Link: {a['href']} Text: {a.get_text(strip=True)}")
+
+        # Inspect ingredient section
+        ing_div = soup.find("div", class_="ingredlist-short-like-section")
+        if ing_div:
+            print(f"Ingredient Section Text (first 200 chars): {ing_div.get_text(strip=True)[:200]}")
+            # Check for links inside
+            ing_links = ing_div.find_all("a")
+            print(f"Found {len(ing_links)} links in ingredient section.")
+            if ing_links:
+                print(f"First ingredient link: {ing_links[0].get_text(strip=True)}")
         name_elem = (
             soup.find("h1") or
             soup.find("h2", class_="product-name") or

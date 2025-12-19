@@ -6,6 +6,7 @@ from PIL import Image, UnidentifiedImageError
 from .forms import CNNModelUploadForm
 from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
+from recommendations.utils import recommend_products
 
 
 # Initialize pipeline (models will be loaded lazily)
@@ -98,6 +99,11 @@ def model_detail(request, pk):
         "face_analysis/model_detail.html",
         {"model": model},
     )
+
+def face_analysis_view(request):
+    analysis_result = {"skin_type": "oily", "concerns": ["acne"]}
+    products = recommend_products(analysis_result)
+    return render(request, "recommendations/results.html", {"analysis": analysis_result, "products": products})
 
 
 def delete_model(request, pk):

@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from django.conf import settings
+from recommendations.models import Product
 
 
 def get_data_path(filename: str) -> Path:
@@ -52,4 +53,15 @@ def normalize_product_url(raw_url: str) -> str:
         return raw_url
 
     return ""
+
+def recommend_products(analysis: dict):
+    skin_type = (analysis.get("skin_type") or "").strip()
+    concerns = analysis.get("concerns") or []
+    qs = Product.objects.all()
+    if skin_type:
+        qs = qs.filter(skin_types__contains=[skin_type])
+    for c in concerns:
+        if c:
+            qs = qs.filter(skin_concerns__contains=[c])
+    return qs.order_by("-rating", "brand", "name")[:50]
 
