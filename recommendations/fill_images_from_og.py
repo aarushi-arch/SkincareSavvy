@@ -20,43 +20,53 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
 def get_image_from_og(url):
+    """
+    Scrapes the product image using the og:image meta tag.
+    Returns the image URL or None if not found.
+    """
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        meta = soup.find("meta", property="og:image")
-        if meta and meta.get("content"):
-            return meta.get("content")
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+        meta_tag = soup.find("meta", property="og:image")
+        if meta_tag and meta_tag.get("content"):
+            return meta_tag.get("content")
     except Exception as e:
         print(f"Error scraping {url}: {e}")
     return None
 
 
 def _source_url(product: Product) -> str | None:
+    # Prefer INCI Decoder URL if available, otherwise original product URL
     return product.inci_decoder_url or product.product_url
 
 
-def update_images_for_all_products():
-    products = Product.objects.all()
+def update_missing_images():
+    """
+    Loops through all products with missing image_url (NULL or empty string)
+    and updates them by scraping from their source_url.
+    """
+    missing_products = Product.objects.filter(image_url__isnull=True) | Product.objects.filter(image_url="")
+    total = missing_products.count()
+    print(f"Found {total} products missing images.")
+
     updated_count = 0
-    for product in products:
-        if product.image_url:
-            continue
+    for product in missing_products:
         src = _source_url(product)
-        if not src:
-            print(f"No source URL for: {product.name}")
-            time.sleep(0.2)
-            continue
-        img_url = get_image_from_og(src)
-        if img_url:
-            product.image_url = img_url
-            product.save(update_fields=["image_url"])
-            updated_count += 1
-            print(f"Updated image for: {product.name}")
+        if src:
+            img_url = get_image_from_og(src)
+            if img_url:
+                product.image_url = img_url
+                product.save(update_fields=["image_url"])
+                updated_count += 1
+                print(f"[{updated_count}/{total}] Updated image for: {product.name}")
+            else:
+                print(f"[{updated_count}/{total}] No image found for: {product.name}")
         else:
-            print(f"No image found for: {product.name}")
+            print(f"[{updated_count}/{total}] No source URL for: {product.name}")
         time.sleep(1)
-    print(f"Total images updated: {updated_count}")
+
+    print(f"Done! Total images updated: {updated_count} / {total}")
 
 
 if __name__ == "__main__":
-    update_images_for_all_products()
+    update_missing_images()
