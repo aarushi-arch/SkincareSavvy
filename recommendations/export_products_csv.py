@@ -12,8 +12,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "SkincareSavvy.settings")
 django.setup()
 
 from recommendations.models import Product
+from recommendations.categorize_products import categorize_product_url
 
-CSV_FILE = "django_products_mapped.csv"
+CSV_FILE = str(BASE_DIR / "recommendations" / "notebooks" / "django_products_mapped.csv")
 
 def _source_url(product: Product) -> str | None:
     return product.inci_decoder_url or product.product_url
@@ -34,11 +35,14 @@ def main():
         )
         writer.writeheader()
         for p in products:
+            product_type = p.category or ""
+            if not product_type or product_type.lower() == "unknown":
+                product_type = categorize_product_url(_source_url(p))
             writer.writerow(
                 {
                     "product_name": p.name,
                     "product_url": _source_url(p) or "",
-                    "product_type": p.category or "",
+                    "product_type": product_type,
                     "clean_ingredients": "",
                     "suitable_skin": "",
                     "notable_effects": "",

@@ -12,7 +12,7 @@ django.setup()
 from recommendations.models import Product
 
 CATEGORIES = {
-    "Cleanser": ["cleanser", "wash", "foaming", "gel", "face wash", "cleansing"],
+    "Cleanser": ["cleanser", "wash", "foaming", "gel", "face wash", "face-wash", "cleansing"],
     "Serum": ["serum", "elixir", "drop", "ampoule"],
     "Moisturizer": ["moisturizer", "cream", "lotion", "gel", "balm"],
     "Sunscreen": ["spf", "sun", "uv", "sunscreen", "block"],
@@ -30,12 +30,25 @@ def categorize_product(name: str) -> str:
                 return category
     return "Other"
 
+def categorize_product_url(url: str | None) -> str:
+    if not url:
+        return "Other"
+    url_lower = url.lower()
+    for category, keywords in CATEGORIES.items():
+        for keyword in keywords:
+            if keyword in url_lower:
+                return category
+    return "Other"
+
+def _source_url(product: Product) -> str | None:
+    return product.inci_decoder_url or product.product_url
+
 def update_product_categories():
     products = Product.objects.all()
     updated_count = 0
     for p in products:
         if not p.category:
-            p.category = categorize_product(p.name)
+            p.category = categorize_product_url(_source_url(p))
             p.save(update_fields=["category"])
             updated_count += 1
             print(f"Updated: {p.name} -> {p.category}")
