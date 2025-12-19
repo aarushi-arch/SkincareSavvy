@@ -55,13 +55,17 @@ def normalize_product_url(raw_url: str) -> str:
     return ""
 
 def recommend_products(analysis: dict):
-    skin_type = (analysis.get("skin_type") or "").strip()
-    concerns = analysis.get("concerns") or []
-    qs = Product.objects.all()
-    if skin_type:
-        qs = qs.filter(skin_types__contains=[skin_type])
-    for c in concerns:
-        if c:
-            qs = qs.filter(skin_concerns__contains=[c])
-    return qs.order_by("-rating", "brand", "name")[:50]
-
+    skin_type = (analysis.get("skin_type") or "").strip().lower()
+    concerns = [(c or "").strip().lower() for c in (analysis.get("concerns") or []) if c]
+    qs = Product.objects.all().only("brand", "name", "category", "rating", "skin_types", "skin_concerns")
+    matched = []
+    for p in qs:
+        stypes = [str(s).lower() for s in (p.skin_types or [])]
+        sconcs = [str(s).lower() for s in (p.skin_concerns or [])]
+        if skin_type and skin_type not in stypes:
+            continue
+        if any(c not in sconcs for c in concerns):
+            continue
+        matched.append(p)
+    matched.sort(key=lambda x: (-(x.rating or 0), (x.brand or ""), (x.name or "")))
+    return matched[:50]
