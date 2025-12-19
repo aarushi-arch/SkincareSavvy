@@ -102,8 +102,16 @@ def model_detail(request, pk):
 
 def face_analysis_view(request):
     analysis_result = {"skin_type": "oily", "concerns": ["acne"]}
+
     products = recommend_products(analysis_result)
-    return render(request, "recommendations/results.html", {"analysis": analysis_result, "products": products})
+
+    print("PRODUCTS FETCHED:")
+    for p in products:
+        print(p.name, p.skin_type, p.concerns)
+
+    return render(request, "recommendations/results.html",
+                  {"analysis": analysis_result, "products": products})
+
 
 
 def delete_model(request, pk):

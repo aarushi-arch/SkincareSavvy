@@ -232,6 +232,14 @@
     </section>
     {% endif %}
 
+    {% if analysis_result %}
+    <div class="panel" style="margin-top: 1rem; text-align: center;">
+        <a href="{% url 'face_analysis:face_analysis_results' %}" class="btn primary" style="display: inline-block; padding: 0.9rem 1.5rem;">
+            Find My Skincare
+        </a>
+    </div>
+    {% endif %}
+
     <!-- HOW IT WORKS -->
     <section id="how-it-works" class="panel steps-panel">
         <div class="panel-head">
