@@ -208,10 +208,21 @@ class FaceAnalysisPipeline:
             # Generate heatmaps
             try:
                 print("Generating heatmaps...")
+                
+                # Determine target size
+                target_size = (224, 224)
+                try:
+                    shape = self.skin_concerns_model.input_shape
+                    if shape and len(shape) >= 3:
+                         target_size = shape[1:3]
+                except AttributeError:
+                    pass
+
                 heatmaps = generate_multi_skin_concern_heatmaps(
                     self.skin_concerns_model,
                     image_bytes,
-                    self.skin_concerns_classes
+                    self.skin_concerns_classes,
+                    target_size=target_size
                 )
                 
                 # Merge heatmaps into predictions

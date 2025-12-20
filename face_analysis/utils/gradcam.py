@@ -4,25 +4,28 @@ import tensorflow as tf
 import base64
 from io import BytesIO
 from PIL import Image
+from face_analysis.utils.image_utils import preprocess_image
 
 def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
     """
     Generates Grad-CAM heatmap for a specific class.
     """
     grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
+        model.input, [model.get_layer(last_conv_layer_name).output, model.output]
     )
 
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
+        if isinstance(predictions, list):
+             predictions = predictions[0]
         loss = predictions[:, class_index]
 
     grads = tape.gradient(loss, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
 
     conv_outputs = conv_outputs[0]
-    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
+    conv_outputs = conv_outputs * pooled_grads
+    heatmap = tf.reduce_mean(conv_outputs, axis=-1)
 
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
@@ -62,7 +65,7 @@ def find_last_conv_layer(model):
             return layer.name
     raise ValueError("No convolution layer found.")
 
-def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_conv_layer_name=None):
+def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_conv_layer_name=None, target_size=(224, 224)):
     """
     Generate Grad-CAM heatmaps for all classes of interest.
     Adapted to accept image bytes directly instead of path for efficiency.
@@ -84,9 +87,9 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     pil_img = Image.open(BytesIO(img_bytes)).convert('RGB')
     img_rgb = np.array(pil_img)
     
-    # Preprocess for model
-    img_resized = cv2.resize(img_rgb, (128, 128))
-    img_array = np.expand_dims(img_resized / 255.0, axis=0)
+    # 2️⃣ Preprocess for model using shared utility
+    # returns (1, H, W, 3)
+    img_array = preprocess_image(img_bytes, target_size=target_size, normalize=True)
     
     # 2️⃣ Predict all skin concerns
     preds = model.predict(img_array, verbose=0)[0]
