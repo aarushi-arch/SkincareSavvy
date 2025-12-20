@@ -85,7 +85,7 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     img_rgb = np.array(pil_img)
     
     # Preprocess for model
-    img_resized = cv2.resize(img_rgb, (224, 224))
+    img_resized = cv2.resize(img_rgb, (128, 128))
     img_array = np.expand_dims(img_resized / 255.0, axis=0)
     
     # 2️⃣ Predict all skin concerns

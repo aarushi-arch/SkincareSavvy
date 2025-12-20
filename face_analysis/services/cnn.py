@@ -229,4 +229,6 @@ class FaceAnalysisPipeline:
                 # Fallback to just predictions
                 result["skin_concerns"] = concerns_result
 
+        print(result)
+
         return result
