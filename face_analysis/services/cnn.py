@@ -12,6 +12,7 @@ from tensorflow import keras
 
 from face_analysis.models import CNNModel
 from face_analysis.utils.image_utils import preprocess_image
+from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps
 
 
 class FaceAnalysisPipeline:
@@ -188,7 +189,7 @@ class FaceAnalysisPipeline:
     
     def analyze(self, image_bytes: bytes | np.ndarray) -> dict[str, Any]:
         """
-        Run full analysis (skin type + concerns).
+        Run full analysis (skin type + concerns) AND generate heatmaps.
         """
         self.load_models_from_db()
 
@@ -200,6 +201,32 @@ class FaceAnalysisPipeline:
         
         if self.skin_concerns_model:
             processed_concerns = self.preprocess(image_bytes, target_model=self.skin_concerns_model)
-            result["skin_concerns"] = self.predict_skin_concerns(processed_concerns)
+            
+            # Predict concerns
+            concerns_result = self.predict_skin_concerns(processed_concerns)
+            
+            # Generate heatmaps
+            try:
+                print("Generating heatmaps...")
+                heatmaps = generate_multi_skin_concern_heatmaps(
+                    self.skin_concerns_model,
+                    image_bytes,
+                    self.skin_concerns_classes
+                )
+                
+                # Merge heatmaps into predictions
+                # Iterate through predictions and attach matches
+                if "predictions" in concerns_result:
+                    for pred in concerns_result["predictions"]:
+                        # Find matching heatmap
+                        match = next((h for h in heatmaps if h['class'] == pred['class']), None)
+                        if match:
+                            pred['heatmap'] = match['heatmap_img']
+                
+                result["skin_concerns"] = concerns_result
+            except Exception as e:
+                print(f"Heatmap generation failed: {e}")
+                # Fallback to just predictions
+                result["skin_concerns"] = concerns_result
 
         return result
