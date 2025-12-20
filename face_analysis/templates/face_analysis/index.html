@@ -1,422 +1,402 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Analysis | SkincareSavvy</title>
 
     <!-- Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap">
 
     <!-- CSS -->
     <link rel="stylesheet" href="{% static 'face_analysis/css/styles.css' %}">
 </head>
+
 <body>
 
-<header class="app-header">
-    <div class="nav-container">
-        <nav class="nav">
-            <div class="logo">
-                <img src="{% static 'images/Skincare.png' %}" alt="SkincareSavvy logo">
-            </div>
-            <ul class="nav-links">
-                <li><a href="{% url 'users-home' %}">Home</a></li>
-                <li><a href="#how-it-works">How it works</a></li>
-                <li class="dropdown">
-                    <a href="#features">Features</a>
-                    <div class="dropdown-content">
-                        <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
-                        <a href="{% url 'recommendations:home' %}">Recommendations</a>
-                    </div>
-                </li>
-                {% if user.is_authenticated %}
+    <header class="app-header">
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="logo">
+                    <img src="{% static 'images/Skincare.png' %}" alt="SkincareSavvy logo">
+                </div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="#how-it-works">How it works</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
+                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
+                        </div>
+                    </li>
+                    {% if user.is_authenticated %}
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
-                {% else %}
+                    {% else %}
                     <li><a href="{% url 'login' %}">Login</a></li>
                     <li><a href="{% url 'users-register' %}">Sign Up</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </div>
-</header>
-
-<main class="container">
-
-    <!-- HERO -->
-    <section class="hero">
-        <div>
-            <p class="eyebrow">CNN-powered</p>
-            <h1>Face & Skin Analysis</h1>
-            <p class="subtitle">
-                Upload a clear selfie to detect your skin type and top concerns using our CNN models.
-            </p>
-            <div class="hero-actions">
-                <a href="#uploader" class="btn primary">Start Analysis</a>
-                <a href="#how-it-works" class="btn ghost">Learn more</a>
-            </div>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
+    </header>
 
-        <div class="hero-card">
-            <div class="card-title">Preview</div>
-            <div class="card-body">
-                {% if analysis_result %}
+    <main class="container">
+
+        <!-- HERO -->
+        <section class="hero">
+            <div>
+                <p class="eyebrow">CNN-powered</p>
+                <h1>Face & Skin Analysis</h1>
+                <p class="subtitle">
+                    Upload a clear selfie to detect your skin type and top concerns using our CNN models.
+                </p>
+                <div class="hero-actions">
+                    <a href="#uploader" class="btn primary">Start Analysis</a>
+                    <a href="#how-it-works" class="btn ghost">Learn more</a>
+                </div>
+            </div>
+
+            <div class="hero-card">
+                <div class="card-title">Preview</div>
+                <div class="card-body">
+                    {% if analysis_result %}
                     <p class="muted">Latest prediction</p>
                     <p>
                         <strong>Skin Type:</strong>
                         {{ analysis_result.skin_type.top_prediction.class|title }}
                     </p>
-                {% else %}
+                    {% else %}
                     <p class="muted">Upload an image to see results here</p>
-                {% endif %}
-            </div>
-        </div>
-    </section>
-
-    <!-- UPLOAD PANEL -->
-    <section id="uploader" class="panel upload-panel">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="panel-head">
-                <div>
-                    <p class="eyebrow">Step 1</p>
-                    <h2>Upload your photo</h2>
-                    <p class="muted">Use natural lighting and keep your face centered.</p>
-                </div>
-                <div class="tag">JPG / PNG</div>
-            </div>
-
-            <label class="upload-drop" id="upload-drop">
-                <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input" required>
-                <div id="upload-placeholder">
-                    <p class="muted">Drag & drop or click to choose a file.</p>
-                    <p class="fine-print">Max size 10MB. Image is processed securely.</p>
-                </div>
-                <div id="image-preview" style="display: none;">
-                    <img id="preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem;">
-                    <p class="muted" id="file-name"></p>
-                    <button type="button" id="remove-image" class="btn ghost" style="margin-top: 0.5rem;">Remove Image</button>
-                </div>
-            </label>
-
-            <div class="upload-actions">
-                <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
-                <div id="loading-indicator" style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle;"></span>
-                    Processing...
+                    {% endif %}
                 </div>
             </div>
-        </form>
+        </section>
 
-        {% if error %}
+        <!-- UPLOAD PANEL -->
+        <section id="uploader" class="panel upload-panel">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="panel-head">
+                    <div>
+                        <p class="eyebrow">Step 1</p>
+                        <h2>Upload your photo</h2>
+                        <p class="muted">Use natural lighting and keep your face centered.</p>
+                    </div>
+                    <div class="tag">JPG / PNG</div>
+                </div>
+
+                <label class="upload-drop" id="upload-drop">
+                    <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input"
+                        required>
+                    <div id="upload-placeholder">
+                        <p class="muted">Drag & drop or click to choose a file.</p>
+                        <p class="fine-print">Max size 10MB. Image is processed securely.</p>
+                    </div>
+                    <div id="image-preview" style="display: none;">
+                        <img id="preview-img" src="" alt="Preview"
+                            style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem;">
+                        <p class="muted" id="file-name"></p>
+                        <button type="button" id="remove-image" class="btn ghost" style="margin-top: 0.5rem;">Remove
+                            Image</button>
+                    </div>
+                </label>
+
+                <div class="upload-actions">
+                    <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
+                    <div id="loading-indicator"
+                        style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600;">
+                        <span
+                            style="display: inline-block; width: 16px; height: 16px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle;"></span>
+                        Processing...
+                    </div>
+                </div>
+            </form>
+
+            {% if error %}
             <div class="alert error" style="margin-top: 1rem;">
                 <strong>Error:</strong> {{ error }}
             </div>
-        {% endif %}
-        
-        {% if analysis_result %}
-            <div class="alert success" style="margin-top: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+            {% endif %}
+
+            {% if analysis_result %}
+            <div class="alert success"
+                style="margin-top: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
                 <strong>✓ Analysis Complete!</strong> Scroll down to see results.
             </div>
-        {% endif %}
-    </section>
-
-    <!-- RESULTS -->
-    {% if analysis_result %}
-    <section class="panel result-panel">
-        <div class="panel-head">
-            <div>
-                <p class="eyebrow">Results</p>
-                <h2>Your Analysis</h2>
-                <p class="muted">CNN predictions with confidence scores.</p>
-            </div>
-        </div>
-
-        <!-- Skin Type -->
-        {% if analysis_result.skin_type %}
-            <h3>Skin Type</h3>
-            {% if analysis_result.skin_type.error %}
-                <p class="result-item" style="color: #dc3545;">
-                    <strong>Error:</strong> {{ analysis_result.skin_type.error }}
-                </p>
-            {% elif analysis_result.skin_type.top_prediction %}
-                <p class="result-item">
-                    <strong>{{ analysis_result.skin_type.top_prediction.class|title }}</strong>
-                    — {{ analysis_result.skin_type.top_prediction.confidence|floatformat:2 }}
-                </p>
-                {% if analysis_result.skin_type.predictions %}
-                    <details style="margin-top: 0.5rem;">
-                        <summary style="cursor: pointer; color: var(--muted); font-size: 0.9rem;">View all predictions</summary>
-                        <ul class="result-list" style="margin-top: 0.5rem;">
-                            {% for pred in analysis_result.skin_type.predictions %}
-                                <li>
-                                    {{ pred.class|title }}
-                                    — {{ pred.confidence|floatformat:2 }}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </details>
-                {% endif %}
-            {% else %}
-                <p class="result-item" style="color: #dc3545;">
-                    <strong>No predictions available.</strong>
-                </p>
             {% endif %}
-        {% endif %}
+        </section>
 
-        <!-- Skin Concerns -->
-        {% if analysis_result.skin_concerns %}
-            <h3>Skin Concerns</h3>
-            {% if analysis_result.skin_concerns.error %}
-                <p class="result-item" style="color: #dc3545;">
-                    <strong>Error:</strong> {{ analysis_result.skin_concerns.error }}
-                </p>
-            {% elif analysis_result.skin_concerns.predictions %}
-                <p class="muted" style="margin-bottom: 0.5rem;">Top predictions:</p>
-                <ul class="result-list">
-                    {% for pred in analysis_result.skin_concerns.predictions %}
-                        <li style="list-style: none; margin-bottom: 1rem;">
+        <!-- RESULTS -->
+        {% if analysis_result %}
+        <section class="panel result-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Results</p>
+                    <h2>Your Analysis</h2>
+                    <p class="muted">CNN predictions with confidence scores.</p>
+                </div>
+            </div>
 
-    <!-- Concern name -->
-    <strong>{{ pred.class|title }}</strong>
+            <!-- Skin Type -->
+            {% if analysis_result.skin_type.predictions %}
+            <h3>Skin Type</h3>
 
-    <!-- Confidence bar container -->
-<div style="margin-top: 0.4rem;">
-    <div style="
-        width: 100%;
-        height: 10px;
-        background: #e0e0e0;
-        border-radius: 6px;
-        overflow: hidden;
-    ">
-        <div style="
-            width: {% widthratio pred.confidence 1 100 %}%;
-            height: 100%;
-            background: linear-gradient(90deg, #ff9f43, #ff6b6b);
-            transition: width 0.6s ease;
-        ">
-        </div>
-    </div>
+            <!-- Always show the first/top prediction -->
+            <p class="result-item">
+                <strong>{{ analysis_result.skin_type.predictions.0.class|title }}</strong>
+                — {{ analysis_result.skin_type.predictions.0.confidence|floatformat:2 }}
+            </p>
 
-    <!-- Confidence text -->
-    <small class="muted">
-        {% widthratio pred.confidence 1 100 %}% confidence
-    </small>
-</div>
-
-
-</li>
-
+            <!-- Show all predictions -->
+            <details style="margin-top: 0.5rem;">
+                <summary style="cursor: pointer; color: var(--muted); font-size: 0.9rem;">
+                    View all predictions
+                </summary>
+                <ul class="result-list" style="margin-top: 0.5rem;">
+                    {% for pred in analysis_result.skin_type.predictions %}
+                    <li>
+                        {{ pred.class|title }} — {{ pred.confidence|floatformat:2 }}
+                    </li>
                     {% endfor %}
                 </ul>
-                {% if analysis_result.skin_concerns.top_prediction %}
-                    <p class="muted" style="margin-top: 1rem; font-size: 0.9rem;">
-                        Top concern: <strong>{{ analysis_result.skin_concerns.top_prediction.class|title }}</strong> 
-                        ({{ analysis_result.skin_concerns.top_prediction.confidence|floatformat:2 }})
-                    </p>
-                {% endif %}
+            </details>
             {% else %}
-                <p class="result-item" style="color: #dc3545;">
-                    <strong>No predictions available.</strong>
-                </p>
+            <p class="result-item" style="color: #dc3545;">
+                <strong>No predictions available.</strong>
+            </p>
             {% endif %}
-        {% endif %}
-        
-        <!-- Show message if no results at all -->
-        {% if not analysis_result.skin_type and not analysis_result.skin_concerns %}
+
+            <!-- Skin Concerns -->
+            {% if analysis_result.skin_concerns.predictions %}
+            <h3>Skin Concerns</h3>
+
+            <!-- Always show the first/top prediction -->
+            <p class="result-item">
+                <strong>{{ analysis_result.skin_concerns.predictions.0.class|title }}</strong>
+                — {{ analysis_result.skin_concerns.predictions.0.confidence|floatformat:2 }}
+            </p>
+
+            <!-- Show all predictions -->
+            <details style="margin-top: 0.5rem;">
+                <summary style="cursor: pointer; color: var(--muted); font-size: 0.9rem;">
+                    View all predictions
+                </summary>
+                <ul class="result-list" style="margin-top: 0.5rem;">
+                    {% for pred in analysis_result.skin_concerns.predictions %}
+                    <li>
+                        {{ pred.class|title }} — {{ pred.confidence|floatformat:2 }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% else %}
+            <p class="result-item" style="color: #dc3545;">
+                <strong>No predictions available.</strong>
+            </p>
+            {% endif %}
+
+
+            <!-- Show message if no results at all -->
+            {% if not analysis_result.skin_type and not analysis_result.skin_concerns %}
             <p class="result-item" style="color: var(--muted);">
                 No analysis results available. Please ensure models are uploaded and active.
             </p>
+            {% endif %}
+        </section>
         {% endif %}
-    </section>
-    {% endif %}
 
-    {% if analysis_result %}
-    <div class="panel" style="margin-top: 1rem; text-align: center;">
-        <a href="{% url 'face_analysis:face_analysis_results' %}" class="btn primary" style="display: inline-block; padding: 0.9rem 1.5rem;">
-            Find My Skincare
-        </a>
-    </div>
-    {% endif %}
-
-    <!-- HOW IT WORKS -->
-    <section id="how-it-works" class="panel steps-panel">
-        <div class="panel-head">
-            <div>
-                <p class="eyebrow">How it works</p>
-                <h2>From upload to insights</h2>
-                <p class="muted">A simple CNN-based pipeline.</p>
-            </div>
-        </div>
-
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <h3>Preprocess</h3>
-                <p>Image is resized, normalized, and prepared for the CNN.</p>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <h3>Skin Type Detection</h3>
-                <p>Model predicts the most likely skin type.</p>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <h3>Concern Identification</h3>
-                <p>Top skin concerns are ranked with confidence scores.</p>
-            </div>
-        </div>
-    </section>
-
-</main>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('face_image_input');
-    const uploadDrop = document.getElementById('upload-drop');
-    const uploadPlaceholder = document.getElementById('upload-placeholder');
-    const imagePreview = document.getElementById('image-preview');
-    const previewImg = document.getElementById('preview-img');
-    const fileName = document.getElementById('file-name');
-    const removeImageBtn = document.getElementById('remove-image');
-    const scanButton = document.getElementById('scan-button');
-
-    // Handle file selection
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
-                fileInput.value = '';
-                return;
-            }
-
-            // Validate file size (10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                alert('File size must be less than 10MB.');
-                fileInput.value = '';
-                return;
-            }
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
-                uploadPlaceholder.style.display = 'none';
-                imagePreview.style.display = 'block';
-                scanButton.disabled = false;
-                uploadDrop.classList.add('has-image');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Remove image
-    removeImageBtn.addEventListener('click', function() {
-        fileInput.value = '';
-        uploadPlaceholder.style.display = 'block';
-        imagePreview.style.display = 'none';
-        scanButton.disabled = true;
-        uploadDrop.classList.remove('has-image');
-    });
-
-    // Drag and drop handlers
-    uploadDrop.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        uploadDrop.classList.add('drag-over');
-    });
-
-    uploadDrop.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        uploadDrop.classList.remove('drag-over');
-    });
-
-    uploadDrop.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadDrop.classList.remove('drag-over');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-
-    // Show loading state on form submit
-    const form = uploadDrop.closest('form');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const originalButtonText = scanButton.textContent;
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            // Don't prevent default - let form submit normally
-            // Keep button visible but show loading
-            scanButton.disabled = true;
-            loadingIndicator.style.display = 'inline-flex';
-            scanButton.style.opacity = '0.6';
-            scanButton.textContent = 'Processing...';
-        });
-    }
-    
-    // Restore button state if page reloads with results or error
-    {% if analysis_result or error %}
-        // If we have results or error, re-enable the button
-        scanButton.disabled = false;
-        scanButton.style.opacity = '1';
-        scanButton.textContent = originalButtonText || 'Scan Photo';
-        loadingIndicator.style.display = 'none';
-        
-        // Keep the image preview visible if file input has a file
-        if (fileInput && fileInput.files.length > 0) {
-            // Image should already be visible from previous selection
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
-                    uploadPlaceholder.style.display = 'none';
-                    imagePreview.style.display = 'block';
-                    uploadDrop.classList.add('has-image');
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-        
-        // Scroll to results if they exist
         {% if analysis_result %}
-            setTimeout(function() {
+        <div class="panel" style="margin-top: 1rem; text-align: center;">
+            <a href="{% url 'face_analysis:face_analysis_results' %}" class="btn primary"
+                style="display: inline-block; padding: 0.9rem 1.5rem;">
+                Find My Skincare
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- HOW IT WORKS -->
+        <section id="how-it-works" class="panel steps-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">How it works</p>
+                    <h2>From upload to insights</h2>
+                    <p class="muted">A simple CNN-based pipeline.</p>
+                </div>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Preprocess</h3>
+                    <p>Image is resized, normalized, and prepared for the CNN.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Skin Type Detection</h3>
+                    <p>Model predicts the most likely skin type.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Concern Identification</h3>
+                    <p>Top skin concerns are ranked with confidence scores.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('face_image_input');
+            const uploadDrop = document.getElementById('upload-drop');
+            const uploadPlaceholder = document.getElementById('upload-placeholder');
+            const imagePreview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            const fileName = document.getElementById('file-name');
+            const removeImageBtn = document.getElementById('remove-image');
+            const scanButton = document.getElementById('scan-button');
+
+            // Handle file selection
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // Validate file size (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
+                        uploadPlaceholder.style.display = 'none';
+                        imagePreview.style.display = 'block';
+                        scanButton.disabled = false;
+                        uploadDrop.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Remove image
+            removeImageBtn.addEventListener('click', function () {
+                fileInput.value = '';
+                uploadPlaceholder.style.display = 'block';
+                imagePreview.style.display = 'none';
+                scanButton.disabled = true;
+                uploadDrop.classList.remove('has-image');
+            });
+
+            // Drag and drop handlers
+            uploadDrop.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadDrop.classList.add('drag-over');
+            });
+
+            uploadDrop.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                uploadDrop.classList.remove('drag-over');
+            });
+
+            uploadDrop.addEventListener('drop', function (e) {
+                e.preventDefault();
+                uploadDrop.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+
+            // Show loading state on form submit
+            const form = uploadDrop.closest('form');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const originalButtonText = scanButton.textContent;
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    // Don't prevent default - let form submit normally
+                    // Keep button visible but show loading
+                    scanButton.disabled = true;
+                    loadingIndicator.style.display = 'inline-flex';
+                    scanButton.style.opacity = '0.6';
+                    scanButton.textContent = 'Processing...';
+                });
+            }
+
+            // Restore button state if page reloads with results or error
+            {% if analysis_result or error %}
+            // If we have results or error, re-enable the button
+            scanButton.disabled = false;
+            scanButton.style.opacity = '1';
+            scanButton.textContent = originalButtonText || 'Scan Photo';
+            loadingIndicator.style.display = 'none';
+
+            // Keep the image preview visible if file input has a file
+            if (fileInput && fileInput.files.length > 0) {
+                // Image should already be visible from previous selection
+                const file = fileInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
+                        uploadPlaceholder.style.display = 'none';
+                        imagePreview.style.display = 'block';
+                        uploadDrop.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            // Scroll to results if they exist
+            {% if analysis_result %}
+            setTimeout(function () {
                 const resultsSection = document.querySelector('.result-panel');
                 if (resultsSection) {
                     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }, 300);
-        {% endif %}
-        
-        // Scroll to error if it exists
-        {% if error %}
-            setTimeout(function() {
+            {% endif %}
+
+            // Scroll to error if it exists
+            {% if error %}
+            setTimeout(function () {
                 const errorAlert = document.querySelector('.alert.error');
                 if (errorAlert) {
                     errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 300);
-        {% endif %}
-    {% endif %}
-});
+            {% endif %}
+            {% endif %}
+        });
 
-// Add spinning animation for loading indicator
-const style = document.createElement('style');
-style.textContent = `
+        // Add spinning animation for loading indicator
+        const style = document.createElement('style');
+        style.textContent = `
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
 `;
-document.head.appendChild(style);
-</script>
+        document.head.appendChild(style);
+    </script>
 
 </body>
+
 </html>
