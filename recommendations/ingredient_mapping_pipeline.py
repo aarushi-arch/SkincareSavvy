@@ -5,6 +5,7 @@ import os
 import sys
 from pathlib import Path
 import django
+import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 if str(BASE_DIR) not in sys.path:
@@ -18,6 +19,7 @@ TEMPLATE_CSV = BASE_DIR / "recommendations" / "notebooks" / "ingredient_mapping_
 
 ingredient_defaults = {
     "aloe barbadensis leaf extract": {"skin_type": "all", "notable_effects": "soothing, moisturizing"},
+    "aloe vera": {"skin_type": "all", "notable_effects": "soothing, hydrating"},
     "hyaluronic acid": {"skin_type": "all", "notable_effects": "hydrating, plumping"},
     "shea butter": {"skin_type": "dry", "notable_effects": "moisturizing, emollient"},
     "jojoba oil": {"skin_type": "all", "notable_effects": "moisturizing, balancing"},
@@ -31,7 +33,7 @@ ingredient_defaults = {
     "niacinamide": {"skin_type": "all", "notable_effects": "brightening, anti-inflammatory"},
     "vitamin c": {"skin_type": "all", "notable_effects": "brightening, antioxidant"},
     "vitamin e": {"skin_type": "all", "notable_effects": "antioxidant, moisturizing"},
-    "retinol": {"skin_type": "all", "notable_effects": "anti-aging, cell turnover"},
+    "retinol": {"skin_type": "normal, dry", "notable_effects": "anti-aging"},
     "coenzyme q10": {"skin_type": "all", "notable_effects": "antioxidant, anti-aging"},
     "argania spinosa kernel oil": {"skin_type": "dry", "notable_effects": "moisturizing, antioxidant"},
     "rosehip oil": {"skin_type": "all", "notable_effects": "brightening, anti-aging"},
@@ -43,6 +45,7 @@ ingredient_defaults = {
     "titanium dioxide": {"skin_type": "all", "notable_effects": "sun protection, soothing"},
     "caffeine": {"skin_type": "all", "notable_effects": "anti-inflammatory, depuffing"},
     "camellia sinensis leaf extract": {"skin_type": "all", "notable_effects": "antioxidant, soothing"},
+    "green tea extract": {"skin_type": "all", "notable_effects": "antioxidant, anti-inflammatory"},
     "chamomilla recutita extract": {"skin_type": "sensitive, all", "notable_effects": "soothing, anti-inflammatory"},
     "licorice root extract": {"skin_type": "all", "notable_effects": "brightening, anti-inflammatory"},
     "centella asiatica extract": {"skin_type": "all", "notable_effects": "soothing, healing"},
@@ -86,6 +89,12 @@ def build_unique_ingredients() -> list[str]:
                 unique.add(cname)
     return sorted(unique)
 
+def safe_str(s: str) -> str:
+    try:
+        return s.encode("ascii", "ignore").decode("ascii")
+    except Exception:
+        return s
+
 def ensure_template(ingredients: list[str]) -> None:
     TEMPLATE_CSV.parent.mkdir(parents=True, exist_ok=True)
     if not TEMPLATE_CSV.exists():
@@ -121,23 +130,22 @@ def load_mapping() -> dict[str, dict[str, list[str]]]:
     mapping: dict[str, dict[str, list[str]]] = {}
     if not TEMPLATE_CSV.exists():
         return mapping
-    with open(TEMPLATE_CSV, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            ing = clean_name(row.get("ingredient", ""))
-            skin = (row.get("skin_type") or "").strip()
-            eff = (row.get("notable_effects") or "").strip()
-            if not ing:
-                continue
-            def split_vals(v: str) -> list[str]:
-                if not v:
-                    return []
-                parts = [p.strip() for p in re.split(r"[\/,]", v) if p.strip()]
-                return parts
-            mapping[ing] = {
-                "skin_types": split_vals(skin),
-                "effects": split_vals(eff),
-            }
+    df = pd.read_csv(TEMPLATE_CSV)
+    for _, row in df.iterrows():
+        ing = clean_name(str(row.get("ingredient", "")))
+        skin = str(row.get("skin_type", "")).strip()
+        eff = str(row.get("notable_effects", "")).strip()
+        if not ing:
+            continue
+        def split_vals(v: str) -> list[str]:
+            if not v:
+                return []
+            parts = [p.strip() for p in re.split(r"[\/,]", v) if p.strip()]
+            return parts
+        mapping[ing] = {
+            "skin_types": split_vals(skin),
+            "effects": split_vals(eff),
+        }
     return mapping
 
 def apply_mapping(mapping: dict[str, dict[str, list[str]]]) -> None:
@@ -152,6 +160,7 @@ def apply_mapping(mapping: dict[str, dict[str, list[str]]]) -> None:
         for name in names:
             cname = clean_name(name)
             if cname in mapping:
+                print(f"Matched ingredient: {safe_str(cname)}")
                 for s in mapping[cname]["skin_types"]:
                     if s:
                         skins.add(s)

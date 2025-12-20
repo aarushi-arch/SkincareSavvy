@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -29,7 +31,7 @@ class FaceAnalysisPipeline:
     # MODEL LOADING
     
     def load_models_from_db(self) -> None:
-        """Load active models from the database (only once)."""
+        """Load active models."""
         if self._models_loaded:
             return
 
@@ -49,21 +51,33 @@ class FaceAnalysisPipeline:
             except Exception as e:
                 print(f"Skin concerns model load failed: {e}")
 
-        # SKIN TYPES 
-        skin_types = CNNModel.objects.filter(
-            model_type="skin_types",
-            is_active=True
-        ).first()
+        # SKIN TYPES - LOAD FROM LOCAL FILE
+        try:
+            base_path = Path(__file__).resolve().parent.parent / "models" / "ml"
+            model_path = base_path / "skin_type_mobilenet_final.h5"
+            labels_path = base_path / "class_labels (1).json"
 
-        if skin_types and skin_types.model_file:
-            try:
-                self.skin_types_model = tf.keras.models.load_model(
-                    skin_types.model_file.path
-                )
-                self.skin_types_classes = self._parse_class_names(skin_types)
-                print("Skin types model loaded")
-            except Exception as e:
-                print(f"Skin types model load failed: {e}")
+            if model_path.exists():
+                self.skin_types_model = tf.keras.models.load_model(str(model_path))
+                print(f"Skin types model loaded from {model_path}")
+            else:
+                print(f"Skin types model not found at {model_path}")
+
+            if labels_path.exists():
+                with open(labels_path, "r") as f:
+                    labels_data = json.load(f)
+                    # Handle dict {"Combination": 0, ...} -> ["Combination", ...]
+                    if isinstance(labels_data, dict):
+                        # Sort by value to ensure correct order
+                        self.skin_types_classes = [k for k, v in sorted(labels_data.items(), key=lambda x: x[1])]
+                    elif isinstance(labels_data, list):
+                        self.skin_types_classes = labels_data
+                    print(f"Skin types classes loaded: {self.skin_types_classes}")
+            else:
+                 print(f"Skin types labels not found at {labels_path}")
+
+        except Exception as e:
+            print(f"Skin types model load failed: {e}")
 
         self._models_loaded = True
 
@@ -95,17 +109,25 @@ class FaceAnalysisPipeline:
     def preprocess(
         self,
         image_bytes: bytes | np.ndarray,
+        target_model: keras.Model | None = None,
     ) -> np.ndarray:
         """
         Preprocess image according to model input size.
         """
-        # Detect input size dynamically
-        if self.skin_concerns_model is not None:
-            h, w = self.skin_concerns_model.input_shape[1:3]
-        elif self.skin_types_model is not None:
-            h, w = self.skin_types_model.input_shape[1:3]
-        else:
-            h, w = (224, 224)
+        h, w = (224, 224)
+
+        if target_model is not None:
+            try:
+                shape = target_model.input_shape
+                # shape might be (None, 224, 224, 3)
+                if shape and len(shape) >= 3:
+                     h, w = shape[1:3]
+            except Exception:
+                pass
+        
+        # Ensure we have valid dimensions
+        if h is None or w is None:
+             h, w = (224, 224)
 
         return preprocess_image(
             image_bytes,
@@ -125,7 +147,9 @@ class FaceAnalysisPipeline:
             return {"error": "Skin types model not loaded"}
 
         preds = self.skin_types_model.predict(processed, verbose=0)[0]
-        top = np.argsort(preds)[-top_k:][::-1]
+        # Ensure we don't request more top_k than classes available
+        k = min(top_k, len(self.skin_types_classes))
+        top = np.argsort(preds)[-k:][::-1]
 
         return {
             "predictions": [
@@ -146,7 +170,8 @@ class FaceAnalysisPipeline:
             return {"error": "Skin concerns model not loaded"}
 
         preds = self.skin_concerns_model.predict(processed, verbose=0)[0]
-        top = np.argsort(preds)[-top_k:][::-1]
+        k = min(top_k, len(self.skin_concerns_classes))
+        top = np.argsort(preds)[-k:][::-1]
 
         return {
             "predictions": [
@@ -167,9 +192,14 @@ class FaceAnalysisPipeline:
         """
         self.load_models_from_db()
 
-        processed = self.preprocess(image_bytes)
+        result = {}
 
-        return {
-            "skin_type": self.predict_skin_type(processed),
-            "skin_concerns": self.predict_skin_concerns(processed),
-        }
+        if self.skin_types_model:
+            processed_types = self.preprocess(image_bytes, target_model=self.skin_types_model)
+            result["skin_type"] = self.predict_skin_type(processed_types)
+        
+        if self.skin_concerns_model:
+            processed_concerns = self.preprocess(image_bytes, target_model=self.skin_concerns_model)
+            result["skin_concerns"] = self.predict_skin_concerns(processed_concerns)
+
+        return result
