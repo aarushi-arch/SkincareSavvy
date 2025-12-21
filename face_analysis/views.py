@@ -21,6 +21,8 @@ def index(request):
     analysis_result = None
     error = None
 
+    recommended_products = []
+
     if request.method == "POST":
         uploaded_file = request.FILES.get("face_image")
 
@@ -37,6 +39,35 @@ def index(request):
 
                 # Run analysis
                 analysis_result = pipeline.analyze(image_bytes)
+                
+                # Fetch Recommendations
+                if analysis_result:
+                    # Extract Data
+                    skin_type = ""
+                    concerns = []
+                    
+                    if "skin_type" in analysis_result and "predictions" in analysis_result["skin_type"]:
+                        preds = analysis_result["skin_type"]["predictions"]
+                        if preds:
+                            skin_type = preds[0]["class"]
+                            
+                    if "skin_concerns" in analysis_result and "predictions" in analysis_result["skin_concerns"]:
+                        # Taking top k concerns ? 
+                        # recommend_products uses all provided in list.
+                        # Let's take all predicted concerns that have decent confidence?
+                        # Or just all returned by the pipeline (which already does top_k=3 default)
+                        preds = analysis_result["skin_concerns"]["predictions"]
+                        concerns = [p["class"] for p in preds]
+                    
+                    print(f"Fetching recommendations for Type: {skin_type}, Concerns: {concerns}")
+                    
+                    query = {
+                        "skin_type": skin_type,
+                        "concerns": concerns
+                    }
+                    
+                    recommended_products = recommend_products(query)
+                    print(f"Found {len(recommended_products)} products.")
 
                 # DEBUG OUTPUT (VERY IMPORTANT)
                 print("ANALYSIS RESULT:", analysis_result)
@@ -45,12 +76,15 @@ def index(request):
                 error = "The uploaded file is not a valid image."
             except Exception as e:
                 error = f"Analysis failed: {str(e)}"
+                import traceback
+                traceback.print_exc()
 
     return render(
         request,
         "face_analysis/index.html",
         {
             "analysis_result": analysis_result,
+            "recommended_products": recommended_products,
             "error": error,
         },
     )

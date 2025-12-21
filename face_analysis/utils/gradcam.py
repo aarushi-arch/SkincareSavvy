@@ -27,10 +27,16 @@ def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
     conv_outputs = conv_outputs * pooled_grads
     heatmap = tf.reduce_mean(conv_outputs, axis=-1)
 
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    heatmap = tf.maximum(heatmap, 0)
+    
+    # Safe normalization to avoid division by zero
+    max_val = tf.math.reduce_max(heatmap)
+    if max_val > 0:
+        heatmap /= max_val
+        
     return heatmap.numpy()
 
-def overlay_heatmap(img_rgb, heatmap, alpha=0.6, colormap=cv2.COLORMAP_JET):
+def overlay_heatmap(img_rgb, heatmap, alpha=0.7, colormap=cv2.COLORMAP_JET):
     """
     Overlays heatmap on original image with dynamic transparency.
     High activation areas are more opaque, low activation areas are transparent.
@@ -43,17 +49,19 @@ def overlay_heatmap(img_rgb, heatmap, alpha=0.6, colormap=cv2.COLORMAP_JET):
     colored_heatmap = cv2.applyColorMap(heatmap_uint8, colormap)
     
     # 2. Create a dynamic alpha mask
-    # Threshold: values below 0.2 are completely transparent (0)
-    # Values above 0.2 scale from 0 to alpha
-    threshold = 0.2
+    # Threshold: Lowered to 0.05 to ensure weaker activations are still visible
+    threshold = 0.05
     mask = np.maximum(0, heatmap - threshold) / (1 - threshold)
     mask = np.clip(mask, 0, 1)
+    
+    # Square the mask to make the transition smoother (optional, but keeps low values lower)
+    # or just use it linearly. Let's stick to linear for visibility.
     
     # Expand mask to 3 channels
     mask_3ch = np.stack([mask] * 3, axis=-1)
     
     # 3. Blend
-    # formula: result = src * (mask * alpha) + dst * (1 - (mask * alpha))
+    # blend_factor scales from 0 (transparent) to alpha (max opacity)
     blend_factor = mask_3ch * alpha
     
     superimposed_img = colored_heatmap * blend_factor + img_rgb * (1 - blend_factor)

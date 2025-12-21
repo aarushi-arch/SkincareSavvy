@@ -62,10 +62,42 @@ def recommend_products(analysis: dict):
     for p in qs:
         stypes = [str(s).lower() for s in (p.skin_types or [])]
         sconcs = [str(s).lower() for s in (p.skin_concerns or [])]
+        
+        # Strict match on skin type (if one is provided)
         if skin_type and skin_type not in stypes:
+            # Maybe allow "all" or generic types? For now keep strict.
             continue
-        if any(c not in sconcs for c in concerns):
-            continue
-        matched.append(p)
-    matched.sort(key=lambda x: (-(x.rating or 0), (x.brand or ""), (x.name or "")))
-    return matched[:50]
+            
+        # Score based on concerns
+        # +1 for every concern this product addresses
+        score = 0
+        matching_concerns = []
+        if concerns:
+            for c in concerns:
+                if c in sconcs:
+                    score += 1
+                    matching_concerns.append(c.title()) # Capitalize for display
+
+        # Generate Match Reason
+        if matching_concerns:
+            # "Targets your Acne and Pores"
+            if len(matching_concerns) > 2:
+                 # "Targets your Acne, Pores, and Wrinkles"
+                 concerns_str = ", ".join(matching_concerns[:-1]) + ", and " + matching_concerns[-1]
+            else:
+                 concerns_str = " and ".join(matching_concerns)
+            
+            p.match_reason = f"Targets your {concerns_str}"
+        elif skin_type and skin_type in stypes:
+            p.match_reason = f"Great for {skin_type.title()} skin"
+        else:
+            p.match_reason = "Recommended for you"
+
+        # Add to list with score
+        matched.append((score, p))
+        
+    # Sort by Score (desc), then Rating (desc)
+    matched.sort(key=lambda x: (-x[0], -(x[1].rating or 0)))
+    
+    # Return just the products
+    return [m[1] for m in matched[:50]]

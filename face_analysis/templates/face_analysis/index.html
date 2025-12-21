@@ -240,13 +240,92 @@
         </section>
         {% endif %}
 
-        {% if analysis_result %}
-        <div class="panel" style="margin-top: 1rem; text-align: center;">
-            <a href="{% url 'face_analysis:face_analysis_results' %}" class="btn primary"
-                style="display: inline-block; padding: 0.9rem 1.5rem;">
-                Find My Skincare
-            </a>
-        </div>
+        {% if recommended_products %}
+        <section class="panel result-panel" style="margin-top: 2rem;">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Recommendations</p>
+                    <h2>Expert Picks for You</h2>
+                    <p class="muted">Based on your {{ analysis_result.skin_type.predictions.0.class|title }} skin and
+                        top concerns.</p>
+                </div>
+            </div>
+
+            <div class="product-grid" style="
+                display: grid; 
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+                gap: 1.5rem; 
+                margin-top: 1.5rem;">
+
+                {% for product in recommended_products %}
+                <div class="product-card" style="
+                    border: 1px solid #eee; 
+                    border-radius: 12px; 
+                    padding: 1.5rem; 
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    display: flex;
+                    flex-direction: column;
+                    background: white;">
+
+                    <div class="card-header" style="margin-bottom: 1rem;">
+                        <span class="badge" style="
+                            background: #f8f9fa; 
+                            color: #6c757d; 
+                            padding: 0.25rem 0.6rem; 
+                            border-radius: 20px; 
+                            font-size: 0.75rem; 
+                            text-transform: uppercase; 
+                            letter-spacing: 0.5px;">
+                            {{ product.category|default:'Skincare' }}
+                        </span>
+                    </div>
+
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; line-height: 1.4;">
+                        {{ product.name }}
+                    </h3>
+
+                    <p class="brand" style="
+                        color: #6c757d; 
+                        font-family: 'Lato', sans-serif; 
+                        margin: 0 0 1rem 0; 
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        font-size: 0.8rem;">
+                        {{ product.brand }}
+                    </p>
+
+                    {% if product.match_reason %}
+                    <p style="
+                        font-size: 0.85rem; 
+                        color: #155724; 
+                        margin: 0 0 1rem 0; 
+                        display: flex; 
+                        align-items: flex-start; 
+                        gap: 0.5rem;
+                        background: #d4edda;
+                        padding: 0.5rem;
+                        border-radius: 6px;
+                        line-height: 1.4;">
+                        <span style="font-size: 1rem; line-height: 1;">✓</span>
+                        <span>{{ product.match_reason }}</span>
+                    </p>
+                    {% endif %}
+
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
+                        <div class="rating" style="color: #ffc107; font-weight: bold;">
+                            ★ {{ product.rating|default:'4.5' }}
+                        </div>
+                        <a href="{{ product.product_url }}" target="_blank" class="btn ghost small"
+                            style="padding: 0.5rem 1rem;">View</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top: 2rem; text-align: center;">
+                <a href="{% url 'recommendations:home' %}" class="btn ghost">See All Products</a>
+            </div>
+        </section>
         {% endif %}
 
         <!-- HOW IT WORKS -->
