@@ -90,6 +90,21 @@
                     <div class="tag">JPG / PNG</div>
                 </div>
 
+                <div class="camera-section" style="margin-bottom: 1rem; text-align: center;">
+                    <button type="button" id="start-camera" class="btn ghost">Use Camera</button>
+                </div>
+
+                <div id="camera-container"
+                    style="display: none; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
+                    <video id="camera-stream" autoplay playsinline
+                        style="width: 100%; max-width: 500px; border-radius: 8px; background: #000; margin-bottom: 1rem;"></video>
+                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <div class="camera-actions">
+                        <button type="button" id="capture-image" class="btn primary">Capture Photo</button>
+                        <button type="button" id="stop-camera" class="btn ghost">Cancel</button>
+                    </div>
+                </div>
+
                 <label class="upload-drop" id="upload-drop">
                     <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input"
                         required>
@@ -370,6 +385,15 @@
             const removeImageBtn = document.getElementById('remove-image');
             const scanButton = document.getElementById('scan-button');
 
+            // Camera elements
+            const startCameraBtn = document.getElementById('start-camera');
+            const cameraContainer = document.getElementById('camera-container');
+            const video = document.getElementById('camera-stream');
+            const canvas = document.getElementById('camera-canvas');
+            const captureBtn = document.getElementById('capture-image');
+            const stopCameraBtn = document.getElementById('stop-camera');
+            let stream = null;
+
             // Handle file selection
             fileInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
@@ -494,16 +518,74 @@
             }, 300);
             {% endif %}
             {% endif %}
-        });
 
-        // Add spinning animation for loading indicator
-        const style = document.createElement('style');
-        style.textContent = `
+
+            // Add spinning animation for loading indicator
+            const style = document.createElement('style');
+            style.textContent = `
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
 `;
-        document.head.appendChild(style);
+            document.head.appendChild(style);
+
+            // Camera Logic
+            startCameraBtn.addEventListener('click', async function () {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                    video.srcObject = stream;
+                    cameraContainer.style.display = 'flex';
+                    uploadDrop.style.display = 'none';
+                    startCameraBtn.style.display = 'none';
+                } catch (err) {
+                    console.error("Error accessing camera:", err);
+                    alert("Could not access camera. Please check permissions.");
+                }
+            });
+
+            stopCameraBtn.addEventListener('click', function () {
+                stopCamera();
+            });
+
+            function stopCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                cameraContainer.style.display = 'none';
+                uploadDrop.style.display = 'block';
+                startCameraBtn.style.display = 'inline-block';
+            }
+
+            captureBtn.addEventListener('click', function () {
+                if (!stream) return;
+
+                // Set canvas dimensions to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw video frame to canvas
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert to blob/file
+                canvas.toBlob(function (blob) {
+                    const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+
+                    // Create a DataTransfer to set the file input files
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // Trigger change event manually
+                    fileInput.dispatchEvent(new Event('change'));
+
+                    // Stop camera and show upload UI
+                    stopCamera();
+
+                }, 'image/jpeg', 0.95);
+            });
+        });
     </script>
 
 </body>
