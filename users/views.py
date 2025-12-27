@@ -1,11 +1,12 @@
-from django.shortcuts import render, redirect 
+from django.shortcuts import render, redirect, get_object_or_404 
 from django.contrib import messages
 from django.views import View
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.decorators import login_required
 
 from .forms import RegisterForm, LoginForm, UserUpdateForm, ProfileUpdateForm
-from .models import Profile
+from .models import Profile, ShelfItem
+from recommendations.models import Product
 
 from django.contrib.auth import logout
 
@@ -91,3 +92,52 @@ def profile(request):
     }
 
     return render(request, 'users/profile.html', context)
+
+
+@login_required
+def my_shelf(request):
+    """View to display user's shelf items."""
+    shelf_items = ShelfItem.objects.filter(user=request.user)
+    context = {
+        'shelf_items': shelf_items,
+        'page_title': 'My Shelf'
+    }
+    return render(request, 'users/my_shelf.html', context)
+
+
+@login_required
+def add_to_shelf(request, product_id):
+    """View to add a product to user's shelf."""
+    product = get_object_or_404(Product, id=product_id)
+    
+    # Check if item already exists
+    shelf_item, created = ShelfItem.objects.get_or_create(
+        user=request.user, 
+        product=product
+    )
+    
+    if created:
+        messages.success(request, f'{product.name} added to your shelf!')
+    else:
+        messages.info(request, f'{product.name} is already in your shelf.')
+        
+    # Redirect back to the previous page or my_shelf
+    next_url = request.META.get('HTTP_REFERER')
+    if next_url:
+        return redirect(next_url)
+    return redirect('my_shelf')
+
+
+@login_required
+def remove_from_shelf(request, product_id):
+    """View to remove a product from user's shelf."""
+    product = get_object_or_404(Product, id=product_id)
+    
+    deleted_count, _ = ShelfItem.objects.filter(user=request.user, product=product).delete()
+    
+    if deleted_count > 0:
+        messages.success(request, f'{product.name} removed from your shelf.')
+    else:
+        messages.warning(request, f'{product.name} was not found in your shelf.')
+        
+    return redirect('my_shelf')

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from recommendations.models import Product
 from PIL import Image
 import os
 
@@ -24,7 +25,23 @@ class Profile(models.Model):
                     output_size = (300, 300)
                     img.thumbnail(output_size)
                     img.save(self.image.path)
+
             except (IOError, OSError, Exception):
                 # If image processing fails, just continue without resizing
                 pass
+
+
+class ShelfItem(models.Model):
+    """Model to store products in user's shelf."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shelf_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='saved_by')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')
+        ordering = ['-added_at']
+
+    def __str__(self):
+        return f"{self.user.username}'s saved {self.product.name}"
+
 

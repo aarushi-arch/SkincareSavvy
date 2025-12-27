@@ -1,0 +1,335 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkincareSavvy - My Shelf</title>
+    <!-- Google Fonts - Lato Light -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            color: #333;
+            min-height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(11, 59, 23, 0.15);
+            backdrop-filter: blur(8px) saturate(150%);
+            -webkit-backdrop-filter: blur(8px) saturate(150%);
+            border: 2px solid rgba(11, 59, 23, 0.4);
+            border-radius: 40px;
+            padding: 12px 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin: 10px auto;
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border-radius: 5px;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f0f0f0;
+            color: #0b3b17ff;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .shelf-container {
+            margin-top: 40px;
+        }
+
+        .shelf-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .shelf-header h1 {
+            font-family: 'Allura', cursive;
+            font-size: 3em;
+            color: #0b3b17;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-image {
+            height: 200px;
+            width: 100%;
+            object-fit: contain;
+            background-color: #ffff;
+            padding: 10px;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-brand {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .product-name {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .btn-remove {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            background-color: #ffcdd2;
+        }
+
+        .empty-shelf {
+            text-align: center;
+            padding: 60px;
+            color: #777;
+        }
+
+        .empty-shelf a {
+            color: #0b3b17;
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            color: #3c763d;
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+        }
+
+        .alert-info {
+            color: #31708f;
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+        }
+
+        .alert-warning {
+            color: #8a6d3b;
+            background-color: #fcf8e3;
+            border-color: #faebcc;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 60px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo"><img src="{% static 'images/Skincare.png' %}" alt="Logo"></div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="{% url 'users-home' %}#about">About</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
+                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
+                            <a href="{% url 'users-home' %}#routine-builder">Routine Builder</a>
+                        </div>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#">My Account</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'profile' %}">Profile</a>
+                            <a href="{% url 'my_shelf' %}">My Shelf</a>
+                            <a href="{% url 'logout' %}">Logout</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container shelf-container">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="shelf-header">
+            <h1>My Skincare Shelf</h1>
+            <p>Your curated collection of favorite products.</p>
+        </div>
+
+        {% if shelf_items %}
+        <div class="products-grid">
+            {% for item in shelf_items %}
+            <div class="product-card">
+                {% if item.product.image_url %}
+                <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="product-image">
+                {% else %}
+                <div class="product-image"
+                    style="display: flex; align-items: center; justify-content: center; background: #eee;">No Image
+                </div>
+                {% endif %}
+                <div class="product-info">
+                    <div class="product-brand">{{ item.product.brand }}</div>
+                    <div class="product-name">{{ item.product.name }}</div>
+                    <a href="{% url 'remove_from_shelf' item.product.id %}" class="btn-remove">Remove from Shelf</a>
+                    <a href="{{ item.product.product_url }}" target="_blank"
+                        style="float: right; color: #0b3b17; font-size: 0.9em; text-decoration: none; padding-top: 10px;">View
+                        Product &rarr;</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-shelf">
+            <h2>Your shelf is empty!</h2>
+            <p>Go to <a href="{% url 'recommendations:home' %}">Recommendations</a> to find products to add.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 SkincareSavvy. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

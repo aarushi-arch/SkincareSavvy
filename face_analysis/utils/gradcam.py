@@ -36,38 +36,24 @@ def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
         
     return heatmap.numpy()
 
-def overlay_heatmap(img_rgb, heatmap, alpha=0.7, colormap=cv2.COLORMAP_JET):
+def overlay_heatmap_with_dots(img_rgb, heatmap, dot_threshold=0.6):
     """
-    Overlays heatmap on original image with dynamic transparency.
-    High activation areas are more opaque, low activation areas are transparent.
+    Draws prominent dots where the model strongly focuses.
     """
-    # Resize heatmap to image size
-    heatmap = cv2.resize(heatmap, (img_rgb.shape[1], img_rgb.shape[0]))
-    
-    # 1. Create the colored heatmap
-    heatmap_uint8 = np.uint8(255 * heatmap)
-    colored_heatmap = cv2.applyColorMap(heatmap_uint8, colormap)
-    
-    # 2. Create a dynamic alpha mask
-    # Threshold: Lowered to 0.05 to ensure weaker activations are still visible
-    threshold = 0.05
-    mask = np.maximum(0, heatmap - threshold) / (1 - threshold)
-    mask = np.clip(mask, 0, 1)
-    
-    # Square the mask to make the transition smoother (optional, but keeps low values lower)
-    # or just use it linearly. Let's stick to linear for visibility.
-    
-    # Expand mask to 3 channels
-    mask_3ch = np.stack([mask] * 3, axis=-1)
-    
-    # 3. Blend
-    # blend_factor scales from 0 (transparent) to alpha (max opacity)
-    blend_factor = mask_3ch * alpha
-    
-    superimposed_img = colored_heatmap * blend_factor + img_rgb * (1 - blend_factor)
-    superimposed_img = np.clip(superimposed_img, 0, 255).astype(np.uint8)
-    
-    return superimposed_img
+    h, w, _ = img_rgb.shape
+    heatmap = cv2.resize(heatmap, (w, h))
+
+    output = img_rgb.copy()
+
+    # Find strong activation points
+    ys, xs = np.where(heatmap > dot_threshold)
+
+    for (x, y) in zip(xs, ys):
+        # Dot size depends on intensity
+        radius = int(2 + heatmap[y, x] * 4)
+        cv2.circle(output, (x, y), radius, (0, 0, 255), -1)
+
+    return output
 
 def image_to_base64(img_array):
     """
@@ -104,16 +90,16 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     if last_conv_layer_name is None:
         last_conv_layer_name = find_last_conv_layer(model)
 
-    # 1️⃣ Load original image
+    # Load original image
     # We use PIL to read bytes, then convert to numpy for CV2 operations
     pil_img = Image.open(BytesIO(img_bytes)).convert('RGB')
     img_rgb = np.array(pil_img)
     
-    # 2️⃣ Preprocess for model using shared utility
+    # Preprocess for model using shared utility
     # returns (1, H, W, 3)
     img_array = preprocess_image(img_bytes, target_size=target_size, normalize=True)
     
-    # 2️⃣ Predict all skin concerns
+    # Predict all skin concerns
     preds = model.predict(img_array, verbose=0)[0]
 
     heatmaps = []
@@ -126,7 +112,7 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
         # Only generate heatmap if confidence is somewhat relevant? 
         # Or just generate for all as requested.
         
-        # 3️⃣ Generate Grad-CAM heatmap for this class
+        # Generate Grad-CAM heatmap for this class
         try:
             heatmap = get_gradcam_heatmap(model, img_array, i, last_conv_layer_name)
             
@@ -137,12 +123,12 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
             # So overlay_heatmap receives original size image and small heatmap.
             # My overlay_heatmap resizes heatmap to img_rgb size. Correct.
             
-            superimposed_img = overlay_heatmap(img_rgb, heatmap)
+            superimposed_img = overlay_heatmap_with_dots(img_rgb, heatmap)
 
-            # 4️⃣ Convert to base64
+            # Convert to base64
             heatmap_base64 = image_to_base64(superimposed_img)
 
-            # 5️⃣ Append to results
+            # Append to results
             heatmaps.append({
                 'class': class_name,
                 'confidence': float(preds[i]),

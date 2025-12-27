@@ -5,6 +5,7 @@ import json
 import pandas as pd
 
 from .forms import RecommendationForm
+from .models import Product
 from .recommender_engine import (
     get_unique_product_types,
     get_unique_notable_effects,
@@ -81,19 +82,40 @@ def recommend(request):
                             recommendations_df['product_name'].isin(filtered_product_names)
                         ]
                     
+
+                    # Fetch Product objects from DB to get IDs
+                    product_urls = recommendations_df['product_href'].tolist() if 'product_href' in recommendations_df.columns else []
+                    # Also check for 'product_url' column if href is missing
+                    if not product_urls and 'product_url' in recommendations_df.columns:
+                        product_urls = recommendations_df['product_url'].tolist()
+
+                    db_products = Product.objects.filter(product_url__in=product_urls)
+                    url_to_id = {p.product_url: p.id for p in db_products}
+                    # Also try matching by name if URL fails/is slightly different? 
+                    # For now rely on URL.
+                    
                     # Convert DataFrame to list of dictionaries
                     for _, row in recommendations_df.iterrows():
-                        raw_href = row.get("product_href", "")
+                        raw_href = row.get("product_href", "") or row.get("product_url", "")
+                        normalized_href = normalize_product_url(raw_href)
+                        product_id = url_to_id.get(raw_href) 
+
+                        # If not found by exact URL, try normalize? or just accept None.
+                        # We need an ID to add to shelf.
+                        
                         similarity_score = row.get("similarity_score", 0.0)
                         # Convert similarity score to percentage and round to 2 decimal places
                         similarity_percentage = round(float(similarity_score) * 100, 2) if pd.notna(similarity_score) else 0.0
-                        recommendations_data.append({
+                        
+                        rec_dict = {
                             "product_name": row.get("product_name", ""),
-                            "product_href": normalize_product_url(raw_href),
+                            "product_href": normalized_href,
                             "price": row.get("price", ""),
                             "description": row.get("description", ""),
                             "similarity_score": similarity_percentage,
-                        })
+                            "id": product_id,
+                        }
+                        recommendations_data.append(rec_dict)
                     
                     # Limit to top 5 recommendations
                     recommendations_data = recommendations_data[:5]
