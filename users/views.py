@@ -116,11 +116,19 @@ def add_to_shelf(request, product_id):
         product=product
     )
     
+    
     if created:
-        messages.success(request, f'{product.name} added to your shelf!')
+        msg = f'{product.name} added to your shelf!'
+        messages.success(request, msg)
     else:
-        messages.info(request, f'{product.name} is already in your shelf.')
+        msg = f'{product.name} is already in your shelf.'
+        messages.info(request, msg)
         
+    # JSON Response for AJAX
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.META.get('HTTP_ACCEPT', ''):
+        from django.http import JsonResponse
+        return JsonResponse({'status': 'success' if created else 'info', 'message': msg, 'crated': created})
+
     # Redirect back to the previous page or my_shelf
     next_url = request.META.get('HTTP_REFERER')
     if next_url:

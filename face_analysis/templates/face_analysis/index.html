@@ -330,8 +330,21 @@
                         <div class="rating" style="color: #ffc107; font-weight: bold;">
                             ★ {{ product.rating|default:'4.5' }}
                         </div>
-                        <a href="{{ product.product_url }}" target="_blank" class="btn ghost small"
-                            style="padding: 0.5rem 1rem;">View</a>
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                            <a href="{{ product.product_url }}" target="_blank" class="btn ghost small"
+                                style="padding: 0.5rem 1rem;">View</a>
+                            {% if user.is_authenticated %}
+                            <button type="button" class="btn primary small add-to-shelf-btn"
+                                data-product-id="{{ product.id }}" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+                                + Shelf
+                            </button>
+                            {% else %}
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn ghost small"
+                                style="padding: 0.5rem 1rem; font-size: 0.8rem; opacity: 0.7;">
+                                + Shelf (Login)
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -584,6 +597,58 @@
                     stopCamera();
 
                 }, 'image/jpeg', 0.95);
+            });
+
+            // Add to Shelf Logic (AJAX)
+            const addToShelfButtons = document.querySelectorAll('.add-to-shelf-btn');
+            addToShelfButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const productId = this.getAttribute('data-product-id');
+                    const originalText = this.textContent;
+
+                    // Optimistic UI update
+                    this.textContent = 'Adding...';
+                    this.disabled = true;
+
+                    fetch(`/add-to-shelf/${productId}/`, {
+                        method: 'GET', // or POST if you prefer, but views.py handles GET for now in many simple adds
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => {
+                            if (response.headers.get('content-type')?.includes('application/json')) {
+                                return response.json();
+                            } else {
+                                // Fallback if not json
+                                return { status: 'success', message: 'Added check my shelf' };
+                            }
+                        })
+                        .then(data => {
+                            this.textContent = '✓ Added';
+                            this.style.background = '#28a745';
+                            this.style.borderColor = '#28a745';
+                            this.style.color = 'white';
+
+                            // Reset after a while if wanted, or keep as added
+                            // setTimeout(() => {
+                            //     this.textContent = originalText;
+                            //     this.disabled = false;
+                            //     this.style.background = ''; // reset
+                            // }, 3000);
+                        })
+                        .catch(err => {
+                            console.error('Error adding to shelf:', err);
+                            this.textContent = 'Error';
+                            this.style.background = '#dc3545';
+                            setTimeout(() => {
+                                this.textContent = originalText;
+                                this.disabled = false;
+                                this.style.background = '';
+                            }, 2000);
+                        });
+                });
             });
         });
     </script>

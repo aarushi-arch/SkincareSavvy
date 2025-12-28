@@ -14,6 +14,9 @@ from face_analysis.models import CNNModel
 from face_analysis.utils.image_utils import preprocess_image
 from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps
 
+import cv2
+import mediapipe as mp
+
 
 class FaceAnalysisPipeline:
     """
@@ -27,6 +30,22 @@ class FaceAnalysisPipeline:
         self.skin_types_classes: list[str] = []
         self.skin_concerns_classes: list[str] = []
         self._models_loaded = False
+        
+        
+        # Initialize MediaPipe Face Detection
+        try:
+            self.mp_face_detection = mp.solutions.face_detection
+            self.face_detector = self.mp_face_detection.FaceDetection(
+                model_selection=1, 
+                min_detection_confidence=0.6
+            )
+            print("MediaPipe Face Detection initialized successfully")
+        except AttributeError:
+            print("MediaPipe Face Detection NOT available (solutions missing). Using full image.")
+            self.face_detector = None
+        except Exception as e:
+            print(f"MediaPipe Face Detection initialization failed: {e}")
+            self.face_detector = None
 
     
     # MODEL LOADING
@@ -185,6 +204,68 @@ class FaceAnalysisPipeline:
         }
 
     
+    
+    # FACE DETECTION
+    
+    def detect_and_crop(self, image_bytes: bytes | np.ndarray) -> np.ndarray:
+        """
+        Detect face and crop the image. 
+        Returns RGB numpy array of the face (or original image if no face).
+        """
+        # Convert bytes to numpy array (if needed)
+        if isinstance(image_bytes, bytes):
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        elif isinstance(image_bytes, np.ndarray):
+            image = image_bytes
+            # If RGB, convert to BGR for consistently using cv2 (though mediapipe wants RGB)
+            # Assuming input ndarray might be RGB if coming from PIL. 
+            # Safest is to treat as BGR if read by cv2, or convert to RGB immediately.
+            # Let's rely on image_bytes being the primary input format (raw bytes).
+            pass
+        
+        if image is None:
+            # Fallback or error
+            return np.zeros((224, 224, 3), dtype=np.uint8)
+
+        # Convert to RGB for MediaPipe
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        if not self.face_detector:
+            return rgb
+
+        # Process
+        try:
+            results = self.face_detector.process(rgb)
+            
+            if results.detections:
+                # Take the first face (highest confidence usually)
+                detection = results.detections[0]
+                bbox = detection.location_data.relative_bounding_box
+                
+                h, w, _ = image.shape
+                x = int(bbox.xmin * w)
+                y = int(bbox.ymin * h)
+                width = int(bbox.width * w)
+                height = int(bbox.height * h)
+                
+                # Ensure within bounds
+                x = max(0, x)
+                y = max(0, y)
+                width = min(w - x, width)
+                height = min(h - y, height)
+                
+                if width > 0 and height > 0:
+                    face = rgb[y:y+height, x:x+width]
+                    print(f"Face detected and cropped: {width}x{height}")
+                    return face
+            
+        except Exception as e:
+            print(f"Face detection failed during process: {e}")
+        
+        print("No face detected, using original image.")
+        return rgb
+
     # MAIN ENTRY POINT
     
     def analyze(self, image_bytes: bytes | np.ndarray) -> dict[str, Any]:
@@ -194,13 +275,17 @@ class FaceAnalysisPipeline:
         self.load_models_from_db()
 
         result = {}
+        
+        # Detect and Crop Face
+        # The result is already a numpy array (RGB)
+        cropped_face = self.detect_and_crop(image_bytes)
 
         if self.skin_types_model:
-            processed_types = self.preprocess(image_bytes, target_model=self.skin_types_model)
+            processed_types = self.preprocess(cropped_face, target_model=self.skin_types_model)
             result["skin_type"] = self.predict_skin_type(processed_types)
         
         if self.skin_concerns_model:
-            processed_concerns = self.preprocess(image_bytes, target_model=self.skin_concerns_model)
+            processed_concerns = self.preprocess(cropped_face, target_model=self.skin_concerns_model)
             
             # Predict concerns
             concerns_result = self.predict_skin_concerns(processed_concerns)
@@ -218,9 +303,21 @@ class FaceAnalysisPipeline:
                 except AttributeError:
                     pass
 
+                # Note: Generate heatmaps needs the raw cropped image, not the preprocessed one?
+                # The existing function likely takes image bytes or array.
+                # Let's check `generate_multi_skin_concern_heatmaps` signature in previous context or next step.
+                # It was imported. Assuming it can handle the array.
+                # Just passing cropped_face (RGB numpy array) should be fine if it handles it.
+                
+                # However, GradCAM usually needs the preprocessed input to run the model, 
+                # but to overlay, it needs the original image.
+                # Looking at cnn.py imports: `from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps`
+                
+                # Let's pass the cropped_face (as bytes or array) 
+                
                 heatmaps = generate_multi_skin_concern_heatmaps(
                     self.skin_concerns_model,
-                    image_bytes,
+                    cropped_face, # Passing the cropped RGB array
                     self.skin_concerns_classes,
                     target_size=target_size
                 )

@@ -80,7 +80,9 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     
     Args:
         model: Keras skin concern model
-        img_bytes: Input image bytes
+    Args:
+        model: Keras skin concern model
+        img_bytes: Input image (bytes or numpy array)
         class_names: List of skin concern class names
         last_conv_layer_name: Name of last conv layer in model (optional, auto-detected if None)
 
@@ -91,9 +93,13 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
         last_conv_layer_name = find_last_conv_layer(model)
 
     # Load original image
-    # We use PIL to read bytes, then convert to numpy for CV2 operations
-    pil_img = Image.open(BytesIO(img_bytes)).convert('RGB')
-    img_rgb = np.array(pil_img)
+    if isinstance(img_bytes, bytes):
+        pil_img = Image.open(BytesIO(img_bytes)).convert('RGB')
+        img_rgb = np.array(pil_img)
+    elif isinstance(img_bytes, np.ndarray):
+        img_rgb = img_bytes
+    else:
+        raise ValueError("Unsupported image type provided to GradCAM generator")
     
     # Preprocess for model using shared utility
     # returns (1, H, W, 3)
