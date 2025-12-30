@@ -32,14 +32,20 @@ def verify():
         image_bytes = f.read()
         
     # Test 1: Detect and Crop
-    print("\n--- Testing detect_and_crop ---")
-    cropped = pipeline.detect_and_crop(image_bytes)
-    print(f"Original logic would just process. Cropped shape: {cropped.shape}")
+    print("\n--- Testing detect_and_crop_face ---")
     
-    # Save cropped image
-    cropped_bgr = cv2.cvtColor(cropped, cv2.COLOR_RGB2BGR)
-    cv2.imwrite("debug_cropped.jpg", cropped_bgr)
-    print("Saved debug_cropped.jpg")
+    # Manually decode to BGR for this specific test
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    
+    cropped_bgr = pipeline.detect_and_crop_face(image_bgr)
+    
+    if cropped_bgr is not None:
+        print(f"Cropped shape: {cropped_bgr.shape}")
+        cv2.imwrite("debug_cropped.jpg", cropped_bgr) # Save as BGR directly
+        print("Saved debug_cropped.jpg")
+    else:
+        print("Detection failed (returned None).")
     
     # Test 2: Full Analyze
     print("\n--- Testing analyze ---")

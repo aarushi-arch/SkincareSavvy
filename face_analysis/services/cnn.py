@@ -37,11 +37,11 @@ class FaceAnalysisPipeline:
             self.mp_face_detection = mp.solutions.face_detection
             self.face_detector = self.mp_face_detection.FaceDetection(
                 model_selection=1, 
-                min_detection_confidence=0.6
+                min_detection_confidence=0.3
             )
             print("MediaPipe Face Detection initialized successfully")
         except AttributeError:
-            print("MediaPipe Face Detection NOT available (solutions missing). Using full image.")
+            print("MediaPipe Face Detection NOT available (solutions missing).")
             self.face_detector = None
         except Exception as e:
             print(f"MediaPipe Face Detection initialization failed: {e}")
@@ -207,64 +207,63 @@ class FaceAnalysisPipeline:
     
     # FACE DETECTION
     
-    def detect_and_crop(self, image_bytes: bytes | np.ndarray) -> np.ndarray:
+    def detect_and_crop_face(self, image_bgr: np.ndarray) -> np.ndarray | None:
         """
-        Detect face and crop the image. 
-        Returns RGB numpy array of the face (or original image if no face).
+        Detect face and crop the image using MediaPipe.
+        Validates face size and crops only skin-relevant region.
+        Args:
+            image_bgr: Input image in BGR format.
+        Returns:
+            Cropped face (BGR) or None if detection failed or face invalid.
         """
-        # Convert bytes to numpy array (if needed)
-        if isinstance(image_bytes, bytes):
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        elif isinstance(image_bytes, np.ndarray):
-            image = image_bytes
-            # If RGB, convert to BGR for consistently using cv2 (though mediapipe wants RGB)
-            # Assuming input ndarray might be RGB if coming from PIL. 
-            # Safest is to treat as BGR if read by cv2, or convert to RGB immediately.
-            # Let's rely on image_bytes being the primary input format (raw bytes).
-            pass
-        
-        if image is None:
-            # Fallback or error
-            return np.zeros((224, 224, 3), dtype=np.uint8)
+        if self.face_detector is None:
+            print("❌ Face detector not available.")
+            return None
 
-        # Convert to RGB for MediaPipe
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        if not self.face_detector:
-            return rgb
+        # Convert BGR → RGB (CRITICAL)
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        results = self.face_detector.process(image_rgb)
 
-        # Process
-        try:
-            results = self.face_detector.process(rgb)
-            
-            if results.detections:
-                # Take the first face (highest confidence usually)
-                detection = results.detections[0]
-                bbox = detection.location_data.relative_bounding_box
-                
-                h, w, _ = image.shape
-                x = int(bbox.xmin * w)
-                y = int(bbox.ymin * h)
-                width = int(bbox.width * w)
-                height = int(bbox.height * h)
-                
-                # Ensure within bounds
-                x = max(0, x)
-                y = max(0, y)
-                width = min(w - x, width)
-                height = min(h - y, height)
-                
-                if width > 0 and height > 0:
-                    face = rgb[y:y+height, x:x+width]
-                    print(f"Face detected and cropped: {width}x{height}")
-                    return face
-            
-        except Exception as e:
-            print(f"Face detection failed during process: {e}")
+        if not results.detections:
+            print("❌ No face detected")
+            return None
+
+        # Take the first detected face
+        detection = results.detections[0]
+        bbox = detection.location_data.relative_bounding_box
+
+        h, w, _ = image_bgr.shape
+        x1 = max(0, int(bbox.xmin * w))
+        y1 = max(0, int(bbox.ymin * h))
+        x2 = min(w, int((bbox.xmin + bbox.width) * w))
+        y2 = min(h, int((bbox.ymin + bbox.height) * h))
+
+        # Calculate face dimensions
+        face_width = x2 - x1
+        face_height = y2 - y1
+        min_face_size = 50  # Reject faces smaller than 50px
         
-        print("No face detected, using original image.")
-        return rgb
+        # Validate face size
+        if face_width < min_face_size or face_height < min_face_size:
+            print(f"❌ Face too small: {face_width}x{face_height} (minimum: {min_face_size}x{min_face_size})")
+            return None
+        
+        # Extract skin-relevant region with slight padding
+        padding_x = int(face_width * 0.05)  # 5% padding
+        padding_y = int(face_height * 0.05)
+        x1_padded = max(0, x1 - padding_x)
+        y1_padded = max(0, y1 - padding_y)
+        x2_padded = min(w, x2 + padding_x)
+        y2_padded = min(h, y2 + padding_y)
+        
+        face_crop = image_bgr[y1_padded:y2_padded, x1_padded:x2_padded]
+
+        if face_crop.size == 0:
+            print("❌ Failed to crop face region")
+            return None
+
+        print(f"✅ Face detected and cropped: {face_crop.shape}")
+        return face_crop
 
     # MAIN ENTRY POINT
     
@@ -277,8 +276,34 @@ class FaceAnalysisPipeline:
         result = {}
         
         # Detect and Crop Face
-        # The result is already a numpy array (RGB)
-        cropped_face = self.detect_and_crop(image_bytes)
+        # 1. Convert bytes to BGR numpy array
+        if isinstance(image_bytes, bytes):
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        elif isinstance(image_bytes, np.ndarray):
+             # Assuming input array is RGB (standard for this pipeline/PIL) but user code wants BGR input to convert back to RGB?
+             # Wait, if input is from PIL (analyze typically called with bytes from view or PIL array)
+             # Let's assume standard flow: bytes -> decode -> BGR (via cv2)
+             # If array, assume it might be RGB or BGR? 
+             # Safe assumption: `analyze` called with bytes in `views.py`.
+             image_bgr = image_bytes
+             # If it was RGB, we should convert to BGR for `detect_and_crop_face` to work as designed 
+             # (it does BGR->RGB internally). 
+             # But let's stick to the primary path: bytes.
+        
+        if image_bgr is None:
+             print("Failed to decode image")
+             return {}
+
+        # 2. Run Detection
+        cropped_face_bgr = self.detect_and_crop_face(image_bgr)
+        
+        if cropped_face_bgr is None:
+            # Strict: reject if face detection fails
+            return {"error": "Face detection failed or face too small"}
+        
+        # Convert BGR to RGB for analysis models
+        cropped_face = cv2.cvtColor(cropped_face_bgr, cv2.COLOR_BGR2RGB)
 
         if self.skin_types_model:
             processed_types = self.preprocess(cropped_face, target_model=self.skin_types_model)
