@@ -32,20 +32,22 @@ class FaceAnalysisPipeline:
         self._models_loaded = False
         
         
-        # Initialize MediaPipe Face Detection
+        # Initialize MediaPipe FaceMesh
         try:
-            self.mp_face_detection = mp.solutions.face_detection
-            self.face_detector = self.mp_face_detection.FaceDetection(
-                model_selection=1, 
+            self.mp_face_mesh = mp.solutions.face_mesh
+            self.face_mesh = self.mp_face_mesh.FaceMesh(
+                static_image_mode=True,
+                max_num_faces=1,
+                refine_landmarks=False,
                 min_detection_confidence=0.3
             )
-            print("MediaPipe Face Detection initialized successfully")
+            print("MediaPipe FaceMesh initialized successfully")
         except AttributeError:
-            print("MediaPipe Face Detection NOT available (solutions missing).")
-            self.face_detector = None
+            print("MediaPipe FaceMesh NOT available (solutions missing).")
+            self.face_mesh = None
         except Exception as e:
-            print(f"MediaPipe Face Detection initialization failed: {e}")
-            self.face_detector = None
+            print(f"MediaPipe FaceMesh initialization failed: {e}")
+            self.face_mesh = None
 
     
     # MODEL LOADING
@@ -209,60 +211,51 @@ class FaceAnalysisPipeline:
     
     def detect_and_crop_face(self, image_bgr: np.ndarray) -> np.ndarray | None:
         """
-        Detect face and crop the image using MediaPipe.
+        Detect face using FaceMesh landmarks and crop the image.
         Validates face size and crops only skin-relevant region.
         Args:
             image_bgr: Input image in BGR format.
         Returns:
             Cropped face (BGR) or None if detection failed or face invalid.
         """
-        if self.face_detector is None:
-            print("❌ Face detector not available.")
+        if self.face_mesh is None:
+            print("❌ FaceMesh not available")
             return None
-
-        # Convert BGR → RGB (CRITICAL)
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        results = self.face_detector.process(image_rgb)
-
-        if not results.detections:
-            print("❌ No face detected")
-            return None
-
-        # Take the first detected face
-        detection = results.detections[0]
-        bbox = detection.location_data.relative_bounding_box
 
         h, w, _ = image_bgr.shape
-        x1 = max(0, int(bbox.xmin * w))
-        y1 = max(0, int(bbox.ymin * h))
-        x2 = min(w, int((bbox.xmin + bbox.width) * w))
-        y2 = min(h, int((bbox.ymin + bbox.height) * h))
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
-        # Calculate face dimensions
-        face_width = x2 - x1
-        face_height = y2 - y1
-        min_face_size = 50  # Reject faces smaller than 50px
-        
+        results = self.face_mesh.process(image_rgb)
+
+        if not results.multi_face_landmarks:
+            print("❌ No face landmarks detected")
+            return None
+
+        face_landmarks = results.multi_face_landmarks[0]
+
+        xs = [int(lm.x * w) for lm in face_landmarks.landmark]
+        ys = [int(lm.y * h) for lm in face_landmarks.landmark]
+
+        x1, x2 = max(0, min(xs)), min(w, max(xs))
+        y1, y2 = max(0, min(ys)), min(h, max(ys))
+
         # Validate face size
-        if face_width < min_face_size or face_height < min_face_size:
-            print(f"❌ Face too small: {face_width}x{face_height} (minimum: {min_face_size}x{min_face_size})")
-            return None
-        
-        # Extract skin-relevant region with slight padding
-        padding_x = int(face_width * 0.05)  # 5% padding
-        padding_y = int(face_height * 0.05)
-        x1_padded = max(0, x1 - padding_x)
-        y1_padded = max(0, y1 - padding_y)
-        x2_padded = min(w, x2 + padding_x)
-        y2_padded = min(h, y2 + padding_y)
-        
-        face_crop = image_bgr[y1_padded:y2_padded, x1_padded:x2_padded]
-
-        if face_crop.size == 0:
-            print("❌ Failed to crop face region")
+        if (x2 - x1) < 80 or (y2 - y1) < 80:
+            print("❌ Face too small")
             return None
 
-        print(f"✅ Face detected and cropped: {face_crop.shape}")
+        # Crop with padding
+        pad_x = int(0.05 * (x2 - x1))
+        pad_y = int(0.10 * (y2 - y1))
+
+        x1 = max(0, x1 - pad_x)
+        y1 = max(0, y1 - pad_y)
+        x2 = min(w, x2 + pad_x)
+        y2 = min(h, y2 + pad_y)
+
+        face_crop = image_bgr[y1:y2, x1:x2]
+
+        print("✅ Face detected using FaceMesh")
         return face_crop
 
     # MAIN ENTRY POINT
