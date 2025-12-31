@@ -32,22 +32,17 @@ class FaceAnalysisPipeline:
         self._models_loaded = False
         
         
-        # Initialize MediaPipe FaceMesh
+        # Initialize MediaPipe FaceDetection (better for face detection)
         try:
-            self.mp_face_mesh = mp.solutions.face_mesh
-            self.face_mesh = self.mp_face_mesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=1,
-                refine_landmarks=False,
-                min_detection_confidence=0.3
+            self.mp_face_detection = mp.solutions.face_detection
+            self.face_detector = self.mp_face_detection.FaceDetection(
+                model_selection=1,          # Best for selfies/close-up images
+                min_detection_confidence=0.6
             )
-            print("MediaPipe FaceMesh initialized successfully")
-        except AttributeError:
-            print("MediaPipe FaceMesh NOT available (solutions missing).")
-            self.face_mesh = None
+            print("✅ MediaPipe FaceDetection initialized successfully")
         except Exception as e:
-            print(f"MediaPipe FaceMesh initialization failed: {e}")
-            self.face_mesh = None
+            print(f"❌ MediaPipe FaceDetection initialization failed: {e}")
+            self.face_detector = None
 
     
     # MODEL LOADING
@@ -206,57 +201,177 @@ class FaceAnalysisPipeline:
         }
 
     
+    # ===============================
+    # FACE DETECTION & PREPROCESSING
+    # ===============================
     
-    # FACE DETECTION
-    
-    def detect_and_crop_face(self, image_bgr: np.ndarray) -> np.ndarray | None:
+    def detect_face(self, image_bgr: np.ndarray):
         """
-        Detect face using FaceMesh landmarks and crop the image.
-        Validates face size and crops only skin-relevant region.
+        Detects face using MediaPipe FaceDetection.
+        
         Args:
-            image_bgr: Input image in BGR format.
+            image_bgr: Input image in BGR format
+            
         Returns:
-            Cropped face (BGR) or None if detection failed or face invalid.
+            MediaPipe detection results or None
         """
-        if self.face_mesh is None:
-            print("❌ FaceMesh not available")
+        if self.face_detector is None:
+            print("❌ FaceDetection not available")
             return None
+            
+        rgb_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        results = self.face_detector.process(rgb_image)
+        return results
+
+    def validate_face(self, image_bgr: np.ndarray, results) -> tuple[bool, str]:
+        """
+        Validates detected face.
+        
+        Args:
+            image_bgr: Input image in BGR format
+            results: MediaPipe detection results
+            
+        Returns:
+            Tuple of (is_valid, message)
+        """
+        if results is None or not results.detections:
+            return False, "No face detected. Please upload a clear selfie with your face visible."
+
+        if len(results.detections) > 1:
+            return False, "Multiple faces detected. Please upload an image with only one face."
+
+        detection = results.detections[0]
+        confidence = detection.score[0]
+
+        if confidence < 0.6:
+            return False, f"Low confidence face detection ({confidence:.2%}). Please use a clearer image."
 
         h, w, _ = image_bgr.shape
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        bbox = detection.location_data.relative_bounding_box
+        face_width = bbox.width * w
+        face_height = bbox.height * h
 
-        results = self.face_mesh.process(image_rgb)
+        if face_width < 100 or face_height < 100:
+            return False, "Face too small. Please move closer or use a higher resolution image."
 
-        if not results.multi_face_landmarks:
-            print("❌ No face landmarks detected")
+        return True, "Valid face detected"
+
+    def crop_face(self, image_bgr: np.ndarray, detection) -> np.ndarray | None:
+        """
+        Crops face region from image.
+        
+        Args:
+            image_bgr: Input image in BGR format
+            detection: MediaPipe detection object
+            
+        Returns:
+            Cropped face image or None
+        """
+        h, w, _ = image_bgr.shape
+        bbox = detection.location_data.relative_bounding_box
+
+        x = int(bbox.xmin * w)
+        y = int(bbox.ymin * h)
+        width = int(bbox.width * w)
+        height = int(bbox.height * h)
+
+        # Clamp values
+        x = max(0, x)
+        y = max(0, y)
+        width = min(w - x, width)
+        height = min(h - y, height)
+
+        face_img = image_bgr[y:y + height, x:x + width]
+        
+        if face_img.size == 0:
             return None
+            
+        return face_img
 
-        face_landmarks = results.multi_face_landmarks[0]
+    def normalize_lighting(self, face_img: np.ndarray) -> np.ndarray:
+        """
+        Normalizes lighting using LAB color space.
+        
+        Args:
+            face_img: Face image in BGR format
+            
+        Returns:
+            Lighting-normalized image
+        """
+        lab = cv2.cvtColor(face_img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
 
-        xs = [int(lm.x * w) for lm in face_landmarks.landmark]
-        ys = [int(lm.y * h) for lm in face_landmarks.landmark]
+        # Equalize the L-channel
+        l = cv2.equalizeHist(l)
 
-        x1, x2 = max(0, min(xs)), min(w, max(xs))
-        y1, y2 = max(0, min(ys)), min(h, max(ys))
+        lab = cv2.merge((l, a, b))
+        normalized = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        return normalized
 
-        # Validate face size
-        if (x2 - x1) < 80 or (y2 - y1) < 80:
-            print("❌ Face too small")
-            return None
+    def denoise_image(self, face_img: np.ndarray) -> np.ndarray:
+        """
+        Reduces noise while preserving skin texture.
+        
+        Args:
+            face_img: Face image in BGR format
+            
+        Returns:
+            Denoised image
+        """
+        return cv2.bilateralFilter(face_img, d=9, sigmaColor=75, sigmaSpace=75)
 
-        # Crop with padding
-        pad_x = int(0.05 * (x2 - x1))
-        pad_y = int(0.10 * (y2 - y1))
+    def prepare_for_cnn(self, face_img: np.ndarray, target_size: tuple[int, int] = (224, 224)) -> np.ndarray:
+        """
+        Resizes and normalizes image for CNN.
+        
+        Args:
+            face_img: Face image in BGR format
+            target_size: Target size for CNN input
+            
+        Returns:
+            Preprocessed image ready for CNN
+        """
+        face_img = cv2.resize(face_img, target_size)
+        face_img = face_img.astype(np.float32) / 255.0
+        return face_img
 
-        x1 = max(0, x1 - pad_x)
-        y1 = max(0, y1 - pad_y)
-        x2 = min(w, x2 + pad_x)
-        y2 = min(h, y2 + pad_y)
+    def skincare_preprocess(self, image_bgr: np.ndarray) -> tuple[np.ndarray | None, str]:
+        """
+        Complete preprocessing pipeline for SkincareSavvy.
+        
+        Args:
+            image_bgr: Input image in BGR format
+            
+        Returns:
+            Tuple of (preprocessed_face, status_message)
+        """
+        print("🔍 Step 1: Detecting face in uploaded image...")
+        results = self.detect_face(image_bgr)
 
-        face_crop = image_bgr[y1:y2, x1:x2]
+        valid, message = self.validate_face(image_bgr, results)
+        if not valid:
+            print(f"❌ {message}")
+            return None, message
 
-        print("✅ Face detected using FaceMesh")
-        return face_crop
+        print(f"✅ {message}")
+        
+        detection = results.detections[0]
+        face = self.crop_face(image_bgr, detection)
+
+        if face is None or face.size == 0:
+            return None, "Face crop failed"
+
+        print("🔧 Step 2: Normalizing lighting...")
+        face = self.normalize_lighting(face)
+        
+        print("🔧 Step 3: Reducing noise...")
+        face = self.denoise_image(face)
+        
+        # Note: Don't prepare_for_cnn here - we'll do that per model
+        # since different models may have different input sizes
+        
+        print("✅ Preprocessing complete")
+        return face, "Ready for CNN"
 
     # MAIN ENTRY POINT
     
@@ -268,42 +383,35 @@ class FaceAnalysisPipeline:
 
         result = {}
         
-        # Detect and Crop Face
-        # 1. Convert bytes to BGR numpy array
+        
+        # Step 1: Convert bytes to BGR numpy array
         if isinstance(image_bytes, bytes):
             nparr = np.frombuffer(image_bytes, np.uint8)
             image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         elif isinstance(image_bytes, np.ndarray):
-             # Assuming input array is RGB (standard for this pipeline/PIL) but user code wants BGR input to convert back to RGB?
-             # Wait, if input is from PIL (analyze typically called with bytes from view or PIL array)
-             # Let's assume standard flow: bytes -> decode -> BGR (via cv2)
-             # If array, assume it might be RGB or BGR? 
-             # Safe assumption: `analyze` called with bytes in `views.py`.
-             image_bgr = image_bytes
-             # If it was RGB, we should convert to BGR for `detect_and_crop_face` to work as designed 
-             # (it does BGR->RGB internally). 
-             # But let's stick to the primary path: bytes.
+            # Assume it's already a BGR array from cv2
+            image_bgr = image_bytes
         
         if image_bgr is None:
-             print("Failed to decode image")
-             return {}
+            print("❌ Failed to decode image")
+            return {"error": "Invalid image format"}
 
-        # 2. Run Detection
-        cropped_face_bgr = self.detect_and_crop_face(image_bgr)
+        # Step 2: Run comprehensive preprocessing pipeline
+        cropped_face_bgr, status_message = self.skincare_preprocess(image_bgr)
         
         if cropped_face_bgr is None:
-            # Strict: reject if face detection fails
-            return {"error": "Face detection failed or face too small"}
+            # Return detailed error message from preprocessing
+            return {"error": status_message}
         
-        # Convert BGR to RGB for analysis models
-        cropped_face = cv2.cvtColor(cropped_face_bgr, cv2.COLOR_BGR2RGB)
+        # Convert BGR to RGB for CNN models (they expect RGB)
+        cropped_face_rgb = cv2.cvtColor(cropped_face_bgr, cv2.COLOR_BGR2RGB)
 
         if self.skin_types_model:
-            processed_types = self.preprocess(cropped_face, target_model=self.skin_types_model)
+            processed_types = self.preprocess(cropped_face_rgb, target_model=self.skin_types_model)
             result["skin_type"] = self.predict_skin_type(processed_types)
         
         if self.skin_concerns_model:
-            processed_concerns = self.preprocess(cropped_face, target_model=self.skin_concerns_model)
+            processed_concerns = self.preprocess(cropped_face_rgb, target_model=self.skin_concerns_model)
             
             # Predict concerns
             concerns_result = self.predict_skin_concerns(processed_concerns)
@@ -335,10 +443,20 @@ class FaceAnalysisPipeline:
                 
                 heatmaps = generate_multi_skin_concern_heatmaps(
                     self.skin_concerns_model,
-                    cropped_face, # Passing the cropped RGB array
+                    cropped_face_rgb, # Passing the cropped RGB array
                     self.skin_concerns_classes,
                     target_size=target_size
                 )
+                
+                # DEBUG: Inspect heatmap structure
+                print("Type of heatmaps:", type(heatmaps))
+                print("Number of heatmaps:", len(heatmaps))
+                
+                if len(heatmaps) > 0:
+                    print("Keys in one heatmap:", heatmaps[0].keys())
+                    print("Heatmap class:", heatmaps[0]["class"])
+                    print("Heatmap array shape:", np.array(heatmaps[0]["heatmap"]).shape)
+                    print("Heatmap max value:", np.max(heatmaps[0]["heatmap"]))
                 
                 # Merge heatmaps into predictions
                 # Iterate through predictions and attach matches

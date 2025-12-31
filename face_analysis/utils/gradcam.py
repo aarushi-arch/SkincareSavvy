@@ -138,6 +138,7 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
             heatmaps.append({
                 'class': class_name,
                 'confidence': float(preds[i]),
+                'heatmap': heatmap,
                 'heatmap_img': heatmap_base64
             })
         except Exception as e:
