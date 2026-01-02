@@ -39,10 +39,24 @@ class FaceAnalysisPipeline:
                 model_selection=1,          # Best for selfies/close-up images
                 min_detection_confidence=0.6
             )
-            print("✅ MediaPipe FaceDetection initialized successfully")
+            print("MediaPipe FaceDetection initialized successfully")
         except Exception as e:
-            print(f"❌ MediaPipe FaceDetection initialization failed: {e}")
+            print(f"MediaPipe FaceDetection initialization failed: {e}")
             self.face_detector = None
+        
+        # Initialize MediaPipe FaceMesh (for eye landmark detection)
+        try:
+            self.mp_face_mesh = mp.solutions.face_mesh
+            self.face_mesh = self.mp_face_mesh.FaceMesh(
+                static_image_mode=True,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=0.6
+            )
+            print("✅ MediaPipe FaceMesh initialized successfully")
+        except Exception as e:
+            print(f"MediaPipe FaceMesh initialization failed: {e}")
+            self.face_mesh = None
 
     
     # MODEL LOADING
@@ -288,6 +302,52 @@ class FaceAnalysisPipeline:
             
         return face_img
 
+    def mask_eyes(self, face_img: np.ndarray) -> np.ndarray:
+        """
+        Masks both eyes using MediaPipe FaceMesh landmarks.
+        This excludes eyes from skin analysis.
+        
+        Args:
+            face_img: Face image in BGR format
+            
+        Returns:
+            Face image with eyes masked (blacked out)
+        """
+        if self.face_mesh is None:
+            print("⚠️ FaceMesh not available, skipping eye masking")
+            return face_img
+        
+        h, w, _ = face_img.shape
+        rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+        results = self.face_mesh.process(rgb)
+
+        if not results.multi_face_landmarks:
+            print("⚠️ No face landmarks detected for eye masking")
+            return face_img
+
+        # Eye landmark indices from MediaPipe FaceMesh
+        LEFT_EYE = [33, 133, 160, 159, 158, 157, 173]
+        RIGHT_EYE = [362, 263, 387, 386, 385, 384, 398]
+
+        # Create white mask (255 = keep, 0 = remove)
+        mask = np.ones((h, w), dtype=np.uint8) * 255
+
+        for landmarks in results.multi_face_landmarks:
+            for eye in [LEFT_EYE, RIGHT_EYE]:
+                points = []
+                for idx in eye:
+                    lm = landmarks.landmark[idx]
+                    points.append((int(lm.x * w), int(lm.y * h)))
+
+                points = np.array(points, dtype=np.int32)
+                # Fill eye region with 0 (will be masked out)
+                cv2.fillPoly(mask, [points], 0)
+
+        # Apply mask to face image
+        masked_face = cv2.bitwise_and(face_img, face_img, mask=mask)
+        print("✅ Eyes masked successfully")
+        return masked_face
+
     def normalize_lighting(self, face_img: np.ndarray) -> np.ndarray:
         """
         Normalizes lighting using LAB color space.
@@ -337,13 +397,8 @@ class FaceAnalysisPipeline:
 
     def skincare_preprocess(self, image_bgr: np.ndarray) -> tuple[np.ndarray | None, str]:
         """
-        Complete preprocessing pipeline for SkincareSavvy.
-        
-        Args:
-            image_bgr: Input image in BGR format
-            
-        Returns:
-            Tuple of (preprocessed_face, status_message)
+        Minimal preprocessing that MATCHES training preprocessing.
+        Uses face detection only for validation and cropping.
         """
         print("🔍 Step 1: Detecting face in uploaded image...")
         results = self.detect_face(image_bgr)
@@ -354,23 +409,20 @@ class FaceAnalysisPipeline:
             return None, message
 
         print(f"✅ {message}")
-        
+
         detection = results.detections[0]
         face = self.crop_face(image_bgr, detection)
 
         if face is None or face.size == 0:
             return None, "Face crop failed"
 
-        print("🔧 Step 2: Normalizing lighting...")
-        face = self.normalize_lighting(face)
-        
-        print("🔧 Step 3: Reducing noise...")
-        face = self.denoise_image(face)
-        
-        # Note: Don't prepare_for_cnn here - we'll do that per model
-        # since different models may have different input sizes
-        
-        print("✅ Preprocessing complete")
+        # 🚫 IMPORTANT:
+        # NO eye masking
+        # NO lighting normalization
+        # NO denoising
+        # These were NOT used during training
+
+        print("✅ Face cropped successfully (no visual modification applied)")
         return face, "Ready for CNN"
 
     # MAIN ENTRY POINT

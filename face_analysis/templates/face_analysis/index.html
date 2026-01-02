@@ -124,10 +124,10 @@
                 <div class="upload-actions">
                     <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
                     <div id="loading-indicator"
-                        style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600;">
+                        style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600; align-items: center;">
                         <span
-                            style="display: inline-block; width: 16px; height: 16px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle;"></span>
-                        Processing...
+                            style="display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.75rem;"></span>
+                        <span id="loading-status-text">Processing...</span>
                     </div>
                 </div>
             </form>
@@ -477,12 +477,35 @@
 
             if (form) {
                 form.addEventListener('submit', function (e) {
-                    // Don't prevent default - let form submit normally
-                    // Keep button visible but show loading
-                    scanButton.disabled = true;
                     loadingIndicator.style.display = 'inline-flex';
+                    scanButton.disabled = true;
                     scanButton.style.opacity = '0.6';
-                    scanButton.textContent = 'Processing...';
+                    scanButton.textContent = 'Analysing...';
+
+                    const statusText = document.getElementById('loading-status-text');
+                    const messages = [
+                        "🔍 Initializing MediaPipe...",
+                        "🎯 Detecting face in image...",
+                        "✅ Face detected and validated",
+                        "🔧 Applying skin extraction...",
+                        "✨ Predicting skin type...",
+                        "🕵️ Identifying skin concerns...",
+                        "🗺️ Generating visual heatmaps...",
+                        "🛍️ Finalizing expert picks..."
+                    ];
+
+                    let currentStep = 0;
+                    statusText.textContent = messages[0];
+
+                    const interval = setInterval(() => {
+                        currentStep++;
+                        if (currentStep < messages.length) {
+                            statusText.textContent = messages[currentStep];
+                        } else {
+                            // If it's taking too long, stay on the last message
+                            clearInterval(interval);
+                        }
+                    }, 1200); // Rotate every 1.2s for a smooth visual experience
                 });
             }
 
