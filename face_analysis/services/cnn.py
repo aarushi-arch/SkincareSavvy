@@ -53,7 +53,7 @@ class FaceAnalysisPipeline:
                 refine_landmarks=True,
                 min_detection_confidence=0.6
             )
-            print("✅ MediaPipe FaceMesh initialized successfully")
+            print("MediaPipe FaceMesh initialized successfully")
         except Exception as e:
             print(f"MediaPipe FaceMesh initialization failed: {e}")
             self.face_mesh = None
@@ -497,7 +497,8 @@ class FaceAnalysisPipeline:
                     self.skin_concerns_model,
                     cropped_face_rgb, # Passing the cropped RGB array
                     self.skin_concerns_classes,
-                    target_size=target_size
+                    target_size=target_size,
+                    threshold=0.6     # Balanced sensitivity for problem areas
                 )
                 
                 # DEBUG: Inspect heatmap structure
@@ -507,8 +508,7 @@ class FaceAnalysisPipeline:
                 if len(heatmaps) > 0:
                     print("Keys in one heatmap:", heatmaps[0].keys())
                     print("Heatmap class:", heatmaps[0]["class"])
-                    print("Heatmap array shape:", np.array(heatmaps[0]["heatmap"]).shape)
-                    print("Heatmap max value:", np.max(heatmaps[0]["heatmap"]))
+                    print("Heatmap base64 length:", len(heatmaps[0]["heatmap"]))
                 
                 # Merge heatmaps into predictions
                 # Iterate through predictions and attach matches
@@ -517,7 +517,7 @@ class FaceAnalysisPipeline:
                         # Find matching heatmap
                         match = next((h for h in heatmaps if h['class'] == pred['class']), None)
                         if match:
-                            pred['heatmap'] = match['heatmap_img']
+                            pred['heatmap'] = match['heatmap']
                 
                 result["skin_concerns"] = concerns_result
             except Exception as e:

@@ -190,31 +190,22 @@
             {% if analysis_result.skin_concerns.predictions %}
             <h3>Skin Concerns</h3>
 
-            <!-- Always show the first/top prediction -->
-            <p class="result-item">
-                <strong>{{ analysis_result.skin_concerns.predictions.0.class|title }}</strong>
-                — {{ analysis_result.skin_concerns.predictions.0.confidence|floatformat:2 }}
-            </p>
-
-            <!-- Loop through predictions and show heatmaps -->
+            <!-- Show all predictions with confidence bars -->
             <div style="margin-top: 1rem;">
                 {% for pred in analysis_result.skin_concerns.predictions %}
-                <div style="margin-bottom: 2rem; border: 1px solid #eee; padding: 1rem; border-radius: 8px;">
-                    <h4
-                        style="margin-top: 0; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                        {{ pred.class|title }}
-                        <span class="muted" style="font-size: 0.9rem; font-weight: normal;">
-                            Confidence: {{ pred.confidence|floatformat:2 }}
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>{{ pred.class|title }}</strong>
+                        <span class="muted" style="font-size: 0.9rem;">
+                            {{ pred.confidence|floatformat:2 }}
                         </span>
-                    </h4>
-
+                    </div>
                     <div style="
                             width: 100%;
-                            height: 10px;
+                            height: 8px;
                             background: #e0e0e0;
                             border-radius: 6px;
                             overflow: hidden;
-                            margin-bottom: 1rem;
                         ">
                         <div style="
                                 width: {% widthratio pred.confidence 1 100 %}%;
@@ -222,22 +213,21 @@
                                 background: linear-gradient(90deg, #ff9f43, #ff6b6b);
                             "></div>
                     </div>
-
-                    {% if pred.heatmap %}
-                    <div style="text-align: center;">
-                        <p class="muted" style="margin-bottom: 0.5rem; font-size: 0.9rem;">Problem Areas (Heatmap)</p>
-                        <img src="data:image/jpeg;base64,{{ pred.heatmap }}" alt="Heatmap for {{ pred.class }}"
-                            style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    </div>
-                    {% else %}
-                    <p class="muted" style="font-size: 0.9rem;">No heatmap available.</p>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
 
-            <!-- Show all predictions toggle (redundant now if we list all above, but good to keep structure if needed later or remove if cleaner) -->
-            <!-- Simplified to just list all with heatmaps as per request to see problem areas -->
+            <!-- Show single heatmap from top prediction -->
+            {% if analysis_result.skin_concerns.predictions.0.heatmap %}
+            <div style="margin-top: 2rem; border: 1px solid #eee; padding: 1.5rem; border-radius: 8px; text-align: center;">
+                <p class="muted" style="margin-bottom: 1rem; font-size: 0.95rem;">Problem Areas Visualization</p>
+                <img src="data:image/jpeg;base64,{{ analysis_result.skin_concerns.predictions.0.heatmap }}" 
+                     alt="Skin concerns heatmap"
+                     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            </div>
+            {% else %}
+            <p class="muted" style="font-size: 0.9rem; margin-top: 1rem;">No heatmap available.</p>
+            {% endif %}
 
             {% else %}
             <p class="result-item" style="color: #dc3545;">
@@ -484,14 +474,14 @@
 
                     const statusText = document.getElementById('loading-status-text');
                     const messages = [
-                        "🔍 Initializing MediaPipe...",
-                        "🎯 Detecting face in image...",
-                        "✅ Face detected and validated",
-                        "🔧 Applying skin extraction...",
-                        "✨ Predicting skin type...",
-                        "🕵️ Identifying skin concerns...",
-                        "🗺️ Generating visual heatmaps...",
-                        "🛍️ Finalizing expert picks..."
+                        "Initializing MediaPipe...",
+                        "Detecting face in image...",
+                        "Face detected and validated",
+                        "Applying skin extraction...",
+                        "Predicting skin type...",
+                        "Identifying skin concerns...",
+                        "Generating visual heatmaps...",
+                        "Finalizing expert picks..."
                     ];
 
                     let currentStep = 0;

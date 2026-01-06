@@ -5,6 +5,12 @@ import base64
 from io import BytesIO
 from PIL import Image
 from face_analysis.utils.image_utils import preprocess_image
+from face_analysis.utils.heatmap_generator import (
+    generate_facial_mesh_with_problem_areas,
+    generate_simplified_mesh_overlay,
+    generate_minimal_white_indicators,
+    convert_heatmap_to_base64
+)
 
 def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
     """
@@ -38,6 +44,9 @@ def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
 
 def overlay_heatmap_with_dots(img_rgb, heatmap, dot_threshold=0.6):
     """
+    Deprecated: Use generate_minimal_white_indicators instead.
+    Kept for backwards compatibility.
+    
     Draws prominent dots where the model strongly focuses.
     """
     h, w, _ = img_rgb.shape
@@ -73,18 +82,18 @@ def find_last_conv_layer(model):
             return layer.name
     raise ValueError("No convolution layer found.")
 
-def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_conv_layer_name=None, target_size=(224, 224)):
+def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_conv_layer_name=None, target_size=(224, 224), alpha=0.3, threshold=0.6):
     """
-    Generate Grad-CAM heatmaps for all classes of interest.
+    Generate Grad-CAM heatmaps for all classes of interest with minimal white indicators.
     Adapted to accept image bytes directly instead of path for efficiency.
     
-    Args:
-        model: Keras skin concern model
     Args:
         model: Keras skin concern model
         img_bytes: Input image (bytes or numpy array)
         class_names: List of skin concern class names
         last_conv_layer_name: Name of last conv layer in model (optional, auto-detected if None)
+        alpha: Transparency for heatmap overlay (lower = more subtle, default 0.3)
+        threshold: Threshold for high-attention areas (default 0.6)
 
     Returns:
         List of dictionaries with heatmaps
@@ -110,36 +119,30 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
 
     heatmaps = []
 
-    # Limit to e.g. top 3 or all? User said "all classes of interest".
-    # Let's do all classes but maybe sort them or just return all.
-    # The snippet loops over class_names.
-    
     for i, class_name in enumerate(class_names):
-        # Only generate heatmap if confidence is somewhat relevant? 
-        # Or just generate for all as requested.
-        
-        # Generate Grad-CAM heatmap for this class
         try:
+            # Generate Grad-CAM heatmap for this class
             heatmap = get_gradcam_heatmap(model, img_array, i, last_conv_layer_name)
             
-            # Use resized image for overlay to match model input size visual
-            # OR overlay on original? 
-            # User snippet: `img_resized = ...; superimposed_img = overlay_heatmap(img_rgb, heatmap)`
-            # Note: img_rgb is the ORIGINAL size in snippet? Yes: `cv2.imread(img_path)`.
-            # So overlay_heatmap receives original size image and small heatmap.
-            # My overlay_heatmap resizes heatmap to img_rgb size. Correct.
-            
-            superimposed_img = overlay_heatmap_with_dots(img_rgb, heatmap)
+            # Generate visualization with facial mesh overlay and problem areas
+            heatmap_visualization = generate_facial_mesh_with_problem_areas(
+                original_image=img_rgb,
+                heatmap=heatmap,
+                threshold=threshold,
+                    mesh_color=(180, 180, 180),      # Professional light gray mesh lines (BGR format)
+                    problem_color=(80, 80, 220),     # Professional red for problem areas (BGR format - R=220 becomes B=220)
+                mesh_thickness=1,                # Thin professional lines
+                problem_thickness=2              # Slightly thicker for problem areas - clear visibility
+            )
 
             # Convert to base64
-            heatmap_base64 = image_to_base64(superimposed_img)
+            heatmap_base64 = convert_heatmap_to_base64(heatmap_visualization)
 
             # Append to results
             heatmaps.append({
                 'class': class_name,
                 'confidence': float(preds[i]),
-                'heatmap': heatmap,
-                'heatmap_img': heatmap_base64
+                'heatmap': heatmap_base64  # This is the base64-encoded visualization
             })
         except Exception as e:
             print(f"Error generating heatmap for {class_name}: {e}")
