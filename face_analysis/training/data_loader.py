@@ -7,7 +7,7 @@ from typing import Generator, Tuple
 
 import numpy as np
 from PIL import Image
-from tensorflow import keras
+import keras
 
 
 class SkinDatasetLoader:

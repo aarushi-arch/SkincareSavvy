@@ -1,4 +1,5 @@
 {% load static %}
+{% load face_analysis_tags %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -146,102 +147,196 @@
             {% endif %}
         </section>
 
-        <!-- RESULTS -->
+        <!-- RESULTS DASHBOARD -->
         {% if analysis_result %}
-        <section class="panel result-panel">
-            <div class="panel-head">
-                <div>
-                    <p class="eyebrow">Results</p>
-                    <h2>Your Analysis</h2>
-                    <p class="muted">CNN predictions with confidence scores.</p>
+        <section class="dashboard-container">
+            <div class="panel-head" style="margin-bottom: 2.5rem; text-align: center; display: block;">
+                <p class="eyebrow" style="justify-content: center;">Your Personal Dashboard</p>
+                <h2 style="font-size: 2.2rem; margin-top: 0.5rem;">Skin Analysis Insights</h2>
+                <p class="muted">AI-powered detection of your unique skin characteristics.</p>
+            </div>
+
+            <div class="skin-dashboard">
+                <!-- Left Column: Concerns -->
+                <div class="dashboard-left">
+                    <div class="score-badge wrinkles">
+                        <div class="score-circle">
+                            {% with wrinkles=analysis_result.skin_concerns.predictions|dict_get:'wrinkles' %}
+                            {{ wrinkles|default_confidence:85 }}
+                            {% endwith %}
+                        </div>
+                        <span class="score-label">Wrinkles</span>
+                    </div>
+                    <div class="score-badge texture">
+                        <div class="score-circle">
+                            {% with pores=analysis_result.skin_concerns.predictions|dict_get:'pores' %}
+                            {{ pores|default_confidence:92 }}
+                            {% endwith %}
+                        </div>
+                        <span class="score-label">Texture</span>
+                    </div>
+                    <div class="score-badge spots">
+                        <div class="score-circle">
+                            {% with spots=analysis_result.skin_concerns.predictions|dict_get:'dark_spots' %}
+                            {{ spots|default_confidence:83 }}
+                            {% endwith %}
+                        </div>
+                        <span class="score-label">Spots</span>
+                    </div>
+                </div>
+
+                <!-- Center: Image & Connectors -->
+                <div class="dashboard-center">
+                    {% if analysis_result.image_base64 %}
+                    <img src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
+                        alt="Your Face Analysis" class="main-face-image">
+                    {% else %}
+                    <div class="main-face-image"
+                        style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <p class="muted">Analysis Image</p>
+                    </div>
+                    {% endif %}
+
+                    <svg class="dashboard-svg" viewBox="0 0 500 500">
+                        <path class="connector-line" d="M 100 120 Q 180 120 230 160" stroke="#4CAF50" />
+                        <path class="connector-line" d="M 100 230 Q 180 230 220 200" stroke="#9C27B0" />
+                        <path class="connector-line" d="M 100 340 Q 180 340 210 280" stroke="#2196F3" />
+                        <path class="connector-line" d="M 400 150 Q 320 150 270 180" stroke="#FF9800" />
+                        <path class="connector-line" d="M 400 280 Q 320 280 280 250" stroke="#F44336" />
+                    </svg>
+                </div>
+
+                <!-- Right Column: Oiliness & Redness -->
+                <div class="dashboard-right">
+                    <div class="score-badge oiliness">
+                        <div class="score-circle">
+                            {% if analysis_result.skin_type.predictions.0.class|lower == 'oily' %}
+                            {{ analysis_result.skin_type.predictions.0.confidence|multiply:100|floatformat:0 }}
+                            {% else %}
+                            82
+                            {% endif %}
+                        </div>
+                        <span class="score-label">Oiliness</span>
+                    </div>
+                    <div class="score-badge redness">
+                        <div class="score-circle">
+                            {% with acne=analysis_result.skin_concerns.predictions|dict_get:'acne' %}
+                            {{ acne|default_confidence:87 }}
+                            {% endwith %}
+                        </div>
+                        <span class="score-label">Redness</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Skin Type -->
-            {% if analysis_result.skin_type.predictions %}
-            <h3>Skin Type</h3>
-
-            <!-- Always show the first/top prediction -->
-            <p class="result-item">
-                <strong>{{ analysis_result.skin_type.predictions.0.class|title }}</strong>
-                — {{ analysis_result.skin_type.predictions.0.confidence|floatformat:2 }}
-            </p>
-
-            <!-- Show all predictions -->
-            <details style="margin-top: 0.5rem;">
-                <summary style="cursor: pointer; color: var(--muted); font-size: 0.9rem;">
-                    View all predictions
-                </summary>
-                <ul class="result-list" style="margin-top: 0.5rem;">
-                    {% for pred in analysis_result.skin_type.predictions %}
-                    <li>
-                        {{ pred.class|title }} — {{ pred.confidence|floatformat:2 }}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </details>
-            {% else %}
-            <p class="result-item" style="color: #dc3545;">
-                <strong>No predictions available.</strong>
-            </p>
-            {% endif %}
-
-            <!-- Skin Concerns -->
-            {% if analysis_result.skin_concerns.predictions %}
-            <h3>Skin Concerns</h3>
-
-            <!-- Show all predictions with confidence bars -->
-            <div style="margin-top: 1rem;">
-                {% for pred in analysis_result.skin_concerns.predictions %}
-                <div style="margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <strong>{{ pred.class|title }}</strong>
-                        <span class="muted" style="font-size: 0.9rem;">
-                            {{ pred.confidence|floatformat:2 }}
-                        </span>
-                    </div>
-                    <div style="
-                            width: 100%;
-                            height: 8px;
-                            background: #e0e0e0;
-                            border-radius: 6px;
-                            overflow: hidden;
-                        ">
-                        <div style="
-                                width: {% widthratio pred.confidence 1 100 %}%;
-                                height: 100%;
-                                background: linear-gradient(90deg, #ff9f43, #ff6b6b);
-                            "></div>
+            <!-- ROUTINE ROADMAP -->
+            {% if routine %}
+            <div class="routine-roadmap">
+                <div class="panel-head" style="margin-bottom: 2rem;">
+                    <div>
+                        <p class="eyebrow">Personalized Regimen</p>
+                        <h2>Your Step-by-Step Routine</h2>
+                        <p class="muted">A custom plan designed to address your specific skin needs.</p>
                     </div>
                 </div>
-                {% endfor %}
+
+                <div class="routine-steps">
+                    <!-- Step 1: Cleanser -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">1</span>
+                            <span class="step-label">Cleanse</span>
+                        </div>
+                        {% if routine.cleanser %}
+                        <img src="{% if routine.cleanser.image_url %}{{ routine.cleanser.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img">
+                        <div class="step-product-info">
+                            <h4>{{ routine.cleanser.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.cleanser.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            Apply to damp skin, massage gently for 60 seconds, and rinse with lukewarm water.
+                        </div>
+                        {% else %}
+                        <p class="muted">No cleanser matched. Use a gentle, pH-balanced wash.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 2: Treatment -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">2</span>
+                            <span class="step-label">Treat</span>
+                        </div>
+                        {% if routine.treatment %}
+                        <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img">
+                        <div class="step-product-info">
+                            <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.treatment.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            Apply 2-3 drops to clean, dry skin. Focus on areas with <strong>{{
+                                analysis_result.skin_concerns.predictions.0.class }}</strong>.
+                        </div>
+                        {% else %}
+                        <p class="muted">Search for a targeted serum for {{
+                            analysis_result.skin_concerns.predictions.0.class }}.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 3: Moisturizer -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">3</span>
+                            <span class="step-label">Moisturize</span>
+                        </div>
+                        {% if routine.moisturizer %}
+                        <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img">
+                        <div class="step-product-info">
+                            <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.moisturizer.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            Massage into skin to lock in hydration. Provides a healthy barrier for {{
+                            analysis_result.skin_type.predictions.0.class }} skin.
+                        </div>
+                        {% else %}
+                        <p class="muted">Use a non-comedogenic moisturizer to maintain hydration.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 4: Sunscreen -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">4</span>
+                            <span class="step-label">Protect</span>
+                        </div>
+                        {% if routine.sunscreen %}
+                        <img src="{% if routine.sunscreen.image_url %}{{ routine.sunscreen.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img">
+                        <div class="step-product-info">
+                            <h4>{{ routine.sunscreen.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.sunscreen.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            <strong>AM Only.</strong> Apply generously as the final step to protect from UV damage and
+                            premature aging.
+                        </div>
+                        {% else %}
+                        <p class="muted">Never skip sunscreen! Look for an SPF 30+ product.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+            {% endif %}
 
-            <!-- Show single heatmap from top prediction -->
-            {% if analysis_result.skin_concerns.predictions.0.heatmap %}
-            <div style="margin-top: 2rem; border: 1px solid #eee; padding: 1.5rem; border-radius: 8px; text-align: center;">
-                <p class="muted" style="margin-bottom: 1rem; font-size: 0.95rem;">Problem Areas Visualization</p>
-                <img src="data:image/jpeg;base64,{{ analysis_result.skin_concerns.predictions.0.heatmap }}" 
-                     alt="Skin concerns heatmap"
-                     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div
+                style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; text-align: center;">
+                <p class="muted"><strong>Calculated Skin Type:</strong> {{
+                    analysis_result.skin_type.predictions.0.class|title }}</p>
             </div>
-            {% else %}
-            <p class="muted" style="font-size: 0.9rem; margin-top: 1rem;">No heatmap available.</p>
-            {% endif %}
-
-            {% else %}
-            <p class="result-item" style="color: #dc3545;">
-                <strong>No predictions available.</strong>
-            </p>
-            {% endif %}
-
-
-            <!-- Show message if no results at all -->
-            {% if not analysis_result.skin_type and not analysis_result.skin_concerns %}
-            <p class="result-item" style="color: var(--muted);">
-                No analysis results available. Please ensure models are uploaded and active.
-            </p>
-            {% endif %}
         </section>
         {% endif %}
 

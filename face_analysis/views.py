@@ -1,3 +1,4 @@
+import base64
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
@@ -6,7 +7,8 @@ from PIL import Image, UnidentifiedImageError
 from .forms import CNNModelUploadForm
 from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
-from recommendations.utils import recommend_products
+from recommendations.utils import recommend_products, build_routine
+from .analyze_face import analyze_face
 
 
 # Initialize pipeline (models will be loaded lazily)
@@ -22,6 +24,7 @@ def index(request):
     error = None
 
     recommended_products = []
+    routine = None
 
     if request.method == "POST":
         uploaded_file = request.FILES.get("face_image")
@@ -38,7 +41,11 @@ def index(request):
                 image_bytes = uploaded_file.read()
 
                 # Run analysis
-                analysis_result = pipeline.analyze(image_bytes)
+                analysis_result = analyze_face(image_bytes)
+                
+                # Add image to result for display in template
+                if analysis_result:
+                    analysis_result["image_base64"] = base64.b64encode(image_bytes).decode('utf-8')
                 
                 # Fetch Recommendations
                 if analysis_result:
@@ -52,14 +59,8 @@ def index(request):
                             skin_type = preds[0]["class"]
                             
                     if "skin_concerns" in analysis_result and "predictions" in analysis_result["skin_concerns"]:
-                        # Taking top k concerns ? 
-                        # recommend_products uses all provided in list.
-                        # Let's take all predicted concerns that have decent confidence?
-                        # Or just all returned by the pipeline (which already does top_k=3 default)
                         preds = analysis_result["skin_concerns"]["predictions"]
                         concerns = [p["class"] for p in preds]
-                    
-                    print(f"Fetching recommendations for Type: {skin_type}, Concerns: {concerns}")
                     
                     query = {
                         "skin_type": skin_type,
@@ -67,7 +68,8 @@ def index(request):
                     }
                     
                     recommended_products = recommend_products(query)
-                    print(f"Found {len(recommended_products)} products.")
+                    routine = build_routine(query)
+                    print(f"Found {len(recommended_products)} products and built personalized routine.")
 
                 # DEBUG OUTPUT (VERY IMPORTANT)
                 print("ANALYSIS RESULT:", analysis_result)
@@ -85,6 +87,7 @@ def index(request):
         {
             "analysis_result": analysis_result,
             "recommended_products": recommended_products,
+            "routine": routine,
             "error": error,
         },
     )
@@ -133,19 +136,6 @@ def model_detail(request, pk):
         "face_analysis/model_detail.html",
         {"model": model},
     )
-
-def face_analysis_view(request):
-    analysis_result = {"skin_type": "oily", "concerns": ["acne"]}
-
-    products = recommend_products(analysis_result)
-
-    print("PRODUCTS FETCHED:")
-    for p in products:
-        print(p.name, p.skin_type, p.concerns)
-
-    return render(request, "recommendations/results.html",
-                  {"analysis": analysis_result, "products": products})
-
 
 
 def delete_model(request, pk):

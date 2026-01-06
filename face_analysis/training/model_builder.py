@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from tensorflow import keras
-from tensorflow.keras import layers
+import keras
+from keras import layers
 
 
 def build_skin_analysis_cnn(

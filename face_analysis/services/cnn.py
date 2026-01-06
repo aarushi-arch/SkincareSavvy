@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 from face_analysis.models import CNNModel
 from face_analysis.utils.image_utils import preprocess_image

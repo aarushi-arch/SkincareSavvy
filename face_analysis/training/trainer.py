@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from tensorflow import keras
+import keras
 
 from face_analysis.training.data_loader import SkinDatasetLoader
 from face_analysis.training.model_builder import build_skin_analysis_cnn

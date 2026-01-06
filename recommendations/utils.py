@@ -140,5 +140,54 @@ def recommend_products(analysis: dict):
     # Filter out nan ratings for sorting
     matched.sort(key=lambda x: (-x[0], -(float(x[1].rating) if x[1].rating and x[1].rating != 'nan' else 0.0)))
     
+    
     # Return top 20 (or 50 if requested, but let's keep it concise)
     return [m[1] for m in matched[:20]]
+
+def build_routine(analysis: dict):
+    """
+    Constructs a 4-step routine based on recommendations.
+    Steps: Cleanser -> Treatment -> Moisturizer -> Sunscreen
+    """
+    # Get high quality matches for all categories first
+    all_recs = recommend_products(analysis)
+    
+    routine = {
+        "cleanser": None,
+        "treatment": None,
+        "moisturizer": None,
+        "sunscreen": None
+    }
+    
+    # Categories to map
+    categories = ["cleanser", "treatment", "moisturizer", "sunscreen"]
+    
+    for cat in categories:
+        # Find the first product in recommendations that matches this category
+        for p in all_recs:
+            if p.category.lower() == cat:
+                routine[cat] = p
+                break
+        
+        # Fallback: if no product in top 20 matches, search the whole DB for a category match
+        if not routine[cat]:
+            skin_type = (analysis.get("skin_type") or "").strip().lower()
+            # Try to find a highly rated product in this category for this skin type
+            # Fetch all products in category and filter in Python (SQLite doesn't support JSONField contains)
+            fallback_candidates = Product.objects.filter(
+                category__iexact=cat
+            ).order_by('-rating')
+            
+            # Find first product that has skin_type
+            fallback = None
+            for p in fallback_candidates:
+                stypes = [str(s).lower() for s in (p.skin_types or [])]
+                if not skin_type or skin_type in stypes or "all" in stypes:
+                    fallback = p
+                    break
+            
+            if fallback:
+                fallback.match_reason = f"Essential {cat} for your skin type"
+                routine[cat] = fallback
+
+    return routine
