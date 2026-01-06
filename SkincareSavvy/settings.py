@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     "recommendations",
     "face_analysis",
     "shop",
-    'rest_framework',
+    "rest_framework",
 ]
 
 MIDDLEWARE = [

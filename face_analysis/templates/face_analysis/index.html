@@ -82,6 +82,7 @@
         <section id="uploader" class="panel upload-panel">
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
+                <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
                 <div class="panel-head">
                     <div>
                         <p class="eyebrow">Step 1</p>
@@ -707,55 +708,48 @@
                 }, 'image/jpeg', 0.95);
             });
 
-            // Add to Shelf Logic (AJAX)
-            const addToShelfButtons = document.querySelectorAll('.add-to-shelf-btn');
-            addToShelfButtons.forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const productId = this.getAttribute('data-product-id');
-                    const originalText = this.textContent;
+            // Add to Shelf Logic (POST with CSRF)
+            const buttons = document.querySelectorAll('.add-to-shelf-btn');
+            const csrfTokenElem = document.getElementById('csrf-token');
+            const csrfToken = csrfTokenElem ? csrfTokenElem.value : '';
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const productId = this.dataset.productId;
+                    const btn = this;
+                    const originalText = btn.textContent;
 
                     // Optimistic UI update
-                    this.textContent = 'Adding...';
-                    this.disabled = true;
+                    btn.textContent = 'Adding...';
+                    btn.disabled = true;
 
-                    fetch(`/add-to-shelf/${productId}/`, {
-                        method: 'GET', // or POST if you prefer, but views.py handles GET for now in many simple adds
+                    fetch('/shop/add-to-cart/', {
+                        method: 'POST',
                         headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ product_id: productId, quantity: 1 })
                     })
-                        .then(response => {
-                            if (response.headers.get('content-type')?.includes('application/json')) {
-                                return response.json();
-                            } else {
-                                // Fallback if not json
-                                return { status: 'success', message: 'Added check my shelf' };
-                            }
-                        })
-                        .then(data => {
-                            this.textContent = '✓ Added';
-                            this.style.background = '#28a745';
-                            this.style.borderColor = '#28a745';
-                            this.style.color = 'white';
-
-                            // Reset after a while if wanted, or keep as added
-                            // setTimeout(() => {
-                            //     this.textContent = originalText;
-                            //     this.disabled = false;
-                            //     this.style.background = ''; // reset
-                            // }, 3000);
-                        })
-                        .catch(err => {
-                            console.error('Error adding to shelf:', err);
-                            this.textContent = 'Error';
-                            this.style.background = '#dc3545';
-                            setTimeout(() => {
-                                this.textContent = originalText;
-                                this.disabled = false;
-                                this.style.background = '';
-                            }, 2000);
-                        });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Not logged in or error');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        alert('Added to shelf ✅');
+                        btn.textContent = '✓ Added';
+                        btn.style.background = '#28a745';
+                        btn.style.borderColor = '#28a745';
+                        btn.style.color = 'white';
+                    })
+                    .catch(error => {
+                        console.error('Add to shelf error:', error);
+                        alert('Please login first');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    });
                 });
             });
         });
