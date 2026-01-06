@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "user_management",
     "recommendations",
     "face_analysis",
+    "shop",
 ]
 
 MIDDLEWARE = [

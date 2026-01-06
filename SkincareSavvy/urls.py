@@ -9,6 +9,7 @@ urlpatterns = [
     path("", include("user_management.urls")),
     path("recommendations/", include("recommendations.urls")),
     path("face-analysis/", include("face_analysis.urls")),
+    path("shop/", include("shop.urls")),
 ]
 
 if settings.DEBUG:
