@@ -651,6 +651,58 @@
 `;
             document.head.appendChild(style);
 
+            // Toast helper (non-blocking notifications)
+            function showToast(message, type = 'info', duration = 3000) {
+                let container = document.getElementById('toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    container.style.position = 'fixed';
+                    container.style.right = '20px';
+                    container.style.bottom = '20px';
+                    container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
+                    container.style.gap = '8px';
+                    container.style.zIndex = '99999';
+                    document.body.appendChild(container);
+                }
+
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.minWidth = '180px';
+                toast.style.maxWidth = '320px';
+                toast.style.padding = '10px 14px';
+                toast.style.borderRadius = '8px';
+                toast.style.color = '#fff';
+                toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 220ms ease, transform 220ms ease';
+                toast.style.transform = 'translateY(6px)';
+
+                if (type === 'success') {
+                    toast.style.background = '#28a745';
+                } else if (type === 'error') {
+                    toast.style.background = '#dc3545';
+                } else {
+                    toast.style.background = '#333';
+                }
+
+                container.appendChild(toast);
+
+                // Enter
+                requestAnimationFrame(() => {
+                    toast.style.opacity = '1';
+                    toast.style.transform = 'translateY(0)';
+                });
+
+                // Auto remove
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(6px)';
+                    setTimeout(() => container.removeChild(toast), 250);
+                }, duration);
+            }
+
             // Camera Logic
             startCameraBtn.addEventListener('click', async function () {
                 try {
@@ -725,6 +777,7 @@
 
                     fetch('/shop/add-to-cart/', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRFToken': csrfToken
@@ -733,12 +786,17 @@
                     })
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Not logged in or error');
+                            if (response.status === 401) {
+                                showToast('Please login to save to your shelf', 'error');
+                            } else {
+                                showToast('Could not add to shelf. Try again.', 'error');
+                            }
+                            throw new Error('Add to shelf failed: ' + response.status);
                         }
                         return response.json();
                     })
                     .then(data => {
-                        alert('Added to shelf ✅');
+                        showToast('Added to shelf ✅', 'success');
                         btn.textContent = '✓ Added';
                         btn.style.background = '#28a745';
                         btn.style.borderColor = '#28a745';
@@ -746,7 +804,7 @@
                     })
                     .catch(error => {
                         console.error('Add to shelf error:', error);
-                        alert('Please login first');
+                        // Restore optimistic UI if adding failed
                         btn.textContent = originalText;
                         btn.disabled = false;
                     });
