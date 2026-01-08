@@ -9,6 +9,8 @@ from rest_framework import status
 from .models import Cart, CartItem
 from recommendations.models import Product
 
+from django.shortcuts import redirect, get_object_or_404
+
 class ShopHealthCheck(APIView):
     def get(self, request):
         return Response({"status": "shop app working"})
@@ -64,4 +66,11 @@ def my_cart(request):
 
     return render(request, "shop/my_cart.html", context)
 
+@login_required
+def remove_from_cart(request, item_id):
+    cart = get_object_or_404(Cart, user=request.user)
+    item = get_object_or_404(CartItem, id=item_id, cart=cart)
+
+    item.delete()
+    return redirect("my_cart")
 

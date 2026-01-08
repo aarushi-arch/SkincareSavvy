@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="mb-4">🧺 My Shelf</h1>
+  <h1 class="mb-4">My Shelf</h1>
 
   {% if items %}
   <div class="table-responsive">
@@ -15,6 +15,7 @@
           <th>Price</th>
           <th>Quantity</th>
           <th>Subtotal</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -22,11 +23,17 @@
         <tr>
           <td>
             <strong>{{ item.product.name }}</strong><br>
-            <small>{{ item.product.brand }}</small>
+            <small class="text-muted">{{ item.product.brand }}</small>
           </td>
           <td>₹ {{ item.product.price }}</td>
           <td>{{ item.quantity }}</td>
           <td>₹ {{ item.subtotal }}</td>
+          <td>
+            <a href="{% url 'remove_from_cart' item.id %}"
+               class="btn btn-sm btn-outline-danger">
+              Remove
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -34,10 +41,15 @@
   </div>
 
   <hr>
-  <h4 class="text-end">Total: ₹ {{ cart.total_price }}</h4>
+
+  <div class="text-end">
+    <h4>Total: ₹ {{ cart.total_price }}</h4>
+  </div>
 
   {% else %}
-    <div class="alert alert-info">Your shelf is empty.</div>
+    <div class="alert alert-info">
+      Your shelf is empty.
+    </div>
   {% endif %}
 </div>
 {% endblock %}
