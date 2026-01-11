@@ -1,0 +1,114 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}Order Successful | SkincareSavvy{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-green: #0b3b17;
+        --soft-green: rgba(11, 59, 23, 0.15);
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(11, 59, 23, 0.2);
+    }
+
+    .success-page {
+        padding: 80px 20px;
+        text-align: center;
+        min-height: 80vh;
+        background: radial-gradient(circle at top right, rgba(11, 59, 23, 0.05), transparent);
+    }
+
+    .success-card {
+        max-width: 600px;
+        margin: 0 auto;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        padding: 50px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+    }
+
+    .success-icon {
+        width: 100px;
+        height: 100px;
+        background: var(--primary-green);
+        color: white;
+        font-size: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 auto 30px;
+        box-shadow: 0 10px 25px rgba(11, 59, 23, 0.3);
+    }
+
+    .success-card h1 {
+        font-size: 2.5rem;
+        color: var(--primary-green);
+        margin-bottom: 20px;
+        font-weight: 300;
+    }
+
+    .highlight-cursive {
+        font-family: 'Allura', cursive;
+        font-size: 1.3em;
+    }
+
+    .order-info {
+        margin: 30px 0;
+        padding: 20px;
+        background: rgba(11, 59, 23, 0.05);
+        border-radius: 20px;
+        color: #555;
+    }
+
+    .order-number {
+        font-weight: 600;
+        color: var(--primary-green);
+    }
+
+    .btn-home {
+        display: inline-block;
+        margin-top: 30px;
+        padding: 15px 40px;
+        background: var(--primary-green);
+        color: white;
+        border-radius: 40px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-home:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(11, 59, 23, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="success-page">
+    <div class="success-card">
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <h1>Order <span class="highlight-cursive">Successful!</span></h1>
+        <p class="text-muted">Thank you for your order. We are preparing your skincare selection with care.</p>
+
+        <div class="order-info">
+            <p>Order Number: <span class="order-number">#{{ order.id }}</span></p>
+            <p>Total Amount: <span class="order-number">₹ {{ order.total_amount }}</span></p>
+            <p>Status: <span class="badge badge-success">{{ order.status }}</span></p>
+        </div>
+
+        <p class="small text-muted">A confirmation has been sent to your registered email.</p>
+
+        <a href="{% url 'users-home' %}" class="btn-home">
+            Return Home
+        </a>
+    </div>
+</div>
+{% endblock %}

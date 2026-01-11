@@ -89,8 +89,8 @@ def recommend(request):
                     if not product_urls and 'product_url' in recommendations_df.columns:
                         product_urls = recommendations_df['product_url'].tolist()
 
-                    db_products = Product.objects.filter(product_url__in=product_urls)
-                    url_to_id = {p.product_url: p.id for p in db_products}
+                    db_products = Product.objects.filter(product_url__in=product_urls).only('product_url', 'id', 'image_url', 'brand')
+                    url_to_data = {p.product_url: {"id": p.id, "image_url": p.image_url, "brand": p.brand} for p in db_products}
                     # Also try matching by name if URL fails/is slightly different? 
                     # For now rely on URL.
                     
@@ -98,7 +98,10 @@ def recommend(request):
                     for _, row in recommendations_df.iterrows():
                         raw_href = row.get("product_href", "") or row.get("product_url", "")
                         normalized_href = normalize_product_url(raw_href)
-                        product_id = url_to_id.get(raw_href) 
+                        db_data = url_to_data.get(raw_href, {})
+                        product_id = db_data.get("id")
+                        image_url = db_data.get("image_url")
+                        brand = db_data.get("brand") or row.get("brand", "Skincare")
 
                         # If not found by exact URL, try normalize? or just accept None.
                         # We need an ID to add to shelf.
@@ -114,6 +117,8 @@ def recommend(request):
                             "description": row.get("description", ""),
                             "similarity_score": similarity_percentage,
                             "id": product_id,
+                            "image_url": image_url,
+                            "brand": brand,
                         }
                         recommendations_data.append(rec_dict)
                     

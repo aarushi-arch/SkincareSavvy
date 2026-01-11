@@ -1,0 +1,215 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block title %}Order History | SkincareSavvy{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-green: #0b3b17;
+        --soft-green: rgba(11, 59, 23, 0.15);
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(11, 59, 23, 0.2);
+    }
+
+    .orders-page {
+        padding: 40px 20px;
+        min-height: 80vh;
+        background: radial-gradient(circle at top right, rgba(11, 59, 23, 0.05), transparent);
+    }
+
+    .orders-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .orders-header h1 {
+        font-size: 2.8rem;
+        font-weight: 300;
+        color: var(--primary-green);
+        margin-bottom: 10px;
+    }
+
+    .highlight-cursive {
+        font-family: 'Allura', cursive;
+        font-size: 1.4em;
+    }
+
+    .orders-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .order-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(15px) saturate(160%);
+        -webkit-backdrop-filter: blur(15px) saturate(160%);
+        border: 1px solid var(--glass-border);
+        border-radius: 25px;
+        margin-bottom: 30px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .order-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-head {
+        padding: 20px 30px;
+        background: rgba(11, 59, 23, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .order-meta {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .order-id {
+        font-weight: 600;
+        color: var(--primary-green);
+        margin-right: 15px;
+    }
+
+    .order-status {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-delivered {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-processing {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .order-body {
+        padding: 30px;
+    }
+
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+    }
+
+    .order-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .product-details h5 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--primary-green);
+    }
+
+    .item-price {
+        font-weight: 600;
+        color: #444;
+    }
+
+    .order-footer {
+        padding: 20px 30px;
+        text-align: right;
+        background: rgba(11, 59, 23, 0.02);
+    }
+
+    .total-label {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-right: 10px;
+    }
+
+    .total-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-green);
+    }
+
+    .empty-history {
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    .empty-history i {
+        font-size: 4rem;
+        color: var(--soft-green);
+        margin-bottom: 20px;
+        display: block;
+    }
+</style>
+
+<div class="orders-page">
+    <div class="orders-header">
+        <h1>Order <span class="highlight-cursive">History</span></h1>
+        <p class="text-muted">Take a look back at your skincare journey.</p>
+    </div>
+
+    <div class="orders-container">
+        {% if orders %}
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-head">
+                <div class="order-meta">
+                    <span class="order-id">#{{ order.id }}</span>
+                    <span>{{ order.created_at|date:"F d, Y" }}</span>
+                </div>
+                <span class="order-status status-{{ order.status|lower }}">
+                    {{ order.status }}
+                </span>
+            </div>
+
+            <div class="order-body">
+                {% for item in order.items.all %}
+                <div class="order-item">
+                    <div class="product-details">
+                        <h5>{{ item.product.name }}</h5>
+                        <small class="text-muted">{{ item.quantity }} × ₹ {{ item.price_at_order }}</small>
+                    </div>
+                    <div class="item-price">
+                        ₹ {{ item.subtotal }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="order-footer">
+                <span class="total-label">Order Total</span>
+                <span class="total-value">₹ {{ order.total_amount }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-history">
+            <i class="fas fa-history"></i>
+            <p>You haven't placed any orders yet.</p>
+            <a href="{% url 'recommendations:home' %}" class="btn-home"
+                style="display: inline-block; margin-top: 20px; padding: 12px 30px; background: var(--primary-green); color: white; border-radius: 40px; text-decoration: none;">Start
+                Exploring</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

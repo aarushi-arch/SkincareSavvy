@@ -10,7 +10,7 @@
     --soft-green: rgba(11, 59, 23, 0.15);
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(11, 59, 23, 0.2);
-    --accent-gold: rgba(255, 215, 0, 0.4);
+    --accent-glow: rgba(11, 59, 23, 0.08);
   }
 
   .shelf-page {
@@ -46,7 +46,7 @@
     bottom: 5px;
     width: 100%;
     height: 8px;
-    background: var(--accent-gold);
+    background: rgba(11, 59, 23, 0.1);
     z-index: -1;
     border-radius: 4px;
   }
@@ -145,27 +145,42 @@
   .summary-bar {
     position: sticky;
     bottom: 30px;
-    max-width: 1200px;
-    margin: 50px auto 0;
-    background: var(--primary-green);
-    color: white;
-    padding: 20px 40px;
-    border-radius: 50px;
+    max-width: 800px;
+    margin: 60px auto 0;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    color: var(--primary-green);
+    padding: 15px 40px;
+    border-radius: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 10px 30px rgba(11, 59, 23, 0.3);
+    border: 1px solid rgba(11, 59, 23, 0.15);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
     z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .summary-bar:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
   }
 
   .summary-text {
-    font-size: 1.1rem;
-    font-weight: 300;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.8;
   }
 
   .summary-total {
-    font-size: 1.8rem;
-    font-weight: 600;
+    font-size: 2.2rem;
+    font-weight: 300;
+    letter-spacing: -1px;
+    font-family: 'Lato', sans-serif;
   }
 
   .empty-state {
@@ -225,6 +240,18 @@
   <div class="shelf-grid">
     {% for item in items %}
     <div class="shelf-card">
+      {% if item.product.image_url %}
+      <div class="product-image"
+        style="width: 100%; height: 180px; margin-bottom: 1.5rem; overflow: hidden; border-radius: 12px; background: white; display: flex; align-items: center; justify-content: center;">
+        <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}"
+          style="max-width: 100%; max-height: 100%; object-fit: contain;">
+      </div>
+      {% else %}
+      <div class="product-image"
+        style="width: 100%; height: 180px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); border-radius: 12px;">
+        <i class="fas fa-image" style="font-size: 2.5rem; color: #ccc;"></i>
+      </div>
+      {% endif %}
       <div class="product-info">
         <span class="product-brand">{{ item.product.brand }}</span>
         <h3>{{ item.product.name }}</h3>
@@ -248,7 +275,32 @@
     <div class="summary-total">
       ₹ {{ cart.total_price }}
     </div>
+    <a href="{% url 'place_order' %}" class="btn-order">
+      Order Now <i class="fas fa-chevron-right ml-2"></i>
+    </a>
   </div>
+
+  <style>
+    .btn-order {
+      background: var(--primary-green);
+      color: white;
+      padding: 10px 25px;
+      border-radius: 30px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-order:hover {
+      background: white;
+      color: var(--primary-green);
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      text-decoration: none;
+    }
+  </style>
 
   {% else %}
   <div class="empty-state">

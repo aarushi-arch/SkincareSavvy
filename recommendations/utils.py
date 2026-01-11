@@ -86,7 +86,7 @@ def recommend_products(analysis: dict):
         else:
             concerns.add(rc)
 
-    qs = Product.objects.all().only("brand", "name", "category", "rating", "skin_types", "skin_concerns", "product_url")
+    qs = Product.objects.all().only("brand", "name", "category", "rating", "skin_types", "skin_concerns", "product_url", "image_url")
     matched = []
     
     for p in qs:
