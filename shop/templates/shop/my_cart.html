@@ -1,55 +1,261 @@
-{% extends "base.html" %}
+{% extends "users/base.html" %}
+{% load static %}
 
-{% block title %}My Shelf{% endblock %}
+{% block title %}My Shelf | SkincareSavvy{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h1 class="mb-4">My Shelf</h1>
+<style>
+  :root {
+    --primary-green: #0b3b17;
+    --soft-green: rgba(11, 59, 23, 0.15);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(11, 59, 23, 0.2);
+    --accent-gold: rgba(255, 215, 0, 0.4);
+  }
 
-  {% if items %}
-  <div class="table-responsive">
-    <table class="table align-middle">
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Price</th>
-          <th>Quantity</th>
-          <th>Subtotal</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        <tr>
-          <td>
-            <strong>{{ item.product.name }}</strong><br>
-            <small class="text-muted">{{ item.product.brand }}</small>
-          </td>
-          <td>₹ {{ item.product.price }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>₹ {{ item.subtotal }}</td>
-          <td>
-            <a href="{% url 'remove_from_cart' item.id %}"
-               class="btn btn-sm btn-outline-danger">
-              Remove
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  .shelf-page {
+    padding: 40px 20px;
+    min-height: 80vh;
+    background: radial-gradient(circle at top right, rgba(11, 59, 23, 0.05), transparent);
+  }
+
+  .shelf-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .shelf-header h1 {
+    font-size: 2.8rem;
+    font-weight: 300;
+    color: var(--primary-green);
+    margin-bottom: 10px;
+  }
+
+  .highlight-cursive {
+    font-family: 'Allura', cursive;
+    font-size: 1.4em;
+    color: var(--primary-green);
+    position: relative;
+    padding: 0 5px;
+  }
+
+  .highlight-cursive::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 5px;
+    width: 100%;
+    height: 8px;
+    background: var(--accent-gold);
+    z-index: -1;
+    border-radius: 4px;
+  }
+
+  .shelf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .shelf-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 25px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shelf-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-green);
+    opacity: 0.6;
+  }
+
+  .shelf-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  }
+
+  .product-info h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-green);
+    margin-bottom: 5px;
+    line-height: 1.4;
+  }
+
+  .product-brand {
+    font-family: 'Lato', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #666;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  .product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .price-tag {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-green);
+  }
+
+  .remove-btn {
+    background: transparent;
+    color: #d9534f;
+    border: 1px solid rgba(217, 83, 79, 0.3);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .remove-btn:hover {
+    background: #d9534f;
+    color: white;
+    box-shadow: 0 4px 12px rgba(217, 83, 79, 0.2);
+  }
+
+  .summary-bar {
+    position: sticky;
+    bottom: 30px;
+    max-width: 1200px;
+    margin: 50px auto 0;
+    background: var(--primary-green);
+    color: white;
+    padding: 20px 40px;
+    border-radius: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(11, 59, 23, 0.3);
+    z-index: 100;
+  }
+
+  .summary-text {
+    font-size: 1.1rem;
+    font-weight: 300;
+  }
+
+  .summary-total {
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 100px 20px;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: var(--soft-green);
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .empty-state p {
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  .btn-return {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 30px;
+    background: var(--primary-green);
+    color: white;
+    border-radius: 40px;
+    text-decoration: none;
+    transition: transform 0.2s;
+  }
+
+  .btn-return:hover {
+    transform: scale(1.05);
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    .shelf-header h1 {
+      font-size: 2.2rem;
+    }
+
+    .summary-bar {
+      flex-direction: column;
+      border-radius: 20px;
+      gap: 10px;
+      bottom: 10px;
+    }
+  }
+</style>
+
+<div class="shelf-page">
+  <div class="shelf-header">
+    <h1>My <span class="highlight-cursive">Personal</span> Shelf</h1>
+    <p class="text-muted">Discover and manage your curated skincare arsenal.</p>
   </div>
 
-  <hr>
+  {% if items %}
+  <div class="shelf-grid">
+    {% for item in items %}
+    <div class="shelf-card">
+      <div class="product-info">
+        <span class="product-brand">{{ item.product.brand }}</span>
+        <h3>{{ item.product.name }}</h3>
+        <p class="text-muted small">Added with care</p>
+      </div>
 
-  <div class="text-end">
-    <h4>Total: ₹ {{ cart.total_price }}</h4>
+      <div class="product-meta">
+        <div class="price-tag">₹ {{ item.product.price }}</div>
+        <a href="{% url 'remove_from_cart' item.id %}" class="remove-btn">
+          <i class="fas fa-trash-alt mr-2"></i> Remove
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="summary-bar">
+    <div class="summary-text">
+      Total Value of your Selections
+    </div>
+    <div class="summary-total">
+      ₹ {{ cart.total_price }}
+    </div>
   </div>
 
   {% else %}
-    <div class="alert alert-info">
-      Your shelf is empty.
-    </div>
+  <div class="empty-state">
+    <i class="fas fa-box-open"></i>
+    <p>Your shelf feels a bit light.</p>
+    <a href="{% url 'recommendations:home' %}" class="btn-return">Explore Products</a>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

@@ -1,17 +1,20 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }}</title>
 
     <!-- Brand fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap"
+        rel="stylesheet">
 
     <!-- Recommendations styling -->
     <link rel="stylesheet" href="{% static 'recommendations/css/styles.css' %}">
 </head>
+
 <body>
     <!-- Shared glass‑style navigation, aligned with the landing page theme -->
     <header class="app-header">
@@ -32,11 +35,12 @@
                         </div>
                     </li>
                     {% if user.is_authenticated %}
-                        <li><a href="{% url 'profile' %}">Profile</a></li>
-                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    <li><a href="{% url 'my_cart' %}">My Shelf</a></li>
+                    <li><a href="{% url 'profile' %}">Profile</a></li>
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}
-                        <li><a href="{% url 'login' %}">Login</a></li>
-                        <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'users-register' %}">Sign Up</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -58,19 +62,21 @@
 
             <section class="form-section">
                 {% if error_message %}
-                    <div class="alert alert-danger" role="alert" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
-                        {{ error_message }}
-                    </div>
+                <div class="alert alert-danger" role="alert"
+                    style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                    {{ error_message }}
+                </div>
                 {% endif %}
                 <form method="post" action="{% url 'recommendations:recommend' %}" id="recommendationForm">
                     {% csrf_token %}
-                    
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.product_category.id_for_label }}">{{ form.product_category.label }}</label>
+                            <label for="{{ form.product_category.id_for_label }}">{{ form.product_category.label
+                                }}</label>
                             {{ form.product_category }}
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="{{ form.skin_type.id_for_label }}">{{ form.skin_type.label }}</label>
                             {{ form.skin_type }}
@@ -81,10 +87,10 @@
                         <label>{{ form.skin_problems.label }}</label>
                         <div class="checkbox-group">
                             {% for checkbox in form.skin_problems %}
-                                <div class="checkbox-item">
-                                    {{ checkbox.tag }}
-                                    <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
-                                </div>
+                            <div class="checkbox-item">
+                                {{ checkbox.tag }}
+                                <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -92,7 +98,8 @@
                     <div class="form-group">
                         <label>{{ form.notable_effects.label }}</label>
                         <div class="checkbox-group" id="notableEffectsGroup">
-                            <p class="help-text">Please select a product category and skin type to see available benefits</p>
+                            <p class="help-text">Please select a product category and skin type to see available
+                                benefits</p>
                         </div>
                     </div>
 
@@ -116,32 +123,32 @@
 
     <script>
         // Dynamic form updates based on selections
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const productCategorySelect = document.getElementById('id_product_category');
             const skinTypeSelect = document.getElementById('id_skin_type');
             const notableEffectsGroup = document.getElementById('notableEffectsGroup');
             const selectedProductSelect = document.getElementById('id_selected_product');
 
             function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        cookie = cookie.trim();
+                        if (cookie.startsWith(name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
             }
-        }
-    }
-    return cookieValue;
-}
 
-            
+
             function updateOptions() {
                 const productCategory = productCategorySelect.value;
                 const skinType = skinTypeSelect.value;
-                
+
                 if (productCategory && skinType) {
                     fetch('{% url "recommendations:filtered-options" %}', {
                         method: 'POST',
@@ -155,66 +162,66 @@
                             skin_type: skinType
                         })
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Check for error in response
-                        if (data.error) {
-                            console.error('Server error:', data.error);
-                            notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
-                            selectedProductSelect.innerHTML = '<option value="">Error loading products</option>';
-                            return;
-                        }
-                        
-                        // Update notable effects
-                        if (data.notable_effects && data.notable_effects.length > 0) {
-                            let html = '';
-                            data.notable_effects.forEach((effect, index) => {
-                                html += `
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Check for error in response
+                            if (data.error) {
+                                console.error('Server error:', data.error);
+                                notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
+                                selectedProductSelect.innerHTML = '<option value="">Error loading products</option>';
+                                return;
+                            }
+
+                            // Update notable effects
+                            if (data.notable_effects && data.notable_effects.length > 0) {
+                                let html = '';
+                                data.notable_effects.forEach((effect, index) => {
+                                    html += `
                                     <div class="checkbox-item">
                                         <input type="checkbox" name="notable_effects" value="${effect}" id="id_notable_effects_${index}" class="form-check-input">
                                         <label for="id_notable_effects_${index}">${effect}</label>
                                     </div>
                                 `;
-                            });
-                            notableEffectsGroup.innerHTML = html;
-                        } else {
-                            notableEffectsGroup.innerHTML = '<p class="help-text">No benefits available for this combination</p>';
-                        }
-                        
-                        // Update product names
-                        if (data.product_names && data.product_names.length > 0) {
-                            selectedProductSelect.innerHTML = '<option value="">Select a product</option>';
-                            data.product_names.forEach(product => {
-                                const option = document.createElement('option');
-                                option.value = product;
-                                option.textContent = product;
-                                selectedProductSelect.appendChild(option);
-                            });
-                        } else {
-                            selectedProductSelect.innerHTML = '<option value="">Select benefits first</option>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching options:', error);
-                        notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
-                        selectedProductSelect.innerHTML = '<option value="">Error loading products</option>';
-                    });
+                                });
+                                notableEffectsGroup.innerHTML = html;
+                            } else {
+                                notableEffectsGroup.innerHTML = '<p class="help-text">No benefits available for this combination</p>';
+                            }
+
+                            // Update product names
+                            if (data.product_names && data.product_names.length > 0) {
+                                selectedProductSelect.innerHTML = '<option value="">Select a product</option>';
+                                data.product_names.forEach(product => {
+                                    const option = document.createElement('option');
+                                    option.value = product;
+                                    option.textContent = product;
+                                    selectedProductSelect.appendChild(option);
+                                });
+                            } else {
+                                selectedProductSelect.innerHTML = '<option value="">Select benefits first</option>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching options:', error);
+                            notableEffectsGroup.innerHTML = '<p class="help-text error-text">Error loading benefits. Please try again.</p>';
+                            selectedProductSelect.innerHTML = '<option value="">Error loading products</option>';
+                        });
                 } else {
                     notableEffectsGroup.innerHTML = '<p class="help-text">Please select a product category and skin type to see available benefits</p>';
                     selectedProductSelect.innerHTML = '<option value="">Select a category, skin type, and benefits first</option>';
                 }
             }
-            
+
             function updateProducts() {
                 const productCategory = productCategorySelect.value;
                 const skinType = skinTypeSelect.value;
                 const notableEffects = Array.from(document.querySelectorAll('input[name="notable_effects"]:checked')).map(cb => cb.value);
-                
+
                 if (productCategory && skinType) {
                     fetch('{% url "recommendations:filtered-options" %}', {
                         method: 'POST',
@@ -228,34 +235,34 @@
                             notable_effects: notableEffects
                         })
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.product_names && data.product_names.length > 0) {
-                            selectedProductSelect.innerHTML = '<option value="">Select a product</option>';
-                            data.product_names.forEach(product => {
-                                const option = document.createElement('option');
-                                option.value = product;
-                                option.textContent = product;
-                                selectedProductSelect.appendChild(option);
-                            });
-                        } else {
-                            selectedProductSelect.innerHTML = '<option value="">No products available</option>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching products:', error);
-                        selectedProductSelect.innerHTML = '<option value="">Error loading products. Please try again.</option>';
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.product_names && data.product_names.length > 0) {
+                                selectedProductSelect.innerHTML = '<option value="">Select a product</option>';
+                                data.product_names.forEach(product => {
+                                    const option = document.createElement('option');
+                                    option.value = product;
+                                    option.textContent = product;
+                                    selectedProductSelect.appendChild(option);
+                                });
+                            } else {
+                                selectedProductSelect.innerHTML = '<option value="">No products available</option>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching products:', error);
+                            selectedProductSelect.innerHTML = '<option value="">Error loading products. Please try again.</option>';
+                        });
                 } else {
                     selectedProductSelect.innerHTML = '<option value="">Select a category and skin type first</option>';
                 }
             }
-            
+
             productCategorySelect.addEventListener('change', updateOptions);
             skinTypeSelect.addEventListener('change', updateOptions);
-            
+
             // Update products when notable effects change
-            document.addEventListener('change', function(e) {
+            document.addEventListener('change', function (e) {
                 if (e.target.name === 'notable_effects') {
                     updateProducts();
                 }
@@ -263,4 +270,5 @@
         });
     </script>
 </body>
+
 </html>

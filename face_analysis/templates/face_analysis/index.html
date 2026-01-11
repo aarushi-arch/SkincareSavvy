@@ -35,6 +35,7 @@
                         </div>
                     </li>
                     {% if user.is_authenticated %}
+                    <li><a href="{% url 'my_cart' %}">My Shelf</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}
@@ -189,8 +190,8 @@
                 <!-- Center: Image & Connectors -->
                 <div class="dashboard-center">
                     {% if analysis_result.image_base64 %}
-                    <img src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
-                        alt="Your Face Analysis" class="main-face-image">
+                    <img src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}" alt="Your Face Analysis"
+                        class="main-face-image">
                     {% else %}
                     <div class="main-face-image"
                         style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center;">
@@ -784,30 +785,30 @@
                         },
                         body: JSON.stringify({ product_id: productId, quantity: 1 })
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            if (response.status === 401) {
-                                showToast('Please login to save to your shelf', 'error');
-                            } else {
-                                showToast('Could not add to shelf. Try again.', 'error');
+                        .then(response => {
+                            if (!response.ok) {
+                                if (response.status === 401) {
+                                    showToast('Please login to save to your shelf', 'error');
+                                } else {
+                                    showToast('Could not add to shelf. Try again.', 'error');
+                                }
+                                throw new Error('Add to shelf failed: ' + response.status);
                             }
-                            throw new Error('Add to shelf failed: ' + response.status);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        showToast('Added to shelf ✅', 'success');
-                        btn.textContent = '✓ Added';
-                        btn.style.background = '#28a745';
-                        btn.style.borderColor = '#28a745';
-                        btn.style.color = 'white';
-                    })
-                    .catch(error => {
-                        console.error('Add to shelf error:', error);
-                        // Restore optimistic UI if adding failed
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    });
+                            return response.json();
+                        })
+                        .then(data => {
+                            showToast('Added to shelf ✅', 'success');
+                            btn.textContent = '✓ Added';
+                            btn.style.background = '#28a745';
+                            btn.style.borderColor = '#28a745';
+                            btn.style.color = 'white';
+                        })
+                        .catch(error => {
+                            console.error('Add to shelf error:', error);
+                            // Restore optimistic UI if adding failed
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        });
                 });
             });
         });
