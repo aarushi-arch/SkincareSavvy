@@ -13,6 +13,72 @@
 
     <!-- Recommendations styling -->
     <link rel="stylesheet" href="{% static 'recommendations/css/styles.css' %}">
+
+    <style>
+        /* Elegant Toast System */
+        #toast-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            padding: 16px 32px;
+            box-shadow: 0 8px 32px 0 rgba(11, 59, 23, 0.15);
+            color: #0b3b17;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(-40px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px;
+        }
+
+        .toast-item.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-color: rgba(40, 167, 69, 0.4);
+        }
+
+        .toast-error {
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+
+        .toast-info {
+            border-color: rgba(11, 59, 23, 0.4);
+        }
+
+        .toast-item i {
+            display: none;
+        }
+
+        /* Icon styling */
+        .toast-item i {
+            font-size: 1.1rem;
+        }
+    </style>
+
+    <!-- Font Awesome (needed for toast icons) -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
 </head>
 
 <body>
@@ -160,9 +226,8 @@
                         </a>
                         {% endif %}
                         {% if item.id %}
-                        <a href="{% url 'add_to_shelf' item.id %}" class="btn-secondary"
-                            style="text-decoration: none; display: inline-block; text-align: center;">Add to My
-                            Shelf</a>
+                        <button type="button" class="btn-secondary add-to-shelf-btn" data-product-id="{{ item.id }}">Add
+                            to My Shelf</button>
                         {% else %}
                         <button type="button" class="btn-secondary" disabled title="Not available for saving">Add to My
                             Shelf</button>
@@ -290,6 +355,76 @@
                 if (e.target.name === 'notable_effects') {
                     updateProducts();
                 }
+            });
+
+            // Toast helper
+            function showToast(message, type = 'info', duration = 4000) {
+                let container = document.getElementById('toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    document.body.appendChild(container);
+                }
+
+                const toast = document.createElement('div');
+                toast.className = `toast-item toast-${type}`;
+
+                toast.innerHTML = `<span>${message}</span>`;
+
+                container.appendChild(toast);
+
+                setTimeout(() => toast.classList.add('show'), 10);
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        if (toast.parentNode) container.removeChild(toast);
+                    }, 500);
+                }, duration);
+            }
+
+            // AJAX Add to Shelf
+            const shelfButtons = document.querySelectorAll('.add-to-shelf-btn');
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            shelfButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const productId = this.dataset.productId;
+                    const btn = this;
+                    const originalText = btn.textContent;
+
+                    btn.textContent = 'Adding...';
+                    btn.disabled = true;
+
+                    fetch(`/add-to-shelf/${productId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.message, data.status === 'success' ? 'success' : 'info');
+                            if (data.status === 'success') {
+                                btn.textContent = 'Added';
+                                btn.style.background = '#28a745';
+                                btn.style.color = 'white';
+                                btn.style.borderColor = '#28a745';
+                            } else {
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('Error adding to shelf', 'error');
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        });
+                });
             });
         });
     </script>

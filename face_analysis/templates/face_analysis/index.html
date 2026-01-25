@@ -14,6 +14,64 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="{% static 'face_analysis/css/styles.css' %}">
+
+    <style>
+        /* Elegant Toast System */
+        #toast-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            padding: 16px 32px;
+            box-shadow: 0 8px 32px 0 rgba(11, 59, 23, 0.15);
+            color: #0b3b17;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(-40px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px;
+        }
+
+        .toast-item.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-color: rgba(40, 167, 69, 0.4);
+        }
+
+        .toast-error {
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+
+        .toast-info {
+            border-color: rgba(11, 59, 23, 0.4);
+        }
+
+        .toast-item i {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -144,7 +202,7 @@
             {% if analysis_result %}
             <div class="alert success"
                 style="margin-top: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
-                <strong>✓ Analysis Complete!</strong> Scroll down to see results.
+                <strong>Analysis Complete!</strong> Scroll down to see results.
             </div>
             {% endif %}
         </section>
@@ -163,25 +221,19 @@
                 <div class="dashboard-left">
                     <div class="score-badge wrinkles">
                         <div class="score-circle">
-                            {% with wrinkles=analysis_result.skin_concerns.predictions|dict_get:'wrinkles' %}
-                            {{ wrinkles|default_confidence:85 }}
-                            {% endwith %}
+                            ✓
                         </div>
                         <span class="score-label">Wrinkles</span>
                     </div>
                     <div class="score-badge texture">
                         <div class="score-circle">
-                            {% with pores=analysis_result.skin_concerns.predictions|dict_get:'pores' %}
-                            {{ pores|default_confidence:92 }}
-                            {% endwith %}
+                            ✓
                         </div>
                         <span class="score-label">Texture</span>
                     </div>
                     <div class="score-badge spots">
                         <div class="score-circle">
-                            {% with spots=analysis_result.skin_concerns.predictions|dict_get:'dark_spots' %}
-                            {{ spots|default_confidence:83 }}
-                            {% endwith %}
+                            ✓
                         </div>
                         <span class="score-label">Spots</span>
                     </div>
@@ -212,19 +264,13 @@
                 <div class="dashboard-right">
                     <div class="score-badge oiliness">
                         <div class="score-circle">
-                            {% if analysis_result.skin_type.predictions.0.class|lower == 'oily' %}
-                            {{ analysis_result.skin_type.predictions.0.confidence|multiply:100|floatformat:0 }}
-                            {% else %}
-                            82
-                            {% endif %}
+                            ✓
                         </div>
                         <span class="score-label">Oiliness</span>
                     </div>
                     <div class="score-badge redness">
                         <div class="score-circle">
-                            {% with acne=analysis_result.skin_concerns.predictions|dict_get:'acne' %}
-                            {{ acne|default_confidence:87 }}
-                            {% endwith %}
+                            ✓
                         </div>
                         <span class="score-label">Redness</span>
                     </div>
@@ -479,7 +525,7 @@
                 <div class="step">
                     <div class="step-number">3</div>
                     <h3>Concern Identification</h3>
-                    <p>Top skin concerns are ranked with confidence scores.</p>
+                    <p>Top skin concerns are identified and prioritized for your routine.</p>
                 </div>
             </div>
         </section>
@@ -665,54 +711,31 @@
             document.head.appendChild(style);
 
             // Toast helper (non-blocking notifications)
-            function showToast(message, type = 'info', duration = 3000) {
+            function showToast(message, type = 'info', duration = 4000) {
                 let container = document.getElementById('toast-container');
                 if (!container) {
                     container = document.createElement('div');
                     container.id = 'toast-container';
-                    container.style.position = 'fixed';
-                    container.style.right = '20px';
-                    container.style.bottom = '20px';
-                    container.style.display = 'flex';
-                    container.style.flexDirection = 'column';
-                    container.style.gap = '8px';
-                    container.style.zIndex = '99999';
                     document.body.appendChild(container);
                 }
 
                 const toast = document.createElement('div');
-                toast.textContent = message;
-                toast.style.minWidth = '180px';
-                toast.style.maxWidth = '320px';
-                toast.style.padding = '10px 14px';
-                toast.style.borderRadius = '8px';
-                toast.style.color = '#fff';
-                toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 220ms ease, transform 220ms ease';
-                toast.style.transform = 'translateY(6px)';
+                toast.className = `toast-item toast-${type}`;
 
-                if (type === 'success') {
-                    toast.style.background = '#28a745';
-                } else if (type === 'error') {
-                    toast.style.background = '#dc3545';
-                } else {
-                    toast.style.background = '#333';
-                }
+                toast.innerHTML = `<span>${message}</span>`;
 
                 container.appendChild(toast);
 
-                // Enter
-                requestAnimationFrame(() => {
-                    toast.style.opacity = '1';
-                    toast.style.transform = 'translateY(0)';
-                });
+                // Animation in
+                setTimeout(() => toast.classList.add('show'), 10);
 
                 // Auto remove
                 setTimeout(() => {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateY(6px)';
-                    setTimeout(() => container.removeChild(toast), 250);
+                    toast.classList.remove('show');
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        if (toast.parentNode) container.removeChild(toast);
+                    }, 500);
                 }, duration);
             }
 
@@ -804,16 +827,19 @@
                                 } else {
                                     showToast('Could not add to shelf. Try again.', 'error');
                                 }
-                                throw new Error('Add to shelf failed: ' + response.status);
                             }
                             return response.json();
                         })
                         .then(data => {
-                            showToast('Added to shelf ✅', 'success');
-                            btn.textContent = '✓ Added';
-                            btn.style.background = '#28a745';
-                            btn.style.borderColor = '#28a745';
-                            btn.style.color = 'white';
+                            if (data.status === 'success') {
+                                showToast('Added to shelf', 'success');
+                                btn.textContent = 'Added';
+                                btn.style.background = '#28a745';
+                                btn.style.borderColor = '#28a745';
+                                btn.style.color = 'white';
+                            } else {
+                                showToast(data.message || 'Could not add to shelf. Try again.', 'error');
+                            }
                         })
                         .catch(error => {
                             console.error('Add to shelf error:', error);

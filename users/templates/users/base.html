@@ -136,6 +136,66 @@
         .dropdown:hover .dropdown-content {
             display: block;
         }
+
+        /* Elegant Toast System */
+        #toast-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            padding: 16px 32px;
+            box-shadow: 0 8px 32px 0 rgba(11, 59, 23, 0.15);
+            color: #0b3b17;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(-40px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px;
+        }
+
+        .toast-item.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-color: rgba(40, 167, 69, 0.4);
+        }
+
+        .toast-error {
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+
+        .toast-info {
+            border-color: rgba(11, 59, 23, 0.4);
+        }
+
+        .toast-success i,
+        .toast-error i,
+        .toast-info i {
+            display: none;
+        }
+
+        /* Removed icons as per user request to avoid "tick" */
     </style>
 
     <title>{% block title %}{% endblock %}</title>
@@ -181,19 +241,7 @@
         <div class="row">
             <div class="col-md-12">
 
-                {# ---------------------- #}
-                {# FLASH MESSAGES #}
-                {# ---------------------- #}
-                {% if messages %}
-                <div class="alert alert-dismissible" role="alert">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-                    {% endfor %}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                {% endif %}
+                {# Flash messages are now handled by showToast via JS at the bottom #}
 
                 {# ---------------------- #}
                 {# MAIN CONTENT #}
@@ -218,6 +266,45 @@
 
     <!-- Password Show/Hide Plugin -->
     <script src="https://unpkg.com/bootstrap-show-password@1.2.1/dist/bootstrap-show-password.min.js"></script>
+
+    <script>
+        function showToast(message, type = 'info', duration = 4000) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast-item toast-${type}`;
+
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Animation in
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 500);
+            }, duration);
+        }
+
+        // Auto-show Django messages as toasts
+        document.addEventListener('DOMContentLoaded', function () {
+            {% if messages %}
+            {% for message in messages %}
+            showToast("{{ message }}", "{{ message.tags }}");
+            {% endfor %}
+            {% endif %}
+        });
+    </script>
 
 </body>
 

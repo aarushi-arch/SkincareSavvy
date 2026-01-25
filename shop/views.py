@@ -71,6 +71,7 @@ def remove_from_cart(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart=cart)
 
     item.delete()
+    messages.success(request, f"Removed from your shelf.")
     return redirect("my_cart")
 
 @login_required
@@ -100,6 +101,7 @@ def place_order(request):
     # Clear Cart
     cart_items.delete()
 
+    messages.success(request, "Order placed successfully! 🌿")
     return redirect("order_success", order_id=order.id)
 
 @login_required
