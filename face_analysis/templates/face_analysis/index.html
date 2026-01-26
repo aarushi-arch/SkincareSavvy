@@ -339,20 +339,26 @@
                             <span class="step-count">2</span>
                             <span class="step-label">Treat</span>
                         </div>
+
                         {% if routine.treatment %}
-                        <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
-                        <div class="step-product-info">
-                            <p>{{ routine.treatment.brand }}</p>
-                            <h4>{{ routine.treatment.name|truncatechars:45 }}</h4>
-                        </div>
-                        <div class="step-instruction">
-                            Apply 2-3 drops to clean, dry skin. Focus on areas with <strong>{{
-                                analysis_result.skin_concerns.predictions.0.class }}</strong>.
-                        </div>
+                            <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                                class="step-product-img">
+                            <div class="step-product-info">
+                                <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
+                                <p>{{ routine.treatment.brand }}</p>
+                            </div>
+                            <div class="step-instruction">
+                                Apply 2-3 drops to clean, dry skin. Focus on areas with 
+                                {% if analysis_result.skin_concerns.predictions %}
+                                    {% for concern in analysis_result.skin_concerns.predictions %}
+                                        <strong>{{ concern.class }}</strong>{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <strong>no specific concerns detected</strong>
+                                {% endif %}.
+                            </div>
                         {% else %}
-                        <p class="muted">Search for a targeted serum for {{
-                            analysis_result.skin_concerns.predictions.0.class }}.</p>
+                            <p class="muted">Search for a targeted serum for your skin.</p>
                         {% endif %}
                     </div>
 
@@ -362,19 +368,24 @@
                             <span class="step-count">3</span>
                             <span class="step-label">Moisturize</span>
                         </div>
+
                         {% if routine.moisturizer %}
-                        <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
-                        <div class="step-product-info">
-                            <p>{{ routine.moisturizer.brand }}</p>
-                            <h4>{{ routine.moisturizer.name|truncatechars:45 }}</h4>
-                        </div>
-                        <div class="step-instruction">
-                            Massage into skin to lock in hydration. Provides a healthy barrier for {{
-                            analysis_result.skin_type.predictions.0.class }} skin.
-                        </div>
+                            <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                                class="step-product-img">
+                            <div class="step-product-info">
+                                <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
+                                <p>{{ routine.moisturizer.brand }}</p>
+                            </div>
+                            <div class="step-instruction">
+                                Massage into skin to lock in hydration. Provides a healthy barrier for 
+                                {% if analysis_result.skin_type.predictions %}
+                                    <strong>{{ analysis_result.skin_type.predictions.0.class }}</strong>
+                                {% else %}
+                                    <strong>skin type not detected</strong>
+                                {% endif %} skin.
+                            </div>
                         {% else %}
-                        <p class="muted">Use a non-comedogenic moisturizer to maintain hydration.</p>
+                            <p class="muted">Search for a moisturizer suitable for your skin.</p>
                         {% endif %}
                     </div>
 
