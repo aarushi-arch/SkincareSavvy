@@ -110,6 +110,9 @@ class FaceAnalysisPipeline:
         except Exception as e:
             print(f"Skin types model load failed: {e}")
 
+        if not self.skin_types_model or not self.skin_concerns_model:
+            print("⚠️ CNN models missing or incomplete. Simulation mode active.")
+            
         self._models_loaded = True
 
     
@@ -230,7 +233,7 @@ class FaceAnalysisPipeline:
             MediaPipe detection results or None
         """
         if self.face_detector is None:
-            print("❌ FaceDetection not available")
+            print("FaceDetection not available")
             return None
             
         rgb_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
@@ -302,6 +305,26 @@ class FaceAnalysisPipeline:
             
         return face_img
 
+    def validate_face_landmarks(self, face_img: np.ndarray) -> bool:
+        """
+        Confirms presence of real facial landmarks using FaceMesh.
+        Rejects non-faces (objects, cartoons, printed photos, etc.).
+        
+        Args:
+            face_img: Face image in BGR format
+            
+        Returns:
+            True if valid face landmarks detected, False otherwise
+        """
+        if self.face_mesh is None:
+            print("FaceMesh not available, skipping landmark validation")
+            return False
+
+        rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+        results = self.face_mesh.process(rgb)
+
+        return bool(results.multi_face_landmarks)
+
     def mask_eyes(self, face_img: np.ndarray) -> np.ndarray:
         """
         Masks both eyes using MediaPipe FaceMesh landmarks.
@@ -314,7 +337,7 @@ class FaceAnalysisPipeline:
             Face image with eyes masked (blacked out)
         """
         if self.face_mesh is None:
-            print("⚠️ FaceMesh not available, skipping eye masking")
+            print("FaceMesh not available, skipping eye masking")
             return face_img
         
         h, w, _ = face_img.shape
@@ -322,7 +345,7 @@ class FaceAnalysisPipeline:
         results = self.face_mesh.process(rgb)
 
         if not results.multi_face_landmarks:
-            print("⚠️ No face landmarks detected for eye masking")
+            print("No face landmarks detected for eye masking")
             return face_img
 
         # Eye landmark indices from MediaPipe FaceMesh
@@ -345,7 +368,7 @@ class FaceAnalysisPipeline:
 
         # Apply mask to face image
         masked_face = cv2.bitwise_and(face_img, face_img, mask=mask)
-        print("✅ Eyes masked successfully")
+        print("Eyes masked successfully")
         return masked_face
 
     def normalize_lighting(self, face_img: np.ndarray) -> np.ndarray:
@@ -400,15 +423,15 @@ class FaceAnalysisPipeline:
         Minimal preprocessing that MATCHES training preprocessing.
         Uses face detection only for validation and cropping.
         """
-        print("🔍 Step 1: Detecting face in uploaded image...")
+        print("Step 1: Detecting face in uploaded image...")
         results = self.detect_face(image_bgr)
 
         valid, message = self.validate_face(image_bgr, results)
         if not valid:
-            print(f"❌ {message}")
+            print(f"{message}")
             return None, message
 
-        print(f"✅ {message}")
+        print(f"{message}")
 
         detection = results.detections[0]
         face = self.crop_face(image_bgr, detection)
@@ -416,13 +439,20 @@ class FaceAnalysisPipeline:
         if face is None or face.size == 0:
             return None, "Face crop failed"
 
-        # 🚫 IMPORTANT:
+        # NEW: Landmark validation
+        print("Step 2: Validating facial landmarks...")
+        if not self.validate_face_landmarks(face):
+            return None, "No real human face detected. Please upload a clear selfie."
+        
+        print("Facial landmarks validated successfully")
+
+        # IMPORTANT:
         # NO eye masking
         # NO lighting normalization
         # NO denoising
         # These were NOT used during training
 
-        print("✅ Face cropped successfully (no visual modification applied)")
+        print("Face cropped successfully (no visual modification applied)")
         return face, "Ready for CNN"
 
     # MAIN ENTRY POINT
@@ -445,15 +475,37 @@ class FaceAnalysisPipeline:
             image_bgr = image_bytes
         
         if image_bgr is None:
-            print("❌ Failed to decode image")
+            print("Failed to decode image")
             return {"error": "Invalid image format"}
 
         # Step 2: Run comprehensive preprocessing pipeline
         cropped_face_bgr, status_message = self.skincare_preprocess(image_bgr)
         
         if cropped_face_bgr is None:
-            # Return detailed error message from preprocessing
+            # Face preprocessing failed → return error
             return {"error": status_message}
+        
+        # Only use simulation if preprocessing passed but models are missing
+        if not self.skin_types_model and not self.skin_concerns_model:
+            import random
+            import base64
+            print(f"Using simulation fallback (models missing)")
+            
+            skin_types = ["Oily", "Dry", "Normal", "Combination"]
+            selected_type = random.choice(skin_types)
+            
+            concerns = ["acne", "wrinkles", "pores", "darkspots", "blackheads"]
+            sim_predictions = [
+                {"class": c, "confidence": random.uniform(0.1, 0.95)} 
+                for c in sorted(random.sample(concerns, random.randint(1, 3)))
+            ]
+            
+            return {
+                "skin_type": {"predictions": [{"class": selected_type, "confidence": 0.9}]},
+                "skin_concerns": {"predictions": sim_predictions},
+                "simulation": True,
+                "image_base64": base64.b64encode(image_bytes).decode('utf-8') if isinstance(image_bytes, bytes) else None
+            }
         
         # Convert BGR to RGB for CNN models (they expect RGB)
         cropped_face_rgb = cv2.cvtColor(cropped_face_bgr, cv2.COLOR_BGR2RGB)
@@ -526,5 +578,10 @@ class FaceAnalysisPipeline:
                 result["skin_concerns"] = concerns_result
 
         print(result)
+
+        # Ensure image is present for display
+        import base64
+        _, buffer = cv2.imencode(".jpg", image_bgr)
+        result["image_base64"] = base64.b64encode(buffer).decode("utf-8")
 
         return result

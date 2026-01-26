@@ -8,7 +8,6 @@ from .forms import CNNModelUploadForm
 from .models import CNNModel
 from .services.cnn import FaceAnalysisPipeline
 from recommendations.utils import recommend_products, build_routine
-from .analyze_face import analyze_face
 
 
 # Initialize pipeline (models will be loaded lazily)
@@ -41,35 +40,40 @@ def index(request):
                 image_bytes = uploaded_file.read()
 
                 # Run analysis
-                analysis_result = analyze_face(image_bytes)
-                
-                # Add image to result for display in template
-                if analysis_result:
-                    analysis_result["image_base64"] = base64.b64encode(image_bytes).decode('utf-8')
+                analysis_result = pipeline.analyze(image_bytes)
                 
                 # Fetch Recommendations
-                if analysis_result:
-                    # Extract Data
-                    skin_type = ""
-                    concerns = []
+                if analysis_result and not analysis_result.get("error"):
+                    # Extract Data for dynamic UI flags and recommendations
+                    skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
+                    skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
                     
-                    if "skin_type" in analysis_result and "predictions" in analysis_result["skin_type"]:
-                        preds = analysis_result["skin_type"]["predictions"]
-                        if preds:
-                            skin_type = preds[0]["class"]
-                            
-                    if "skin_concerns" in analysis_result and "predictions" in analysis_result["skin_concerns"]:
-                        preds = analysis_result["skin_concerns"]["predictions"]
-                        concerns = [p["class"] for p in preds]
+                    concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
+                    concerns_list = [p["class"].lower().replace("_", "") for p in concerns_preds]
+                    
+                    # Create flags for the template to handle dynamic icons/badges
+                    analysis_result["flags"] = {
+                        "acne": "acne" in concerns_list,
+                        "wrinkles": "wrinkles" in concerns_list,
+                        "pores": "pores" in concerns_list or "texture" in concerns_list,
+                        "darkspots": "darkspots" in concerns_list or "dark_spots" in concerns_list or "spots" in concerns_list,
+                        "blackheads": "blackheads" in concerns_list,
+                    }
+                    
+                    # Clean concerns list for recommendation engine
+                    detected_concerns = [c for c, active in analysis_result["flags"].items() if active]
                     
                     query = {
                         "skin_type": skin_type,
-                        "concerns": concerns
+                        "concerns": detected_concerns
                     }
                     
                     recommended_products = recommend_products(query)
                     routine = build_routine(query)
-                    print(f"Found {len(recommended_products)} products and built personalized routine.")
+                    print(f"Found {len(recommended_products)} products for {skin_type} with {detected_concerns} concerns.")
+                
+                if analysis_result.get("error"):
+                    error = analysis_result.get("error")
 
                 # DEBUG OUTPUT (VERY IMPORTANT)
                 print("ANALYSIS RESULT:", analysis_result)
