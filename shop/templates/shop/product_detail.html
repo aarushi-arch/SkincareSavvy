@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid" alt="{{ product.name }}">
+            {% else %}
+            <img src="https://via.placeholder.com/500x500?text=No+Image" class="img-fluid" alt="{{ product.name }}">
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <h1>{{ product.name }}</h1>
+            <p class="lead">${{ product.price }}</p>
+            <p>{{ product.description }}</p>
+            {% if product.brand %}
+            <p><strong>Brand:</strong> {{ product.brand }}</p>
+            {% endif %}
+            {% if product.skin_type %}
+            <p><strong>Skin Type:</strong> {{ product.skin_type }}</p>
+            {% endif %}
+            <a href="{% url 'add-to-cart' product.id %}" class="btn btn-success btn-lg">Add to Cart</a>
+            <a href="{% url 'shop-home' %}" class="btn btn-secondary btn-lg">Back to Shop</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

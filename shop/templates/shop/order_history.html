@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>My Orders</h1>
+
+    {% if orders %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                <td>${{ order.get_total }}</td>
+                <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                <td>
+                    <a href="{% url 'order-detail' order.id %}" class="btn btn-sm btn-info">View Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>You haven't placed any orders yet.</p>
+    <a href="{% url 'shop-home' %}" class="btn btn-primary">Start Shopping</a>
+    {% endif %}
+</div>
+{% endblock %}

@@ -250,13 +250,33 @@
 
                 <!-- Center: Image & Connectors -->
                 <div class="dashboard-center">
-                    {% if analysis_result.image_base64 %}
+                    {% if analysis_result.combined_heatmap %}
+                    <div class="face-wrapper" style="display:flex; justify-content:center;">
+                        <img
+                            class="main-face-image"
+                            src="data:image/jpeg;base64,{{ analysis_result.combined_heatmap }}"
+                            alt="Combined Skin Analysis"
+                            style="max-width:100%; height:auto; border-radius:8px;"
+                        >
+                    </div>
+                    {% elif analysis_result.image_base64 %}
                     <img src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}" alt="Your Face Analysis"
                         class="main-face-image">
                     {% else %}
                     <div class="main-face-image"
                         style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center;">
                         <p class="muted">Analysis Image</p>
+                    </div>
+                    {% endif %}
+
+                    {% if analysis_result.detected_concerns %}
+                    <div class="concern-summary" style="margin-top:1rem; text-align:left;">
+                        <h4 style="margin:0 0 0.5rem 0;">Detected Concerns</h4>
+                        <ul style="margin:0; padding-left:1.2rem;">
+                            {% for c in analysis_result.detected_concerns %}
+                                <li>{{ c|title }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
 
