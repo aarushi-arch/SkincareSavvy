@@ -48,12 +48,31 @@ class Order(models.Model):
         related_name="orders"
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+
+    # prices
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    shipping_charge = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+
+    # delivery address (persisted at time of order)
+    address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=120, blank=True, null=True)
+    postal_code = models.CharField(max_length=30, blank=True, null=True)
+    country = models.CharField(max_length=120, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Order #{self.id} by {self.user.username}"
+
+    @property
+    def total_including_shipping(self):
+        """Return order total including shipping_charge."""
+        return (self.total_amount or 0) + (self.shipping_charge or 0)
+
+    def full_address(self):
+        parts = [self.address, self.city, self.postal_code, self.country]
+        return ", ".join([p for p in parts if p])
 
 
 class OrderItem(models.Model):

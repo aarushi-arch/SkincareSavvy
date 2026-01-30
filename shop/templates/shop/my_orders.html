@@ -5,211 +5,163 @@
 
 {% block content %}
 <style>
-    :root {
-        --primary-green: #0b3b17;
-        --soft-green: rgba(11, 59, 23, 0.15);
-        --glass-bg: rgba(255, 255, 255, 0.7);
-        --glass-border: rgba(11, 59, 23, 0.2);
-    }
-
-    .orders-page {
-        padding: 40px 20px;
-        min-height: 80vh;
-        background: radial-gradient(circle at top right, rgba(11, 59, 23, 0.05), transparent);
-    }
-
-    .orders-header {
-        text-align: center;
-        margin-bottom: 50px;
-    }
-
-    .orders-header h1 {
-        font-size: 2.8rem;
-        font-weight: 300;
-        color: var(--primary-green);
-        margin-bottom: 10px;
-    }
-
-    .highlight-cursive {
-        font-family: 'Allura', cursive;
-        font-size: 1.4em;
-    }
-
-    .orders-container {
-        max-width: 900px;
-        margin: 0 auto;
-    }
-
-    .order-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(15px) saturate(160%);
-        -webkit-backdrop-filter: blur(15px) saturate(160%);
-        border: 1px solid var(--glass-border);
-        border-radius: 25px;
-        margin-bottom: 30px;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .order-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    }
-
-    .order-head {
-        padding: 20px 30px;
-        background: rgba(11, 59, 23, 0.05);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .order-meta {
-        font-size: 0.9rem;
-        color: #666;
-    }
-
-    .order-id {
-        font-weight: 600;
-        color: var(--primary-green);
-        margin-right: 15px;
-    }
-
-    .order-status {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .status-pending {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .status-delivered {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .status-processing {
-        background: #d1ecf1;
-        color: #0c5460;
-    }
-
-    .order-body {
-        padding: 30px;
-    }
-
-    .order-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        padding-bottom: 15px;
-        border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
-    }
-
-    .order-item:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-    }
-
-    .product-details h5 {
-        margin: 0;
-        font-size: 1.1rem;
-        color: var(--primary-green);
-    }
-
-    .item-price {
-        font-weight: 600;
-        color: #444;
-    }
-
-    .order-footer {
-        padding: 20px 30px;
-        text-align: right;
-        background: rgba(11, 59, 23, 0.02);
-    }
-
-    .total-label {
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-right: 10px;
-    }
-
-    .total-value {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--primary-green);
-    }
-
-    .empty-history {
-        text-align: center;
-        padding: 80px 20px;
-    }
-
-    .empty-history i {
-        font-size: 4rem;
-        color: var(--soft-green);
-        margin-bottom: 20px;
-        display: block;
-    }
+:root{ --primary-green: #0b3b17; --soft-green: rgba(11,59,23,0.12); }
+.orders-page{padding:36px 20px;min-height:75vh;background:radial-gradient(circle at top right, rgba(11,59,23,0.03), transparent);}
+.orders-layout{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1.6fr;gap:24px;align-items:start}
+/* LEFT: list */
+.order-list{background:rgba(255,255,255,0.85);border-radius:14px;padding:12px;border:1px solid rgba(11,59,23,0.05);max-height:72vh;overflow:auto}
+.order-card-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer;transition:background .18s,transform .12s}
+.order-card-item.active{background:linear-gradient(90deg, rgba(11,59,23,0.03), rgba(11,59,23,0.01));box-shadow:0 6px 18px rgba(10,30,15,0.04);transform:translateY(-2px)}
+.order-card-item + .order-card-item{margin-top:8px}
+.order-thumb{width:56px;height:56px;border-radius:10px;background:#f7f7f7;object-fit:cover;flex:0 0 56px}
+.order-meta .pname{font-weight:600;color:var(--primary-green);margin:0}
+.order-meta .oid{color:#888;font-size:.9rem}
+.order-amount{margin-left:auto;font-weight:700;color:#333}
+/* RIGHT: details */
+.order-details{background:#fff;border-radius:14px;padding:22px;border:1px solid rgba(11,59,23,0.04)}
+.order-details h3{margin:0 0 10px;color:var(--primary-green)}
+.status-badge{display:inline-block;padding:6px 12px;border-radius:20px;font-weight:600;background:#f1f8f4;color:#115a2d;margin-bottom:14px}
+.summary-item,.summary-total{display:flex;justify-content:space-between;margin:10px 0}
+.summary{margin-top:6px;border-top:1px solid #f2f2f2;padding-top:12px}
+.timeline{display:flex;justify-content:space-between;margin:26px 0}
+.step{font-size:13px;color:#a0a0a0;text-align:center;flex:1}
+.step::before{content:'';display:block;margin:0 auto 8px;width:12px;height:12px;border-radius:50%;background:#eee}
+.step.completed{color:#1f8a3a;font-weight:700}
+.step.completed::before{background:linear-gradient(135deg,#34d399,#059669)}
+.address{background:#fbfdfb;padding:14px;border-radius:10px;border:1px solid #f0f6f0}
+.empty-panel{text-align:center;padding:60px 20px;color:#6b6b6b}
+@media(max-width:880px){.orders-layout{grid-template-columns:1fr}.order-list{max-height:none}}
 </style>
 
 <div class="orders-page">
-    <div class="orders-header">
-        <h1>Order <span class="highlight-cursive">History</span></h1>
-        <p class="text-muted">Take a look back at your skincare journey.</p>
-    </div>
+  <div class="orders-header" style="text-align:center;margin-bottom:28px">
+    <h1 style="margin:0;font-weight:300;color:var(--primary-green)">Order <span class="highlight-cursive">History</span></h1>
+    <p class="text-muted" style="margin-top:6px">Review your past orders and track delivery status.</p>
+  </div>
 
-    <div class="orders-container">
-        {% if orders %}
+  {% if migration_needed %}
+  <div class="alert alert-warning" role="alert" style="max-width:1100px;margin:0 auto 18px;border-radius:12px">
+    <strong>Database update required —</strong> the orders table is missing recent columns (shipping/address).
+    Run the migrations locally to resolve this.
+    <div style="margin-top:8px;font-size:0.95rem">Suggested commands (run from project root):
+      <pre style="display:inline-block;margin:6px 0;padding:8px;background:#f6f8f9;border-radius:6px">python manage.py migrate</pre>
+      If that fails, inspect the DB schema: <code>sqlite3 db.sqlite3 "PRAGMA table_info('shop_order');"</code>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="orders-layout">
+
+    <!-- LEFT: orders list -->
+    <div class="order-list" id="orderList">
+      {% if orders %}
         {% for order in orders %}
-        <div class="order-card">
-            <div class="order-head">
-                <div class="order-meta">
-                    <span class="order-id">#{{ order.id }}</span>
-                    <span>{{ order.created_at|date:"F d, Y" }}</span>
-                </div>
-                <span class="order-status status-{{ order.status|lower }}">
-                    {{ order.status }}
-                </span>
+          {% with first_item=order.items.all|first %}
+          <div class="order-card-item {% if selected_order and selected_order.id == order.id %}active{% endif %}" onclick="selectOrder('{{ order.id }}')" data-order-id="{{ order.id }}">
+            {% if first_item and first_item.product.image %}
+              <img class="order-thumb" src="{{ first_item.product.image.url }}" alt="thumb">
+            {% else %}
+              <div class="order-thumb" aria-hidden></div>
+            {% endif %}
+
+            <div class="order-meta">
+              {% if first_item %}
+                <p class="pname">{{ first_item.product.name }}</p>
+              {% else %}
+                <p class="pname">Order #{{ order.id }}</p>
+              {% endif %}
+              <div class="oid">Order #{{ order.id }} • {{ order.created_at|date:"M d, Y" }}</div>
             </div>
 
-            <div class="order-body">
-                {% for item in order.items.all %}
-                <div class="order-item">
-                    <div class="product-details">
-                        <h5>{{ item.product.name }}</h5>
-                        <small class="text-muted">{{ item.quantity }} × ₹ {{ item.price_at_order }}</small>
-                    </div>
-                    <div class="item-price">
-                        ₹ {{ item.subtotal }}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="order-footer">
-                <span class="total-label">Order Total</span>
-                <span class="total-value">₹ {{ order.total_amount }}</span>
-            </div>
-        </div>
+            <div class="order-amount">₹ {{ order.total_amount }}</div>
+          </div>
+          {% endwith %}
         {% endfor %}
-        {% else %}
-        <div class="empty-history">
-            <i class="fas fa-history"></i>
-            <p>You haven't placed any orders yet.</p>
-            <a href="{% url 'recommendations:home' %}" class="btn-home"
-                style="display: inline-block; margin-top: 20px; padding: 12px 30px; background: var(--primary-green); color: white; border-radius: 40px; text-decoration: none;">Start
-                Exploring</a>
+      {% else %}
+        <div class="empty-history" style="padding:36px;text-align:center">
+          <i class="fas fa-box-open" style="font-size:40px;color:var(--soft-green)"></i>
+          <p style="margin-top:14px">You haven't placed any orders yet.</p>
+          <a href="{% url 'recommendations:home' %}" class="btn-home" style="display:inline-block;margin-top:14px;padding:10px 22px;background:var(--primary-green);color:#fff;border-radius:30px;text-decoration:none">Start exploring</a>
         </div>
-        {% endif %}
+      {% endif %}
     </div>
+
+    <!-- RIGHT: selected order details -->
+    <div class="order-details" id="orderDetails">
+      {% if selected_order %}
+        <h3>Order #{{ selected_order.id }}</h3>
+
+        {% if selected_order.status == 'Cancelled' %}
+          <div class="status-badge" style="background:#fff1f0;color:#7a271a">Cancelled</div>
+        {% else %}
+          <div class="status-badge">{{ selected_order.status }}</div>
+        {% endif %}
+
+        <div class="summary">
+          {% for item in selected_order.items.all %}
+            <div class="summary-item">
+              <span>{{ item.product.name }} <small class="text-muted">(x{{ item.quantity }})</small></span>
+              <span>₹ {{ item.subtotal }}</span>
+            </div>
+          {% endfor %}
+
+          <div class="summary-item">
+            <span>Shipping</span>
+            <span>₹ {{ selected_order.shipping_charge }}</span>
+          </div>
+
+          <div class="summary-total">
+            <strong>Total</strong>
+            <strong>₹ {{ selected_order.total_including_shipping }}</strong>
+          </div>
+        </div>
+
+        <div class="timeline" aria-hidden>
+          {% for step in timeline_steps %}
+            <div class="step {% if forloop.counter0 <= selected_step_index %}completed{% endif %}">{{ step }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="address">
+          <h4 style="margin:0 0 8px">Delivery address</h4>
+          {% comment %} Order model has no address field in current schema; keep flexible {% endcomment %}
+          {% if selected_order.address %}
+            <p style="margin:0">{{ selected_order.address }}</p>
+          {% else %}
+            <p style="margin:0;color:#666">No address on file for this order.</p>
+          {% endif %}
+
+          <div style="margin-top:12px;text-align:right">
+            <a href="{% url 'order-detail' selected_order.id %}" class="btn btn-sm btn-outline-secondary">View full details</a>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="empty-panel">
+          <p>No order selected.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
 </div>
+
+<script>
+function selectOrder(orderId){
+  const params = new URLSearchParams(window.location.search);
+  params.set('order', orderId);
+  // preserve any other params
+  window.location.search = params.toString();
+}
+
+// Optional: keyboard navigation (up/down)
+document.addEventListener('keydown', (e)=>{
+  const list = Array.from(document.querySelectorAll('.order-card-item'));
+  if(!list.length) return;
+  const activeIndex = list.findIndex(el=>el.classList.contains('active'));
+  if(e.key === 'ArrowDown' && activeIndex < list.length-1){ list[activeIndex+1].click(); }
+  if(e.key === 'ArrowUp' && activeIndex > 0){ list[activeIndex-1].click(); }
+});
+</script>
+
 {% endblock %}
