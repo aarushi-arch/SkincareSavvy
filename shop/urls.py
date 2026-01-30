@@ -6,6 +6,7 @@ from .views import (
     remove_from_cart,
     place_order,
     checkout,
+    esewa_checkout,
     order_success,
     my_orders,
     order_detail,
@@ -18,6 +19,7 @@ urlpatterns = [
     path("remove/<int:item_id>/", remove_from_cart, name="remove_from_cart"),
     path("place-order/", place_order, name="place_order"),
     path("checkout/", checkout, name="shop-checkout"),
+    path("checkout/<int:product_id>/", esewa_checkout, name="esewa-checkout"),
     path("order-success/<int:order_id>/", order_success, name="order_success"),
 
     # Primary orders listing + backward-compatible alias

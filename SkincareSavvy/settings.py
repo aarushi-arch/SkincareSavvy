@@ -25,6 +25,17 @@ INSTALLED_APPS = [
     "rest_framework",
 ]
 
+# enable optional third-party apps only when installed
+try:
+    import esewa  # type: ignore
+except Exception:
+    ES_EWA_AVAILABLE = False
+else:
+    ES_EWA_AVAILABLE = True
+
+if ES_EWA_AVAILABLE:
+    INSTALLED_APPS.append('esewa')
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -85,4 +96,11 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+ESEWA_MERCHANT_ID = "EPAYTEST"   # Sandbox merchant code
+ESEWA_SECRET_KEY = "8gBm/:&EnhH.1/q"  # Sandbox key
+
+ESEWA_SUCCESS_URL = "http://127.0.0.1:8000/shop/payment/success/"
+ESEWA_FAILURE_URL = "http://127.0.0.1:8000/shop/payment/failure/"
+
 

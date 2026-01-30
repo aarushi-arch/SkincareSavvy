@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,7 +9,48 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from .models import Cart, CartItem, Order, OrderItem
+from .forms import CheckoutForm
 from recommendations.models import Product
+from decimal import Decimal
+
+# eSewa integration (product-level checkout)
+import uuid
+try:
+    from esewa.payment import EsewaPayment
+except Exception:  # pragma: no cover - optional dependency
+    EsewaPayment = None
+
+
+def esewa_checkout(request, product_id):
+    """Start an eSewa checkout for a single product (product-level "Buy now").
+
+    This implements the exact minimal flow you provided: instantiate
+    EsewaPayment and render the generated form which auto-submits.
+    """
+    product = Product.objects.get(id=product_id)
+
+    if EsewaPayment is None:
+        raise RuntimeError(
+            "django-esewa not installed — install `django-esewa` to use eSewa checkout"
+        )
+
+    transaction_uuid = str(uuid.uuid4())
+
+    payment = EsewaPayment(
+        amount=product.price,
+        tax_amount=10,
+        total_amount=product.price + 10,
+        transaction_uuid=transaction_uuid,
+        product_code=settings.ESEWA_MERCHANT_ID,
+        success_url=settings.ESEWA_SUCCESS_URL,
+        failure_url=settings.ESEWA_FAILURE_URL,
+        secret_key=settings.ESEWA_SECRET_KEY,
+    )
+
+    return render(request, 'shop/esewa_checkout.html', {
+        'form': payment.generate(),
+        'product': product,
+    })
 
 class ShopHealthCheck(APIView):
     def get(self, request):
@@ -94,11 +136,11 @@ def place_order(request):
     postal_code = request.POST.get('postal_code') or None
     country = request.POST.get('country') or None
 
-    # compute shipping: simple rule (free over ₹1000, else ₹49) — configurable via settings
+    # compute shipping: simple rule (free over threshold, else shipping_rate)
     from django.conf import settings
-    free_threshold = getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)
-    shipping_rate = getattr(settings, 'SHOP_SHIPPING_RATE', 49.00)
-    shipping = 0 if (cart.total_price >= free_threshold) else shipping_rate
+    free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+    shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+    shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
 
     # Create Order (persist shipping + address)
     order = Order.objects.create(
@@ -134,8 +176,6 @@ def checkout(request):
     This is the canonical flow for collecting delivery address and showing
     shipping charges before creating an order.
     """
-    from .forms import CheckoutForm
-
     cart = get_object_or_404(Cart, user=request.user)
 
     if request.method == 'POST':
@@ -147,11 +187,11 @@ def checkout(request):
             # by forwarding data into place_order via the request.POST-like dict.
             # Simpler: compute shipping here and create the order directly.
 
-            # compute shipping
+            # compute shipping (use Decimal for arithmetic with Decimal fields)
             from django.conf import settings
-            free_threshold = getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)
-            shipping_rate = getattr(settings, 'SHOP_SHIPPING_RATE', 49.00)
-            shipping = 0 if (cart.total_price >= free_threshold) else shipping_rate
+            free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+            shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+            shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
 
             order = Order.objects.create(
                 user=request.user,
@@ -175,13 +215,17 @@ def checkout(request):
             messages.success(request, "Order placed successfully! 🌿")
             return redirect('order_success', order_id=order.id)
     else:
-        form = CheckoutForm()
+        # prefill form where possible (friendly UX)
+        initial = {}
+        if request.user.is_authenticated:
+            initial['email'] = getattr(request.user, 'email', '')
+        form = CheckoutForm(initial=initial)
 
-    # preview shipping on the checkout page
+    # preview shipping on the checkout page (ensure Decimal arithmetic)
     from django.conf import settings
-    free_threshold = getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)
-    shipping_rate = getattr(settings, 'SHOP_SHIPPING_RATE', 49.00)
-    shipping_preview = 0 if (cart.total_price >= free_threshold) else shipping_rate
+    free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+    shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+    shipping_preview = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
 
     return render(request, 'shop/checkout.html', {
         'form': form,
