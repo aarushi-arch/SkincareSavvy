@@ -13,6 +13,9 @@ from .forms import CheckoutForm
 from recommendations.models import Product
 from decimal import Decimal
 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+
 # eSewa integration (product-level checkout)
 import uuid
 try:
@@ -51,6 +54,21 @@ def esewa_checkout(request, product_id):
         'form': payment.generate(),
         'product': product,
     })
+
+@csrf_exempt
+def esewa_success(request):
+    """
+    eSewa will POST here after a successful payment.
+    You can optionally verify the payment server-side.
+    """
+    return HttpResponse("Payment Successful!")
+
+@csrf_exempt
+def esewa_failure(request):
+    """
+    eSewa will POST here if the payment failed.
+    """
+    return HttpResponse("Payment Failed!")
 
 class ShopHealthCheck(APIView):
     def get(self, request):

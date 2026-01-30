@@ -10,6 +10,9 @@ from .views import (
     order_success,
     my_orders,
     order_detail,
+    esewa_checkout,
+    esewa_success,
+    esewa_failure,
 )
 
 urlpatterns = [
@@ -28,4 +31,9 @@ urlpatterns = [
 
     # Order detail (templates expect `order-detail`)
     path("order/<int:order_id>/", order_detail, name="order-detail"),
+
+    path('esewa/<int:product_id>/', esewa_checkout, name='esewa_checkout'),
+    path('esewa/success/', esewa_success, name='esewa_success'),
+    path('esewa/failure/', esewa_failure, name='esewa_failure'),
+
 ]
