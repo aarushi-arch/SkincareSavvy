@@ -117,34 +117,59 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     # Predict all skin concerns
     preds = model.predict(img_array, verbose=0)[0]
 
-    heatmaps = []
+    # Build a single combined, confidence-weighted heatmap
+    combined_heatmap = None
+    total_weight = 0.0
+    detected_concerns = []
+
+    orig_h, orig_w = img_rgb.shape[:2]
 
     for i, class_name in enumerate(class_names):
         try:
-            # Generate Grad-CAM heatmap for this class
             heatmap = get_gradcam_heatmap(model, img_array, i, last_conv_layer_name)
-            
-            # Generate visualization with facial mesh overlay and problem areas
-            heatmap_visualization = generate_facial_mesh_with_problem_areas(
-                original_image=img_rgb,
-                heatmap=heatmap,
-                threshold=threshold,
-                    mesh_color=(180, 180, 180),      # Professional light gray mesh lines (BGR format)
-                    problem_color=(80, 80, 220),     # Professional red for problem areas (BGR format - R=220 becomes B=220)
-                mesh_thickness=1,                # Thin professional lines
-                problem_thickness=2              # Slightly thicker for problem areas - clear visibility
-            )
 
-            # Convert to base64
-            heatmap_base64 = convert_heatmap_to_base64(heatmap_visualization)
+            # Confidence for this class
+            confidence = float(preds[i])
 
-            # Append to results
-            heatmaps.append({
-                'class': class_name,
-                'confidence': float(preds[i]),
-                'heatmap': heatmap_base64  # This is the base64-encoded visualization
-            })
+            # Resize to original image size and weight by confidence
+            heatmap = cv2.resize(heatmap, (orig_w, orig_h))
+            heatmap = heatmap * confidence
+
+            if combined_heatmap is None:
+                combined_heatmap = heatmap
+            else:
+                combined_heatmap += heatmap
+
+            total_weight += confidence
+
+            # Consider it a detected concern if confidence passes a small threshold
+            if confidence >= 0.10:
+                detected_concerns.append(class_name)
+
         except Exception as e:
             print(f"Error generating heatmap for {class_name}: {e}")
 
-    return heatmaps
+    # Normalize combined heatmap
+    if combined_heatmap is None:
+        combined_heatmap = np.zeros((orig_h, orig_w), dtype=np.float32)
+
+    combined_heatmap = combined_heatmap / max(total_weight, 1e-6)
+    combined_heatmap = np.clip(combined_heatmap, 0.0, 1.0)
+
+    # Colorize and overlay on original image
+    colored_heatmap = cv2.applyColorMap((combined_heatmap * 255).astype(np.uint8), cv2.COLORMAP_JET)
+
+    # Ensure we have BGR for overlay; original is RGB -> convert to BGR
+    original_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+    overlay_bgr = cv2.addWeighted(original_bgr, 0.6, colored_heatmap, 0.4, 0)
+
+    # Convert overlay back to RGB for consistent downstream handling
+    overlay_rgb = cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
+
+    # Convert to base64
+    combined_base64 = convert_heatmap_to_base64(overlay_rgb)
+
+    return {
+        'combined_heatmap': combined_base64,
+        'detected_concerns': detected_concerns,
+    }

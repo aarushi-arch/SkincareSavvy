@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Shopping Cart</h1>
+    
+    {% if messages %}
+    <div class="alert alert-info">
+        {% for message in messages %}
+        <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if cart.items.all %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart.items.all %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>${{ item.product.price }}</td>
+                <td>
+                    <form method="post" action="{% url 'update-cart' item.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="999">
+                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                    </form>
+                </td>
+                <td>${{ item.get_subtotal }}</td>
+                <td>
+                    <a href="{% url 'remove-from-cart' item.id %}" class="btn btn-danger btn-sm">Remove</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="row mt-4">
+        <div class="col-md-6"></div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Cart Total</h5>
+                    <p><strong>Total: ${{ cart.get_total }}</strong></p>
+                    <a href="{% url 'shop-checkout' %}" class="btn btn-success btn-block">Proceed to Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'shop-home' %}" class="btn btn-secondary mt-3">Continue Shopping</a>
+    {% else %}
+    <p>Your cart is empty.</p>
+    <a href="{% url 'shop-home' %}" class="btn btn-primary">Start Shopping</a>
+    {% endif %}
+</div>
+{% endblock %}

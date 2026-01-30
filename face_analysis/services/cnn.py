@@ -545,32 +545,23 @@ class FaceAnalysisPipeline:
                 
                 # Let's pass the cropped_face (as bytes or array) 
                 
-                heatmaps = generate_multi_skin_concern_heatmaps(
+                heatmap_result = generate_multi_skin_concern_heatmaps(
                     self.skin_concerns_model,
                     cropped_face_rgb, # Passing the cropped RGB array
                     self.skin_concerns_classes,
                     target_size=target_size,
                     threshold=0.6     # Balanced sensitivity for problem areas
                 )
-                
-                # DEBUG: Inspect heatmap structure
-                print("Type of heatmaps:", type(heatmaps))
-                print("Number of heatmaps:", len(heatmaps))
-                
-                if len(heatmaps) > 0:
-                    print("Keys in one heatmap:", heatmaps[0].keys())
-                    print("Heatmap class:", heatmaps[0]["class"])
-                    print("Heatmap base64 length:", len(heatmaps[0]["heatmap"]))
-                
-                # Merge heatmaps into predictions
-                # Iterate through predictions and attach matches
-                if "predictions" in concerns_result:
-                    for pred in concerns_result["predictions"]:
-                        # Find matching heatmap
-                        match = next((h for h in heatmaps if h['class'] == pred['class']), None)
-                        if match:
-                            pred['heatmap'] = match['heatmap']
-                
+
+                # Debug info
+                print("Heatmap generation result keys:", heatmap_result.keys() if isinstance(heatmap_result, dict) else type(heatmap_result))
+
+                # Attach combined heatmap and detected concerns
+                if isinstance(heatmap_result, dict):
+                    result["combined_heatmap"] = heatmap_result.get('combined_heatmap')
+                    result["detected_concerns"] = heatmap_result.get('detected_concerns', [])
+
+                # Keep individual predictions (without per-class heatmap attachments)
                 result["skin_concerns"] = concerns_result
             except Exception as e:
                 print(f"Heatmap generation failed: {e}")

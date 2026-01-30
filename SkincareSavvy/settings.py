@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "face_analysis",
     "shop",
     "rest_framework",
+    "products",
 ]
 
 # enable optional third-party apps only when installed
