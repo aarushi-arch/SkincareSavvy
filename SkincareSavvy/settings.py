@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "products",
     "widget_tweaks",
+
 ]
 
 # enable optional third-party apps only when installed
@@ -99,10 +100,35 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ESEWA_MERCHANT_ID = "EPAYTEST"   # Sandbox merchant code
-ESEWA_SECRET_KEY = "8gBm/:&EnhH.1/q"  # Sandbox key
+# ===================================
+# eSewa Payment Gateway Configuration
+# Add these to your settings.py file
+# ===================================
 
-ESEWA_SUCCESS_URL = "http://127.0.0.1:8000/shop/payment/success/"
-ESEWA_FAILURE_URL = "http://127.0.0.1:8000/shop/payment/failure/"
+# eSewa Merchant ID (also called Product Code)
+# For testing, use: 'EPAYTEST'
+# For production, get this from your eSewa merchant account
+ESEWA_MERCHANT_ID = 'EPAYTEST'
+
+# eSewa Secret Key
+# For testing, use: '8gBm/:&EnhH.1/q'
+# For production, get this from your eSewa merchant account
+ESEWA_SECRET_KEY = '8gBm/:&EnhH.1/q'
+
+# eSewa Payment Gateway URL
+# For testing (development):
+ESEWA_URL = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
+
+# For production (live):
+# ESEWA_URL = 'https://epay.esewa.com.np/api/epay/main/v2/form'
+
+# Success and Failure URLs will be automatically constructed from your domain
+# They will point to:
+# - Success: http://yourdomain.com/shop/esewa/success/
+# - Failure: http://yourdomain.com/shop/esewa/failure/
+
+# Optional: Shipping configuration (if not already present)
+SHOP_FREE_SHIPPING_THRESHOLD = 1000  # Free shipping for orders over Rs. 1000
+SHOP_SHIPPING_RATE = 49.00  # Standard shipping rate in Rupees
 
 

@@ -16,102 +16,217 @@ from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
-# eSewa integration (product-level checkout)
+# eSewa integration (manual implementation)
 import uuid
-try:
-    from esewa.payment import EsewaPayment
-except Exception:  # pragma: no cover - optional dependency
-    EsewaPayment = None
+import hashlib
+import hmac
+import base64
+
+
+def generate_esewa_signature(total_amount, transaction_uuid, product_code, secret_key):
+    """Generate HMAC SHA256 signature for eSewa payment"""
+    # Create the message to sign
+    message = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
+    
+    # Generate HMAC SHA256 hash
+    secret = secret_key.encode('utf-8')
+    msg = message.encode('utf-8')
+    signature = hmac.new(secret, msg, hashlib.sha256).digest()
+    
+    # Encode to base64
+    return base64.b64encode(signature).decode('utf-8')
+
+
+def generate_esewa_form(amount, tax_amount, total_amount, transaction_uuid, product_code, success_url, failure_url, secret_key, product_name="Product"):
+    """Generate eSewa payment form HTML"""
+    
+    # Generate signature
+    signature = generate_esewa_signature(total_amount, transaction_uuid, product_code, secret_key)
+    
+    # Get eSewa URL (test or production)
+    esewa_url = getattr(settings, 'ESEWA_URL', 'https://rc-epay.esewa.com.np/api/epay/main/v2/form')
+    
+    # Generate form HTML
+    form_html = f'''
+    <form id="esewaForm" action="{esewa_url}" method="POST">
+        <input type="hidden" name="amount" value="{amount}">
+        <input type="hidden" name="tax_amount" value="{tax_amount}">
+        <input type="hidden" name="total_amount" value="{total_amount}">
+        <input type="hidden" name="transaction_uuid" value="{transaction_uuid}">
+        <input type="hidden" name="product_code" value="{product_code}">
+        <input type="hidden" name="product_service_charge" value="0">
+        <input type="hidden" name="product_delivery_charge" value="0">
+        <input type="hidden" name="success_url" value="{success_url}">
+        <input type="hidden" name="failure_url" value="{failure_url}">
+        <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+        <input type="hidden" name="signature" value="{signature}">
+        <button type="submit" class="btn btn-primary">Pay with eSewa</button>
+    </form>
+    '''
+    
+    return form_html
 
 
 def esewa_checkout(request, product_id):
-    """Start an eSewa checkout for a single product (product-level "Buy now").
-
-    This implements the exact minimal flow you provided: instantiate
-    EsewaPayment and render the generated form which auto-submits.
-    """
+    """Start an eSewa checkout for a single product (product-level "Buy now")."""
     product = Product.objects.get(id=product_id)
 
-    if EsewaPayment is None:
-        raise RuntimeError(
-            "django-esewa not installed — install `django-esewa` to use eSewa checkout"
-        )
-
     transaction_uuid = str(uuid.uuid4())
-
-    payment = EsewaPayment(
-        amount=product.price,
-        tax_amount=10,
-        total_amount=product.price + 10,
+    
+    # Get eSewa configuration from settings
+    product_code = getattr(settings, 'ESEWA_MERCHANT_ID', 'EPAYTEST')
+    secret_key = getattr(settings, 'ESEWA_SECRET_KEY', '8gBm/:&EnhH.1/q')
+    success_url = request.build_absolute_uri('/shop/esewa/success/')
+    failure_url = request.build_absolute_uri('/shop/esewa/failure/')
+    
+    # Calculate amounts
+    amount = float(product.price)
+    tax_amount = 0
+    total_amount = amount + tax_amount
+    
+    # Generate form
+    form_html = generate_esewa_form(
+        amount=amount,
+        tax_amount=tax_amount,
+        total_amount=total_amount,
         transaction_uuid=transaction_uuid,
-        product_code=settings.ESEWA_MERCHANT_ID,
-        success_url=settings.ESEWA_SUCCESS_URL,
-        failure_url=settings.ESEWA_FAILURE_URL,
-        secret_key=settings.ESEWA_SECRET_KEY,
+        product_code=product_code,
+        success_url=success_url,
+        failure_url=failure_url,
+        secret_key=secret_key,
+        product_name=product.name
     )
 
     return render(request, 'shop/esewa_checkout.html', {
-        'form': payment.generate(),
+        'form': form_html,
         'product': product,
     })
 
 
 @login_required
 def esewa_checkout_cart(request):
-    """Start an eSewa checkout for the current user's cart (cart-level).
-
-    The view computes shipping server-side (same rules as checkout/place_order)
-    and renders the same auto-submit eSewa form used by product-level flow.
-    """
+    """Start an eSewa checkout for the current user's cart (cart-level)."""
     cart, _ = Cart.objects.get_or_create(user=request.user)
 
     if not cart.items.exists():
         messages.warning(request, "Your shelf is empty — add items before paying with eSewa.")
         return redirect('my_cart')
 
-    if EsewaPayment is None:
-        raise RuntimeError(
-            "django-esewa not installed — install `django-esewa` to use eSewa checkout"
-        )
-
-    # compute shipping using Decimal (same as checkout)
+    # Compute shipping using Decimal (same as checkout)
     free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
     shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
     shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
 
-    total_amount = cart.total_price + shipping
+    total_amount_decimal = cart.total_price + shipping
     transaction_uuid = str(uuid.uuid4())
-
-    payment = EsewaPayment(
-        amount=cart.total_price,
-        tax_amount=Decimal('0.00'),
+    
+    # Get eSewa configuration from settings
+    product_code = getattr(settings, 'ESEWA_MERCHANT_ID', 'EPAYTEST')
+    secret_key = getattr(settings, 'ESEWA_SECRET_KEY', '8gBm/:&EnhH.1/q')
+    success_url = request.build_absolute_uri('/shop/esewa/success/')
+    failure_url = request.build_absolute_uri('/shop/esewa/failure/')
+    
+    # Convert to float for eSewa
+    amount = float(cart.total_price)
+    tax_amount = 0
+    total_amount = float(total_amount_decimal)
+    
+    # Store transaction details in session for verification later
+    request.session['esewa_transaction'] = {
+        'uuid': transaction_uuid,
+        'amount': str(total_amount_decimal),
+        'cart_id': cart.id,
+    }
+    
+    # Generate form
+    form_html = generate_esewa_form(
+        amount=amount,
+        tax_amount=tax_amount,
         total_amount=total_amount,
         transaction_uuid=transaction_uuid,
-        product_code=settings.ESEWA_MERCHANT_ID,
-        success_url=settings.ESEWA_SUCCESS_URL,
-        failure_url=settings.ESEWA_FAILURE_URL,
-        secret_key=settings.ESEWA_SECRET_KEY,
+        product_code=product_code,
+        success_url=success_url,
+        failure_url=failure_url,
+        secret_key=secret_key,
+        product_name="Cart Checkout"
     )
 
     return render(request, 'shop/esewa_checkout.html', {
-        'form': payment.generate(),
+        'form': form_html,
         'cart': cart,
     })
+
 
 @csrf_exempt
 def esewa_success(request):
     """
-    eSewa will POST here after a successful payment.
-    You can optionally verify the payment server-side.
+    eSewa will redirect here after a successful payment.
+    You can verify the payment server-side here.
     """
+    if request.method == 'GET':
+        # eSewa sends these parameters on success
+        data = request.GET.get('data')
+        transaction_uuid = request.GET.get('transaction_uuid')
+        
+        # Get stored transaction from session
+        stored_transaction = request.session.get('esewa_transaction', {})
+        
+        if transaction_uuid and transaction_uuid == stored_transaction.get('uuid'):
+            # Transaction matches - create order
+            if request.user.is_authenticated:
+                cart = get_object_or_404(Cart, user=request.user)
+                
+                # Compute shipping
+                free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+                shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+                shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
+                
+                # Create order
+                order = Order.objects.create(
+                    user=request.user,
+                    total_amount=cart.total_price,
+                    shipping_charge=shipping,
+                    payment_method='eSewa',
+                    transaction_id=transaction_uuid,
+                )
+                
+                # Transfer cart items to order
+                for item in cart.items.all():
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item.product,
+                        quantity=item.quantity,
+                        price_at_order=item.product.price or 0,
+                    )
+                
+                # Clear cart
+                cart.items.all().delete()
+                
+                # Clear session
+                if 'esewa_transaction' in request.session:
+                    del request.session['esewa_transaction']
+                
+                messages.success(request, "Payment successful! Your order has been placed. 🌿")
+                return redirect('order_success', order_id=order.id)
+        
+        messages.success(request, "Payment successful!")
+        return redirect('my_orders')
+    
     return HttpResponse("Payment Successful!")
+
 
 @csrf_exempt
 def esewa_failure(request):
     """
-    eSewa will POST here if the payment failed.
+    eSewa will redirect here if the payment failed.
     """
-    return HttpResponse("Payment Failed!")
+    # Clear session transaction data
+    if 'esewa_transaction' in request.session:
+        del request.session['esewa_transaction']
+    
+    messages.error(request, "Payment failed or was cancelled. Please try again.")
+    return redirect('my_cart')
+
 
 class ShopHealthCheck(APIView):
     def get(self, request):
@@ -220,33 +335,27 @@ def place_order(request):
             order=order,
             product=item.product,
             quantity=item.quantity,
-            price_at_order=item.product.price or 0
+            price_at_order=item.product.price or 0,
         )
-    
-    # Clear Cart
-    cart_items.delete()
 
+    cart_items.delete()
     messages.success(request, "Order placed successfully! 🌿")
     return redirect("order_success", order_id=order.id)
 
 
 @login_required
 def checkout(request):
-    """Render checkout form (uses `CheckoutForm`) and create order on POST.
+    """Full checkout page with shipping info form (address, city, etc).
 
-    This is the canonical flow for collecting delivery address and showing
-    shipping charges before creating an order.
+    On POST, validate and create an order with shipping charges. Prefills
+    the user's email and shows a preview of the cart + shipping.
     """
-    cart = get_object_or_404(Cart, user=request.user)
+    cart, _ = Cart.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            # reuse place_order logic by POSTing the address data into it
-            # (keeps a single creation path). We'll call the same helper
-            # by forwarding data into place_order via the request.POST-like dict.
-            # Simpler: compute shipping here and create the order directly.
 
             # compute shipping (use Decimal for arithmetic with Decimal fields)
             from django.conf import settings
@@ -293,7 +402,7 @@ def checkout(request):
         'cart': cart,
         'shipping_preview': shipping_preview,
         'total_with_shipping': cart.total_price + shipping_preview,
-        'esewa_available': True,  # temporary for testing — shows the Pay with eSewa button
+        'esewa_available': True,  # eSewa is now available with manual implementation
     })
 
 @login_required
@@ -361,8 +470,8 @@ def my_orders(request):
         import logging
         logging.getLogger(__name__).warning("Orders fetch failed: %s", exc)
 
-    # expose whether eSewa is available so templates can show the payment CTA
-    esewa_available = getattr(settings, 'ES_EWA_AVAILABLE', False)
+    # eSewa is now available with manual implementation
+    esewa_available = True
 
     return render(
         request,

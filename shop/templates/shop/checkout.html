@@ -93,16 +93,17 @@
                     </button>
 
                     <div class="text-muted">Subtotal: <strong>₹{{ cart.total_price }}</strong></div>
-
-                    {% if esewa_available %}
-                    <div style="margin-left:auto">
-                        <a href="{% url 'esewa-checkout-cart' %}" class="btn btn-outline-primary" id="esewaBtn" aria-label="Pay with eSewa">
-                            <img src="/static/images/esewa-logo.png" alt="eSewa" style="height:20px;vertical-align:middle;margin-right:8px">Pay with eSewa
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
             </form>
+
+            {% if esewa_available %}
+            <div class="mt-3 text-end">
+                <a href="{% url 'esewa-checkout-cart' %}" class="btn btn-outline-primary" aria-label="Pay with eSewa">
+                    <img src="/static/images/esewa-logo.png" alt="eSewa" style="height:20px;vertical-align:middle;margin-right:8px">
+                    Pay with eSewa
+                </a>
+            </div>
+            {% endif %}
 
             <script>
             (function(){
@@ -116,8 +117,8 @@
                 }
 
                 function updateButtonState(){
-                    // disable if cart is empty or required fields are missing
-                    const cartEmpty = {{ cart.total_price|default:0 }} <= 0;
+                    const cartTotal = parseFloat("{{ cart.total_price|default:'0' }}");
+                    const cartEmpty = isNaN(cartTotal) || cartTotal <= 0;
                     btn.disabled = cartEmpty || !allRequiredFilled();
                 }
 

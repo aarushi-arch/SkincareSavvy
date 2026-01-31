@@ -105,3 +105,20 @@ class CheckoutAddressShippingTests(TestCase):
         resp = self.client.post(reverse('order-reorder', args=[order.id]), follow=True)
         self.assertContains(resp, 'Cannot reorder a cancelled order')
 
+    def test_settings_does_not_add_missing_esewa_to_installed_apps(self):
+        """Ensure we never put a missing third-party 'esewa' into INSTALLED_APPS (prevents ModuleNotFoundError).
+
+        Tests may still set ES_EWA_AVAILABLE=True to exercise templates; that should not cause Django to try to import an app
+        called 'esewa' unless the package is actually installed.
+        """
+        import importlib.util
+        from django.conf import settings as djsettings
+
+        spec = importlib.util.find_spec('esewa')
+        # if package is not installed, it must not appear in INSTALLED_APPS
+        if spec is None:
+            self.assertNotIn('esewa', djsettings.INSTALLED_APPS)
+        else:
+            # if package is present, it's allowed to be in INSTALLED_APPS
+            self.assertIn('esewa', djsettings.INSTALLED_APPS)
+
