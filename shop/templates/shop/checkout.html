@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
 {% block content %}
 <div class="container mt-5">
@@ -92,6 +93,14 @@
                     </button>
 
                     <div class="text-muted">Subtotal: <strong>₹{{ cart.total_price }}</strong></div>
+
+                    {% if esewa_available %}
+                    <div style="margin-left:auto">
+                        <a href="{% url 'esewa-checkout-cart' %}" class="btn btn-outline-primary" id="esewaBtn" aria-label="Pay with eSewa">
+                            <img src="/static/images/esewa-logo.png" alt="eSewa" style="height:20px;vertical-align:middle;margin-right:8px">Pay with eSewa
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </form>
 

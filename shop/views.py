@@ -55,6 +55,49 @@ def esewa_checkout(request, product_id):
         'product': product,
     })
 
+
+@login_required
+def esewa_checkout_cart(request):
+    """Start an eSewa checkout for the current user's cart (cart-level).
+
+    The view computes shipping server-side (same rules as checkout/place_order)
+    and renders the same auto-submit eSewa form used by product-level flow.
+    """
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+
+    if not cart.items.exists():
+        messages.warning(request, "Your shelf is empty — add items before paying with eSewa.")
+        return redirect('my_cart')
+
+    if EsewaPayment is None:
+        raise RuntimeError(
+            "django-esewa not installed — install `django-esewa` to use eSewa checkout"
+        )
+
+    # compute shipping using Decimal (same as checkout)
+    free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+    shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+    shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
+
+    total_amount = cart.total_price + shipping
+    transaction_uuid = str(uuid.uuid4())
+
+    payment = EsewaPayment(
+        amount=cart.total_price,
+        tax_amount=Decimal('0.00'),
+        total_amount=total_amount,
+        transaction_uuid=transaction_uuid,
+        product_code=settings.ESEWA_MERCHANT_ID,
+        success_url=settings.ESEWA_SUCCESS_URL,
+        failure_url=settings.ESEWA_FAILURE_URL,
+        secret_key=settings.ESEWA_SECRET_KEY,
+    )
+
+    return render(request, 'shop/esewa_checkout.html', {
+        'form': payment.generate(),
+        'cart': cart,
+    })
+
 @csrf_exempt
 def esewa_success(request):
     """
@@ -250,6 +293,7 @@ def checkout(request):
         'cart': cart,
         'shipping_preview': shipping_preview,
         'total_with_shipping': cart.total_price + shipping_preview,
+        'esewa_available': True,  # temporary for testing — shows the Pay with eSewa button
     })
 
 @login_required
@@ -317,6 +361,9 @@ def my_orders(request):
         import logging
         logging.getLogger(__name__).warning("Orders fetch failed: %s", exc)
 
+    # expose whether eSewa is available so templates can show the payment CTA
+    esewa_available = getattr(settings, 'ES_EWA_AVAILABLE', False)
+
     return render(
         request,
         "shop/my_orders.html",
@@ -326,8 +373,87 @@ def my_orders(request):
             "timeline_steps": timeline_steps,
             "selected_step_index": selected_step_index,
             "migration_needed": migration_needed,
+            "esewa_available": esewa_available,
         },
     )
+
+
+@login_required
+def reorder_to_cart(request, order_id):
+    """Copy an existing order's items into the user's cart and redirect to checkout.
+
+    - POST-only for safety
+    - clears existing cart items (user expectation: reorder replaces cart)
+    - disallows re-ordering cancelled orders
+    """
+    if request.method != 'POST':
+        return redirect('order-detail', order_id=order_id)
+
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if order.status == 'Cancelled':
+        messages.warning(request, "Cannot reorder a cancelled order.")
+        return redirect('my_orders')
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    cart.items.all().delete()
+
+    for oi in order.items.all():
+        CartItem.objects.create(cart=cart, product=oi.product, quantity=oi.quantity)
+
+    messages.success(request, "Added items from Order #{} to your cart.".format(order.id))
+    return redirect('shop-checkout')
+
+
+@login_required
+def checkout_order_item(request, order_id, item_id):
+    """Copy a single OrderItem into the user's cart and redirect to the checkout page.
+
+    - POST-only for safety
+    - preserves the original item's quantity
+    - denies operation for cancelled orders
+    """
+    if request.method != 'POST':
+        return redirect('order-detail', order_id=order_id)
+
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if order.status == 'Cancelled':
+        messages.warning(request, "Cannot reorder a cancelled order.")
+        return redirect('my_orders')
+
+    oi = get_object_or_404(OrderItem, id=item_id, order=order)
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    # replace existing cart contents (user expectation: checkout this item now)
+    cart.items.all().delete()
+    CartItem.objects.create(cart=cart, product=oi.product, quantity=oi.quantity)
+
+    messages.success(request, "Added '{}' to your cart. Proceed to checkout.".format(oi.product.name))
+    return redirect('shop-checkout')
+
+
+@login_required
+def reorder_to_esewa(request, order_id):
+    """Copy order items into cart and redirect to cart-level eSewa checkout.
+
+    Uses the same safety checks as `reorder_to_cart` but redirects to
+    the eSewa cart checkout URL so the user can pay immediately.
+    """
+    if request.method != 'POST':
+        return redirect('order-detail', order_id=order_id)
+
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if order.status == 'Cancelled':
+        messages.warning(request, "Cannot reorder a cancelled order.")
+        return redirect('my_orders')
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    cart.items.all().delete()
+
+    for oi in order.items.all():
+        CartItem.objects.create(cart=cart, product=oi.product, quantity=oi.quantity)
+
+    messages.success(request, "Proceeding to payment for Order #{}".format(order.id))
+    return redirect('esewa-checkout-cart')
 
 
 @login_required

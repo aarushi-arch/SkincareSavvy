@@ -3,13 +3,19 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Redirecting to eSewa — {{ product.name }}</title>
+    <title>Redirecting to eSewa{% if product %} — {{ product.name }}{% endif %}</title>
   </head>
   <body>
     <div style="max-width:720px;margin:80px auto;text-align:center;font-family:Inter, sans-serif;color:#333">
       <h3>Redirecting to eSewa...</h3>
-      <p>Please wait while we prepare your payment for <strong>{{ product.name }}</strong>.</p>
+      {% if product %}
+        <p>Please wait while we prepare your payment for <strong>{{ product.name }}</strong>.</p>
+      {% else %}
+        <p>Please wait while we prepare your payment for your order.</p>
+      {% endif %}
+
       {{ form|safe }}
+
       <noscript>
         <p>Please click the button below to continue to payment.</p>
       </noscript>

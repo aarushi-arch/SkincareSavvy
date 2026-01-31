@@ -99,8 +99,25 @@
 
         <div class="summary">
           {% for item in selected_order.items.all %}
-            <div class="summary-item">
-              <span>{{ item.product.name }} <small class="text-muted">(x{{ item.quantity }})</small></span>
+            <div class="summary-item" style="align-items:center;gap:12px">
+              <div style="display:flex;flex-direction:column">
+                <span>{{ item.product.name }} <small class="text-muted">(x{{ item.quantity }})</small></span>
+
+                <div style="margin-top:8px">
+                  <!-- POST form: copy this single order-item into cart and go to checkout -->
+                  <form method="post" action="{% url 'order-item-checkout' selected_order.id item.id %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" aria-label="Checkout {{ item.product.name }}">Checkout this item</button>
+                  </form>
+
+                  {% if esewa_available %}
+                    <a href="{% url 'esewa_checkout' item.product.id %}" class="btn btn-sm btn-outline-primary" style="margin-left:8px">Buy with eSewa</a>
+                  {% endif %}
+
+                  <a href="{% url 'order-detail' selected_order.id %}#item-{{ item.id }}" class="text-muted" style="margin-left:10px;font-size:.9rem">View item</a>
+                </div>
+              </div>
+
               <span>₹ {{ item.subtotal }}</span>
             </div>
           {% endfor %}

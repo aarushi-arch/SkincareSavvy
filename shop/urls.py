@@ -7,10 +7,13 @@ from .views import (
     place_order,
     checkout,
     esewa_checkout,
+    esewa_checkout_cart,
+    reorder_to_cart,
+    checkout_order_item,
+    reorder_to_esewa,
     order_success,
     my_orders,
     order_detail,
-    esewa_checkout,
     esewa_success,
     esewa_failure,
 )
@@ -22,8 +25,16 @@ urlpatterns = [
     path("remove/<int:item_id>/", remove_from_cart, name="remove_from_cart"),
     path("place-order/", place_order, name="place_order"),
     path("checkout/", checkout, name="shop-checkout"),
+    path('esewa/cart/', esewa_checkout_cart, name='esewa-checkout-cart'),
+    path("checkout/esewa/", esewa_checkout_cart, name="esewa-checkout-cart"),
     path("checkout/<int:product_id>/", esewa_checkout, name="esewa-checkout"),
     path("order-success/<int:order_id>/", order_success, name="order_success"),
+
+    # Reorder / pay again
+    path("order/<int:order_id>/reorder/", reorder_to_cart, name="order-reorder"),
+    # Checkout a single item from a past order (POST-only)
+    path("order/<int:order_id>/item/<int:item_id>/checkout/", checkout_order_item, name="order-item-checkout"),
+    path("order/<int:order_id>/reorder/esewa/", reorder_to_esewa, name="order-reorder-esewa"),
 
     # Primary orders listing + backward-compatible alias
     path("my-orders/", my_orders, name="my_orders"),

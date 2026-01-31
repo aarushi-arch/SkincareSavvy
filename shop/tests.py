@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .models import Order, OrderItem
@@ -44,4 +44,64 @@ class CheckoutAddressShippingTests(TestCase):
         resp = self.client.get(url)
         self.assertContains(resp, 'addr')
         self.assertContains(resp, '₹ 20')
+
+    @override_settings(ES_EWA_AVAILABLE=True)
+    def test_checkout_shows_esewa_button_when_available(self):
+        """Checkout page should show a 'Pay with eSewa' button when eSewa is enabled."""
+        url = reverse('shop-checkout')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Pay with eSewa')
+        self.assertContains(resp, reverse('esewa-checkout-cart'))
+
+    def test_reorder_copies_items_into_cart_and_redirects(self):
+        order = Order.objects.create(user=self.user, total_amount=500, shipping_charge=20)
+        OrderItem.objects.create(order=order, product=self.product, quantity=2, price_at_order=self.product.price)
+
+        resp = self.client.post(reverse('order-reorder', args=[order.id]), follow=True)
+        self.assertEqual(resp.status_code, 200)
+        from .models import Cart, CartItem
+        cart = Cart.objects.get(user=self.user)
+        self.assertEqual(cart.items.count(), 1)
+        ci = cart.items.first()
+        self.assertEqual(ci.product, self.product)
+        self.assertEqual(ci.quantity, 2)
+        self.assertContains(resp, 'Shipping')
+
+    def test_checkout_item_copies_single_item_into_cart_and_redirects(self):
+        order = Order.objects.create(user=self.user, total_amount=500, shipping_charge=20)
+        oi = OrderItem.objects.create(order=order, product=self.product, quantity=2, price_at_order=self.product.price)
+
+        resp = self.client.post(reverse('order-item-checkout', args=[order.id, oi.id]), follow=True)
+        self.assertEqual(resp.status_code, 200)
+        from .models import Cart, CartItem
+        cart = Cart.objects.get(user=self.user)
+        self.assertEqual(cart.items.count(), 1)
+        ci = cart.items.first()
+        self.assertEqual(ci.product, self.product)
+        self.assertEqual(ci.quantity, 2)
+        self.assertContains(resp, 'Shipping')
+
+    def test_cannot_checkout_item_from_cancelled_order(self):
+        order = Order.objects.create(user=self.user, total_amount=200, shipping_charge=0, status='Cancelled')
+        oi = OrderItem.objects.create(order=order, product=self.product, quantity=1, price_at_order=self.product.price)
+
+        resp = self.client.post(reverse('order-item-checkout', args=[order.id, oi.id]), follow=True)
+        self.assertContains(resp, 'Cannot reorder a cancelled order')
+
+    @override_settings(ES_EWA_AVAILABLE=True)
+    def test_reorder_redirects_to_esewa_when_requested(self):
+        order = Order.objects.create(user=self.user, total_amount=500, shipping_charge=20)
+        OrderItem.objects.create(order=order, product=self.product, quantity=1, price_at_order=self.product.price)
+
+        resp = self.client.post(reverse('order-reorder-esewa', args=[order.id]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp['Location'], reverse('esewa-checkout-cart'))
+
+    def test_cannot_reorder_cancelled_order(self):
+        order = Order.objects.create(user=self.user, total_amount=200, shipping_charge=0, status='Cancelled')
+        OrderItem.objects.create(order=order, product=self.product, quantity=1, price_at_order=self.product.price)
+
+        resp = self.client.post(reverse('order-reorder', args=[order.id]), follow=True)
+        self.assertContains(resp, 'Cannot reorder a cancelled order')
 

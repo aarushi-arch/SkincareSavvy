@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "shop",
     "rest_framework",
     "products",
+    "widget_tweaks",
 ]
 
 # enable optional third-party apps only when installed
