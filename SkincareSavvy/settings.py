@@ -102,12 +102,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ===================================
 # eSewa Payment Gateway Configuration
-# Add these to your settings.py file
 # ===================================
 
 # eSewa Merchant ID (also called Product Code)
 # For testing, use: 'EPAYTEST'
 # For production, get this from your eSewa merchant account
+ESEWA_SANDBOX = True
+
 ESEWA_MERCHANT_ID = 'EPAYTEST'
 
 # eSewa Secret Key
@@ -115,9 +116,10 @@ ESEWA_MERCHANT_ID = 'EPAYTEST'
 # For production, get this from your eSewa merchant account
 ESEWA_SECRET_KEY = '8gBm/:&EnhH.1/q'
 
+
 # eSewa Payment Gateway URL
 # For testing (development):
-ESEWA_URL = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
+#ESEWA_URL = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
 
 # For production (live):
 # ESEWA_URL = 'https://epay.esewa.com.np/api/epay/main/v2/form'
