@@ -111,7 +111,7 @@ class FaceAnalysisPipeline:
             print(f"Skin types model load failed: {e}")
 
         if not self.skin_types_model or not self.skin_concerns_model:
-            print("⚠️ CNN models missing or incomplete. Simulation mode active.")
+            print("CNN models missing or incomplete. Simulation mode active.")
             
         self._models_loaded = True
 
