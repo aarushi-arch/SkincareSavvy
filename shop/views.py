@@ -207,6 +207,7 @@ def esewa_success(request):
                     del request.session['esewa_transaction']
                 
                 messages.success(request, "Payment successful! Your order has been placed. 🌿")
+                
                 return redirect('order_success', order_id=order.id)
         
         messages.success(request, "Payment successful!")
@@ -340,6 +341,7 @@ def place_order(request):
 
     cart_items.delete()
     messages.success(request, "Order placed successfully! 🌿")
+    
     return redirect("order_success", order_id=order.id)
 
 
@@ -383,6 +385,7 @@ def checkout(request):
 
             cart.items.all().delete()
             messages.success(request, "Order placed successfully! 🌿")
+            
             return redirect('order_success', order_id=order.id)
     else:
         # prefill form where possible (friendly UX)

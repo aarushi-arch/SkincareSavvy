@@ -13,6 +13,148 @@
 
     <!-- Recommendations styling -->
     <link rel="stylesheet" href="{% static 'recommendations/css/styles.css' %}">
+
+    <style>
+        /* Notification Styles */
+        .notification-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .notification-btn {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .notification-btn:hover {
+            /* transform: scale(1.1); */
+        }
+
+        .notification-btn::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff;
+            transition: width 0.3s ease;
+        }
+
+        .notification-btn:hover::after {
+            width: 100%;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .notification-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            z-index: 2000;
+            border-radius: 15px;
+            top: 100%;
+            margin-top: 15px;
+            border: 1px solid rgba(11, 59, 23, 0.1);
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+            text-align: left;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-content.show {
+            display: block;
+        }
+
+        .notification-header {
+            padding: 12px 16px;
+            background: rgba(11, 59, 23, 0.05);
+            font-weight: 600;
+            color: #0b3b17;
+            border-bottom: 1px solid rgba(11, 59, 23, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(11, 59, 23, 0.05);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: rgba(11, 59, 23, 0.03);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item .message {
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            display: block;
+        }
+
+        .notification-item .time {
+            font-size: 0.75rem;
+            color: #7a8b81;
+        }
+
+        .notification-footer {
+            padding: 10px;
+            text-align: center;
+            background: rgba(11, 59, 23, 0.02);
+            border-top: 1px solid rgba(11, 59, 23, 0.05);
+        }
+
+        .notification-footer a {
+            font-size: 0.85rem;
+            color: #0b3b17;
+            font-weight: 600;
+            text-decoration: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -35,6 +177,41 @@
                         </div>
                     </li>
                     {% if user.is_authenticated %}
+                    <li class="notification-dropdown">
+                        <button class="notification-btn" id="notificationBtn">
+                            Notification
+                            {% if unread_count > 0 %}
+                            <span class="notification-badge">{{ unread_count }}</span>
+                            {% endif %}
+                        </button>
+                        <div class="notification-content" id="notificationContent">
+                            <div class="notification-header">
+                                Notifications
+                                {% if unread_count > 0 %}
+                                <span
+                                    style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">{{
+                                    unread_count }} new</span>
+                                {% endif %}
+                            </div>
+                            <div class="notification-body">
+                                {% if unread_notifications %}
+                                {% for notification in unread_notifications %}
+                                <div class="notification-item">
+                                    <span class="message">{{ notification.message }}</span>
+                                    <span class="time">{{ notification.created_at|timesince }} ago</span>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="notification-item" style="text-align: center; padding: 20px;">
+                                    <p style="color: #7a8b81; margin: 0;">No unread notifications</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="notification-footer">
+                                <a href="{% url 'notifications' %}">View All Notifications</a>
+                            </div>
+                        </div>
+                    </li>
                     <li><a href="{% url 'my_cart' %}">My Shelf</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
@@ -267,6 +444,23 @@
                     updateProducts();
                 }
             });
+
+            // Notification dropdown toggle
+            const notificationBtn = document.getElementById('notificationBtn');
+            const notificationContent = document.getElementById('notificationContent');
+
+            if (notificationBtn && notificationContent) {
+                notificationBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    notificationContent.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) {
+                        notificationContent.classList.remove('show');
+                    }
+                });
+            }
         });
     </script>
 </body>

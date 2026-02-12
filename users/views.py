@@ -149,3 +149,23 @@ def remove_from_shelf(request, product_id):
         messages.warning(request, f'{product.name} was not found in your shelf.')
         
     return redirect('my_shelf')
+
+
+@login_required
+def notifications_view(request):
+    """View to display all notifications for the user."""
+    from .models import Notification
+    # Evaluation happens here to ensure we capture them before marking as read
+    notifications = list(request.user.notifications.all())
+    
+    # Debug print to check count
+    print(f"DEBUG: Found {len(notifications)} notifications for user {request.user.username}")
+    
+    # Mark as read
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    
+    context = {
+        'notifications': notifications,
+        'page_title': 'Notifications'
+    }
+    return render(request, 'users/notifications.html', context)
