@@ -413,13 +413,13 @@
                         <div class="score-circle">
                             {% if analysis_result.flags.pores %} ✓ {% else %} — {% endif %}
                         </div>
-                        <span class="score-label">Texture</span>
+                        <span class="score-label">Pores</span>
                     </div>
                     <div class="score-badge spots {% if not analysis_result.flags.darkspots %}inactive{% endif %}">
                         <div class="score-circle">
                             {% if analysis_result.flags.darkspots %} ✓ {% else %} — {% endif %}
                         </div>
-                        <span class="score-label">Spots</span>
+                        <span class="score-label">Darkspots</span>
                     </div>
                 </div>
 
@@ -458,8 +458,6 @@
                             d="M 100 230 Q 180 230 220 200" stroke="#9C27B0" />
                         <path class="connector-line {% if not analysis_result.flags.darkspots %}inactive{% endif %}"
                             d="M 100 340 Q 180 340 210 280" stroke="#2196F3" />
-                        <path class="connector-line {% if not analysis_result.flags.oiliness %}inactive{% endif %}"
-                            d="M 400 150 Q 320 150 270 180" stroke="#FF9800" />
                         <path class="connector-line {% if not analysis_result.flags.acne %}inactive{% endif %}"
                             d="M 400 280 Q 320 280 280 250" stroke="#F44336" />
                         <path class="connector-line {% if not analysis_result.flags.blackheads %}inactive{% endif %}"
@@ -469,17 +467,11 @@
 
                 <!-- Right Column: Oiliness & Redness -->
                 <div class="dashboard-right">
-                    <div class="score-badge oiliness {% if not analysis_result.flags.oiliness %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.oiliness %} ✓ {% else %} — {% endif %}
-                        </div>
-                        <span class="score-label">Oiliness</span>
-                    </div>
                     <div class="score-badge redness {% if not analysis_result.flags.acne %}inactive{% endif %}">
                         <div class="score-circle">
                             {% if analysis_result.flags.acne %} ✓ {% else %} — {% endif %}
                         </div>
-                        <span class="score-label">Redness</span>
+                        <span class="score-label">Acne</span>
                     </div>
                     <div
                         class="score-badge blackheads {% if not analysis_result.flags.blackheads %}inactive{% endif %}">

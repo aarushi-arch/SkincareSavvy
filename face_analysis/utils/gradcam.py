@@ -82,42 +82,41 @@ def find_last_conv_layer(model):
             return layer.name
     raise ValueError("No convolution layer found.")
 
-def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_conv_layer_name=None, target_size=(224, 224), alpha=0.3, threshold=0.6):
+def generate_multi_skin_concern_heatmaps(
+    model,
+    img_bytes,
+    class_names,
+    last_conv_layer_name=None,
+    target_size=(224, 224),
+    confidence_threshold=0.30,   # only show meaningful concerns
+    activation_threshold=0.45,   # remove weak heatmap noise
+    alpha=0.25                   # subtle overlay
+):
     """
-    Generate Grad-CAM heatmaps for all classes of interest with minimal white indicators.
-    Adapted to accept image bytes directly instead of path for efficiency.
-    
-    Args:
-        model: Keras skin concern model
-        img_bytes: Input image (bytes or numpy array)
-        class_names: List of skin concern class names
-        last_conv_layer_name: Name of last conv layer in model (optional, auto-detected if None)
-        alpha: Transparency for heatmap overlay (lower = more subtle, default 0.3)
-        threshold: Threshold for high-attention areas (default 0.6)
+    Improved Grad-CAM visualization with:
+    - Noise reduction
+    - Strong activation filtering
+    - Smoother, more professional look
+    """
 
-    Returns:
-        List of dictionaries with heatmaps
-    """
     if last_conv_layer_name is None:
         last_conv_layer_name = find_last_conv_layer(model)
 
     # Load original image
     if isinstance(img_bytes, bytes):
-        pil_img = Image.open(BytesIO(img_bytes)).convert('RGB')
+        pil_img = Image.open(BytesIO(img_bytes)).convert("RGB")
         img_rgb = np.array(pil_img)
     elif isinstance(img_bytes, np.ndarray):
         img_rgb = img_bytes
     else:
-        raise ValueError("Unsupported image type provided to GradCAM generator")
-    
-    # Preprocess for model using shared utility
-    # returns (1, H, W, 3)
+        raise ValueError("Unsupported image type provided")
+
+    # Preprocess image
     img_array = preprocess_image(img_bytes, target_size=target_size, normalize=True)
-    
-    # Predict all skin concerns
+
+    # Get predictions
     preds = model.predict(img_array, verbose=0)[0]
 
-    # Build a single combined, confidence-weighted heatmap
     combined_heatmap = None
     total_weight = 0.0
     detected_concerns = []
@@ -125,14 +124,29 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
     orig_h, orig_w = img_rgb.shape[:2]
 
     for i, class_name in enumerate(class_names):
+        confidence = float(preds[i])
+
+        # Only visualize meaningful predictions
+        if confidence < confidence_threshold:
+            continue
+
         try:
-            heatmap = get_gradcam_heatmap(model, img_array, i, last_conv_layer_name)
+            heatmap = get_gradcam_heatmap(
+                model, img_array, i, last_conv_layer_name
+            )
 
-            # Confidence for this class
-            confidence = float(preds[i])
-
-            # Resize to original image size and weight by confidence
             heatmap = cv2.resize(heatmap, (orig_w, orig_h))
+
+            # Boost contrast
+            heatmap = np.power(heatmap, 1.8)
+
+            # Remove weak activations
+            heatmap[heatmap < activation_threshold] = 0
+
+            # Smooth heatmap
+            heatmap = cv2.GaussianBlur(heatmap, (21, 21), 0)
+
+            # Weight by confidence
             heatmap = heatmap * confidence
 
             if combined_heatmap is None:
@@ -141,35 +155,32 @@ def generate_multi_skin_concern_heatmaps(model, img_bytes, class_names, last_con
                 combined_heatmap += heatmap
 
             total_weight += confidence
-
-            # Consider it a detected concern if confidence passes a small threshold
-            if confidence >= 0.10:
-                detected_concerns.append(class_name)
+            detected_concerns.append(class_name)
 
         except Exception as e:
-            print(f"Error generating heatmap for {class_name}: {e}")
+            print(f"GradCAM error for {class_name}: {e}")
 
-    # Normalize combined heatmap
     if combined_heatmap is None:
         combined_heatmap = np.zeros((orig_h, orig_w), dtype=np.float32)
 
-    combined_heatmap = combined_heatmap / max(total_weight, 1e-6)
-    combined_heatmap = np.clip(combined_heatmap, 0.0, 1.0)
+    combined_heatmap /= max(total_weight, 1e-6)
+    combined_heatmap = np.clip(combined_heatmap, 0, 1)
 
-    # Colorize and overlay on original image
-    colored_heatmap = cv2.applyColorMap((combined_heatmap * 255).astype(np.uint8), cv2.COLORMAP_JET)
+    # Apply modern colormap
+    colored_heatmap = cv2.applyColorMap(
+        (combined_heatmap * 255).astype(np.uint8),
+        cv2.COLORMAP_INFERNO  # better than JET
+    )
 
-    # Ensure we have BGR for overlay; original is RGB -> convert to BGR
+    # Blend with original image
     original_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-    overlay_bgr = cv2.addWeighted(original_bgr, 0.6, colored_heatmap, 0.4, 0)
+    overlay_bgr = cv2.addWeighted(original_bgr, 1 - alpha, colored_heatmap, alpha, 0)
 
-    # Convert overlay back to RGB for consistent downstream handling
     overlay_rgb = cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
 
-    # Convert to base64
     combined_base64 = convert_heatmap_to_base64(overlay_rgb)
 
     return {
-        'combined_heatmap': combined_base64,
-        'detected_concerns': detected_concerns,
+        "combined_heatmap": combined_base64,
+        "detected_concerns": detected_concerns,
     }

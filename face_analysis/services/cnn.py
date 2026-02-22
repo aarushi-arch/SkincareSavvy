@@ -10,18 +10,18 @@ import numpy as np
 import tensorflow as tf
 import keras
 
-from face_analysis.models import CNNModel
-from face_analysis.utils.image_utils import preprocess_image
-from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps
+from face_analysis.models import CNNModel # Import CNN model stored in database
+from face_analysis.utils.image_utils import preprocess_image # For consistent preprocessing
+from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps # For heatmap generation
 
-import cv2
-import mediapipe as mp
+import cv2 # For image processing and face detection
+import mediapipe as mp # For advanced face detection and landmark recognition
 
 
 class FaceAnalysisPipeline:
     """
     CNN pipeline for face analysis (skin types and skin concerns).
-    Loads ACTIVE models from the database.
+    Loads Active models from the database.
     """
 
     def __init__(self) -> None:
@@ -148,12 +148,12 @@ class FaceAnalysisPipeline:
         """
         Preprocess image according to model input size.
         """
-        h, w = (224, 224)
+        h, w = (128, 128)
 
         if target_model is not None:
             try:
                 shape = target_model.input_shape
-                # shape might be (None, 224, 224, 3)
+                # shape might be (None, 128, 128, 3)
                 if shape and len(shape) >= 3:
                      h, w = shape[1:3]
             except Exception:
@@ -161,7 +161,7 @@ class FaceAnalysisPipeline:
         
         # Ensure we have valid dimensions
         if h is None or w is None:
-             h, w = (224, 224)
+             h, w = (128, 128)
 
         return preprocess_image(
             image_bytes,
@@ -185,7 +185,7 @@ class FaceAnalysisPipeline:
         k = min(top_k, len(self.skin_types_classes))
         top = np.argsort(preds)[-k:][::-1]
 
-        return {
+        return { # Return list of top predictions with class names and confidence
             "predictions": [
                 {
                     "class": self.skin_types_classes[i],
@@ -218,9 +218,9 @@ class FaceAnalysisPipeline:
         }
 
     
-    # ===============================
+    
     # FACE DETECTION & PREPROCESSING
-    # ===============================
+    
     
     def detect_face(self, image_bgr: np.ndarray):
         """
@@ -549,8 +549,7 @@ class FaceAnalysisPipeline:
                     self.skin_concerns_model,
                     cropped_face_rgb, # Passing the cropped RGB array
                     self.skin_concerns_classes,
-                    target_size=target_size,
-                    threshold=0.6     # Balanced sensitivity for problem areas
+                    target_size=target_size
                 )
 
                 # Debug info

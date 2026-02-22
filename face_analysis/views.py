@@ -48,8 +48,15 @@ def index(request):
                     skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
                     skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
                     
+                    CONFIDENCE_THRESHOLD = 0.5  # 50%
+
                     concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
-                    concerns_list = [p["class"].lower().replace("_", "") for p in concerns_preds]
+
+                    concerns_list = [
+                        p["class"].lower().replace("_", "")
+                        for p in concerns_preds
+                        if p["confidence"] >= CONFIDENCE_THRESHOLD
+                    ]    
                     
                     # Create flags for the template to handle dynamic icons/badges
                     analysis_result["flags"] = {
@@ -60,8 +67,9 @@ def index(request):
                         "blackheads": "blackheads" in concerns_list,
                     }
                     
-                    # Clean concerns list for recommendation engine
+                    # Clean concerns list for recommendation engine and UI consistency
                     detected_concerns = [c for c, active in analysis_result["flags"].items() if active]
+                    analysis_result["detected_concerns"] = detected_concerns
                     
                     query = {
                         "skin_type": skin_type,
@@ -72,7 +80,7 @@ def index(request):
                     routine = build_routine(query)
                     print(f"Found {len(recommended_products)} products for {skin_type} with {detected_concerns} concerns.")
                 
-                if analysis_result.get("error"):
+                if analysis_result and analysis_result.get("error"):
                     error = analysis_result.get("error")
 
                 # DEBUG OUTPUT (VERY IMPORTANT)
