@@ -139,6 +139,11 @@ def recommend(request):
         "error_message": error_message,
         "page_title": "Skincare Product Recommendations",
     }
+    
+    # Check if this is an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, "recommendations/recommend_results.html", context)
+    
     return render(request, "recommendations/recommend.html", context)
 
 

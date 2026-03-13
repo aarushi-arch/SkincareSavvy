@@ -307,13 +307,28 @@
                     {{ error_message }}
                 </div>
                 {% endif %}
+                {% if form.errors %}
+                <div class="alert alert-danger" role="alert"
+                    style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                    <strong>Please correct the following errors:</strong>
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
                 <form method="post" action="{% url 'recommendations:recommend' %}" id="recommendationForm">
                     {% csrf_token %}
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.product_category.id_for_label }}">{{ form.product_category.label
-                                }}</label>
+                            <label for="{{ form.product_category.id_for_label }}">{{ form.product_category.label }}</label>
                             {{ form.product_category }}
                         </div>
 
@@ -338,13 +353,12 @@
                     <div class="form-group">
                         <label>{{ form.notable_effects.label }}</label>
                         <div class="checkbox-group" id="notableEffectsGroup">
-                            {% if form.notable_effects.field.choices %}
-                            {% for choice in form.notable_effects.field.choices %}
+                            {% if form.notable_effects.choices %}
+                            {% for choice in form.notable_effects.choices %}
                             {% if choice.0 %}
                             <div class="checkbox-item">
                                 <input type="checkbox" name="notable_effects" value="{{ choice.0 }}"
-                                    id="id_notable_effects_{{ forloop.counter }}" {% if choice.0 in
-                                    form.notable_effects.value %}checked{% endif %} class="form-check-input">
+                                    id="id_notable_effects_{{ forloop.counter }}" {% if form.notable_effects.value and choice.0 in form.notable_effects.value %}checked{% endif %} class="form-check-input">
                                 <label for="id_notable_effects_{{ forloop.counter }}">{{ choice.1 }}</label>
                             </div>
                             {% endif %}
@@ -360,7 +374,7 @@
                         {{ form.selected_product }}
                     </div>
 
-                    <button type="submit" class="btn-primary">Find More Product Recommendations</button>
+                    <button type="button" class="btn-primary" id="findRecommendationsBtn">Find More Product Recommendations</button>
                 </form>
             </section>
 
@@ -559,48 +573,109 @@
                 }, duration);
             }
 
-            // AJAX Add to Shelf
-            const shelfButtons = document.querySelectorAll('.add-to-shelf-btn');
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            // AJAX Form Submission for Recommendations
+            const findRecommendationsBtn = document.getElementById('findRecommendationsBtn');
+            const recommendationForm = document.getElementById('recommendationForm');
+            const resultsSection = document.querySelector('.results-section');
 
-            shelfButtons.forEach(button => {
-                button.addEventListener('click', function () {
-                    const productId = this.dataset.productId;
-                    const btn = this;
-                    const originalText = btn.textContent;
-
-                    btn.textContent = 'Adding...';
-                    btn.disabled = true;
-
-                    fetch(`/add-to-shelf/${productId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRFToken': csrfToken,
-                            'Accept': 'application/json'
-                        }
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            showToast(data.message, data.status === 'success' ? 'success' : 'info');
-                            if (data.status === 'success') {
-                                btn.textContent = 'Added';
-                                btn.style.background = '#28a745';
-                                btn.style.color = 'white';
-                                btn.style.borderColor = '#28a745';
-                            } else {
-                                btn.textContent = originalText;
-                                btn.disabled = false;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            showToast('Error adding to shelf', 'error');
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                        });
+            findRecommendationsBtn.addEventListener('click', function() {
+                const formData = new FormData(recommendationForm);
+                
+                // Show loading state
+                findRecommendationsBtn.textContent = 'Finding Recommendations...';
+                findRecommendationsBtn.disabled = true;
+                
+                // Clear previous results
+                if (resultsSection) {
+                    resultsSection.innerHTML = '<p>Finding recommendations...</p>';
+                }
+                
+                fetch(recommendationForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    // Parse the returned HTML and update the results section
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newResultsSection = doc.querySelector('.results-section');
+                    
+                    if (newResultsSection) {
+                        resultsSection.innerHTML = newResultsSection.innerHTML;
+                        
+                        // Re-bind Add to Shelf buttons
+                        bindAddToShelfButtons();
+                    }
+                    
+                    // Check for errors
+                    const errorDiv = doc.querySelector('.alert-danger');
+                    if (errorDiv) {
+                        showToast(errorDiv.textContent.trim(), 'error');
+                    }
+                    
+                    // Reset button
+                    findRecommendationsBtn.textContent = 'Find More Product Recommendations';
+                    findRecommendationsBtn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error finding recommendations. Please try again.', 'error');
+                    findRecommendationsBtn.textContent = 'Find More Product Recommendations';
+                    findRecommendationsBtn.disabled = false;
                 });
             });
+
+            // AJAX Add to Shelf
+            function bindAddToShelfButtons() {
+                const shelfButtons = document.querySelectorAll('.add-to-shelf-btn');
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                shelfButtons.forEach(button => {
+                    button.addEventListener('click', function () {
+                        const productId = this.dataset.productId;
+                        const btn = this;
+                        const originalText = btn.textContent;
+
+                        btn.textContent = 'Adding...';
+                        btn.disabled = true;
+
+                        fetch(`/add-to-shelf/${productId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': csrfToken,
+                                'Accept': 'application/json'
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                showToast(data.message, data.status === 'success' ? 'success' : 'info');
+                                if (data.status === 'success') {
+                                    btn.textContent = 'Added';
+                                    btn.style.background = '#28a745';
+                                    btn.style.color = 'white';
+                                    btn.style.borderColor = '#28a745';
+                                } else {
+                                    btn.textContent = originalText;
+                                    btn.disabled = false;
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                showToast('Error adding to shelf', 'error');
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                            });
+                    });
+                });
+            }
+
+            // Bind Add to Shelf buttons initially
+            bindAddToShelfButtons();
 
             // Notification dropdown toggle
             const notificationBtn = document.getElementById('notificationBtn');

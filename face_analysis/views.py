@@ -47,18 +47,33 @@ def index(request):
                     # Extract Data for dynamic UI flags and recommendations
                     skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
                     skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
+                    analysis_result["skin_type_label"] = skin_type
                     
                     CONFIDENCE_THRESHOLD = 0.5  # 50%
 
                     concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
 
-                    concerns_list = [
-                        p["class"].lower().replace("_", "")
+                    # Identify all concerns meeting the threshold
+                    detected_concerns_with_confidence = [
+                        {
+                            "name": p["class"].lower().replace("_", ""),
+                            "confidence": p["confidence"]
+                        }
                         for p in concerns_preds
                         if p["confidence"] >= CONFIDENCE_THRESHOLD
-                    ]    
+                    ]
+
+                    # Map names for internal flags consistency
+                    concerns_list = [c["name"] for c in detected_concerns_with_confidence]
+
+                    # Identify main concern (highest confidence)
+                    main_concern = None
+                    if detected_concerns_with_confidence:
+                        # Sort by confidence descending
+                        sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
+                        main_concern = sorted_concerns[0]["name"]
                     
-                    # Create flags for the template to handle dynamic icons/badges
+                    # Create flags for the template to handle dynamic icons/badges (visual feedback for all)
                     analysis_result["flags"] = {
                         "acne": "acne" in concerns_list,
                         "wrinkles": "wrinkles" in concerns_list,
@@ -67,23 +82,23 @@ def index(request):
                         "blackheads": "blackheads" in concerns_list,
                     }
                     
-                    # Clean concerns list for recommendation engine and UI consistency
-                    detected_concerns = [c for c, active in analysis_result["flags"].items() if active]
-                    analysis_result["detected_concerns"] = detected_concerns
+                    # Use ONLY the main concern for recommendations and the results summary
+                    final_concerns = [main_concern] if main_concern else []
+                    analysis_result["detected_concerns"] = final_concerns
                     
                     query = {
                         "skin_type": skin_type,
-                        "concerns": detected_concerns
+                        "concerns": final_concerns
                     }
                     
                     recommended_products = recommend_products(query)
                     routine = build_routine(query)
-                    print(f"Found {len(recommended_products)} products for {skin_type} with {detected_concerns} concerns.")
+                    print(f"Main concern: {main_concern}. Found {len(recommended_products)} products for {skin_type}.")
                 
                 if analysis_result and analysis_result.get("error"):
                     error = analysis_result.get("error")
 
-                # DEBUG OUTPUT (VERY IMPORTANT)
+                # DEBUG OUTPUT 
                 print("ANALYSIS RESULT:", analysis_result)
 
             except UnidentifiedImageError:

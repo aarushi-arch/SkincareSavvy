@@ -11,6 +11,7 @@ from rest_framework import status
 from .models import Cart, CartItem, Order, OrderItem
 from .forms import CheckoutForm
 from recommendations.models import Product
+from users.models import Notification
 from decimal import Decimal
 
 from django.views.decorators.csrf import csrf_exempt
@@ -205,6 +206,12 @@ def esewa_success(request):
                 # Clear session
                 if 'esewa_transaction' in request.session:
                     del request.session['esewa_transaction']
+                
+                # Create notification
+                Notification.objects.create(
+                    user=request.user,
+                    message=f"Payment successful! Your order #{order.id} has been placed. 🌿"
+                )
                 
                 messages.success(request, "Payment successful! Your order has been placed. 🌿")
                 

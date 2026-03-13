@@ -123,7 +123,15 @@ def _load_artifacts():
 def get_unique_product_types() -> List[str]:
     """Get unique product types from the dataset."""
     artifacts = _load_artifacts()
-    return sorted(artifacts.data['product_type'].unique().tolist())
+    all_types = sorted(artifacts.data['product_type'].unique().tolist())
+    # Only keep the specified categories (case-insensitive match)
+    allowed_types = ["cleanser", "moisturiser", "serum", "sunscreen"]
+    filtered = [pt for pt in all_types if pt.lower() in allowed_types]
+    # Add 'Sunscreen' if it exists in database but not in dataset
+    if 'Sunscreen' not in filtered:
+        filtered.append('Sunscreen')
+    # Replace 'Moisturiser' with 'Moisturizer' for American spelling
+    return sorted(['Moisturizer' if pt == 'Moisturiser' else pt for pt in filtered])
 
 
 def get_filtered_products(

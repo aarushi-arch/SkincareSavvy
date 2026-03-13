@@ -425,6 +425,13 @@
 
                 <!-- Center: Image & Connectors -->
                 <div class="dashboard-center">
+                    {% if analysis_result.skin_type_label %}
+                    <div class="skin-type-badge">
+                        <span class="type-label">Skin Type</span>
+                        <span class="type-value">{{ analysis_result.skin_type_label }}</span>
+                    </div>
+                    {% endif %}
+
                     {% if analysis_result.combined_heatmap %}
                     <div class="face-wrapper" style="display:flex; justify-content:center;">
                         <img class="main-face-image" src="data:image/jpeg;base64,{{ analysis_result.combined_heatmap }}"

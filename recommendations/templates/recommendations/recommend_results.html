@@ -1,0 +1,74 @@
+            <section class="results-section">
+                {% if error_message %}
+                <div class="alert alert-danger" role="alert"
+                    style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                    {{ error_message }}
+                </div>
+                {% endif %}
+                {% if form.errors %}
+                <div class="alert alert-danger" role="alert"
+                    style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                    <strong>Please correct the following errors:</strong>
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% if recommendations %}
+                <h2>Other products you might also love</h2>
+                <div class="recommendations-grid">
+                    {% for item in recommendations %}
+                    <div class="recommendation-card">
+                        {% if item.image_url %}
+                        <div class="product-image"
+                            style="width: 100%; height: 200px; margin-bottom: 1rem; overflow: hidden; border-radius: 12px; background: white;">
+                            <img src="{{ item.image_url }}" alt="{{ item.product_name }}"
+                                style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        {% else %}
+                        <div class="product-image"
+                            style="width: 100%; height: 200px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 12px;">
+                            <i class="fas fa-image" style="font-size: 3rem; color: #ccc;"></i>
+                        </div>
+                        {% endif %}
+                        <h3>{{ item.product_name }}</h3>
+                        {% if item.similarity_score %}
+                        <div class="similarity-score">
+                            <span class="similarity-label">Similarity:</span>
+                            <span class="similarity-value">{{ item.similarity_score }}%</span>
+                        </div>
+                        {% endif %}
+                        {% if item.price %}
+                        <p class="price">{{ item.price }}</p>
+                        {% endif %}
+                        {% if item.description %}
+                        <p class="description">{{ item.description }}</p>
+                        {% endif %}
+                        {% if item.product_href %}
+                        <a href="{{ item.product_href }}" target="_blank" rel="noopener" class="product-link">
+                            View product
+                        </a>
+                        {% endif %}
+                        {% if item.id %}
+                        <button type="button" class="btn-secondary add-to-shelf-btn" data-product-id="{{ item.id }}">Add
+                            to My Shelf</button>
+                        {% else %}
+                        <button type="button" class="btn-secondary" disabled title="Not available for saving">Add to My
+                            Shelf</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-results">
+                    <p>No recommendations yet. Select a product and click the button to explore similar options.</p>
+                </div>
+                {% endif %}
+            </section>
