@@ -288,19 +288,67 @@
     </header>
 
     <main>
-        <div class="container page-container">
-            <section class="page-intro">
-                <h1 class="page-title">
-                    Find products that truly suit your
-                    <span class="highlight">skin</span>
-                </h1>
-                <p class="page-subtitle">
-                    Refine your preferences and discover similar skincare products that match your
-                    skin type, concerns, and desired results.
-                </p>
-            </section>
+        <div class="container page-container split-layout">
+            
+            <!-- Left Sidebar Tracker -->
+            <aside class="sidebar">
+                <div class="sidebar-intro">
+                    <h1 class="page-title">
+                        Your Skin. <span class="highlight">Your Story.</span>
+                    </h1>
+                    <p class="page-subtitle">
+                        Answer a few quick questions to meet your skin's new favorites.
+                    </p>
+                </div>
+                
+                <div class="stepper">
+                    <div class="step-item" id="step1">
+                        <div class="step-icon"><i class="fas fa-check"></i></div>
+                        <div class="step-content">
+                            <h4>Skin Profile</h4>
+                            <p>Get to know your skin type.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-line"></div>
+                    
+                    <div class="step-item" id="step2">
+                        <div class="step-icon"><i class="fas fa-check"></i></div>
+                        <div class="step-content">
+                            <h4>Skin Concerns</h4>
+                            <p>Tell us what you want to improve.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-line"></div>
+                    
+                    <div class="step-item" id="step3">
+                        <div class="step-icon"><i class="fas fa-check"></i></div>
+                        <div class="step-content">
+                            <h4>Desired Benefits</h4>
+                            <p>Choose what you prefer or avoid.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-line"></div>
+                    
+                    <div class="step-item active" id="step4">
+                        <div class="step-icon"><i class="fas fa-circle"></i></div>
+                        <div class="step-content">
+                            <h4>Final Review</h4>
+                            <p>Your personalized routine is ready.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
 
-            <section class="form-section">
+            <!-- Decorative Background Elements for Glassmorphism -->
+            <div class="glow-blob" style="position: absolute; top: 10%; left: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(197, 160, 89, 0.4) 0%, rgba(197, 160, 89, 0) 70%); border-radius: 50%; z-index: -1;"></div>
+            <div class="glow-blob" style="position: absolute; bottom: 20%; right: -5%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(11, 59, 23, 0.3) 0%, rgba(11, 59, 23, 0) 70%); border-radius: 50%; z-index: -1;"></div>
+
+            <!-- Right Side Form Area -->
+            <div class="main-content">
+                <section class="form-section">
                 {% if error_message %}
                 <div class="alert alert-danger" role="alert"
                     style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
@@ -429,7 +477,7 @@
                     <p>No recommendations yet. Select a product and click the button to explore similar options.</p>
                 </div>
                 {% endif %}
-            </section>
+            </div>
         </div>
     </main>
 
@@ -446,6 +494,91 @@
             const skinTypeSelect = document.getElementById('id_skin_type');
             const notableEffectsGroup = document.getElementById('notableEffectsGroup');
             const selectedProductSelect = document.getElementById('id_selected_product');
+            const skinProblemsGroup = document.querySelector('input[name="skin_problems"]')?.closest('.radio-group');
+
+            // Stepper Elements
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
+            const step4 = document.getElementById('step4');
+
+            function updateStepper() {
+                // Step 1: Skin Profile (Category & Type)
+                if (productCategorySelect.value && skinTypeSelect.value) {
+                    step1.classList.add('active');
+                    step1.classList.remove('incomplete');
+                    step1.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    step1.classList.remove('active');
+                    step1.classList.add('incomplete');
+                    step1.querySelector('.step-icon').innerHTML = '';
+                    // Reset subsequent steps
+                    resetStep(step2);
+                    resetStep(step3);
+                    resetStep(step4);
+                    return; // Stop checking
+                }
+
+                // Step 2: Skin Concerns
+                const skinProblemSelected = document.querySelector('input[name="skin_problems"]:checked');
+                if (skinProblemSelected) {
+                    step2.classList.add('active');
+                    step2.classList.remove('incomplete');
+                    step2.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    step2.classList.add('active'); // active because it's the current step they need to fill
+                    step2.classList.remove('incomplete');
+                    step2.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle"></i>';
+                    
+                    resetStep(step3);
+                    resetStep(step4);
+                    return;
+                }
+
+                // Step 3: Desired Benefits
+                const benefitSelected = document.querySelector('input[name="notable_effects"]:checked');
+                if (benefitSelected) {
+                    step3.classList.add('active');
+                    step3.classList.remove('incomplete');
+                    step3.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    step3.classList.add('active');
+                    step3.classList.remove('incomplete');
+                    step3.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle"></i>';
+                    
+                    resetStep(step4);
+                    return;
+                }
+
+                // Step 4: Final Product Selection
+                if (selectedProductSelect.value) {
+                    step4.classList.add('active');
+                    step4.classList.remove('incomplete');
+                    step4.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    step4.classList.add('active');
+                    step4.classList.remove('incomplete');
+                    step4.querySelector('.step-icon').innerHTML = '<i class="fas fa-circle"></i>';
+                }
+            }
+
+            function resetStep(stepEl) {
+                if(stepEl) {
+                    stepEl.classList.remove('active');
+                    stepEl.classList.add('incomplete');
+                    stepEl.querySelector('.step-icon').innerHTML = '';
+                }
+            }
+
+            // Listeners for Stepper
+            productCategorySelect.addEventListener('change', updateStepper);
+            skinTypeSelect.addEventListener('change', updateStepper);
+            if (skinProblemsGroup) skinProblemsGroup.addEventListener('change', updateStepper);
+            notableEffectsGroup.addEventListener('change', updateStepper);
+            selectedProductSelect.addEventListener('change', updateStepper);
+
+            // Initialize Stepper
+            updateStepper();
 
             function updateOptions() {
                 const productCategory = productCategorySelect.value;
