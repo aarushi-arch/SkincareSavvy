@@ -45,6 +45,8 @@ def recommend(request):
             product_category = form.cleaned_data.get("product_category") or ""
             skin_type = form.cleaned_data.get("skin_type") or ""
             notable_effects = form.cleaned_data.get("notable_effects") or []
+            if isinstance(notable_effects, str):
+                notable_effects = [notable_effects] if notable_effects else []
             selected_product = form.cleaned_data.get("selected_product") or ""
             
             # If no product is selected, try to find one based on filters
@@ -100,7 +102,8 @@ def recommend(request):
                         normalized_href = normalize_product_url(raw_href)
                         db_data = url_to_data.get(raw_href, {})
                         product_id = db_data.get("id")
-                        image_url = db_data.get("image_url")
+                        # Prefer the image_url in the DB, fall back to the dataset value if missing
+                        image_url = db_data.get("image_url") or row.get("image_url")
                         brand = db_data.get("brand") or row.get("brand", "Skincare")
 
                         # If not found by exact URL, try normalize? or just accept None.

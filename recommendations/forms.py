@@ -22,16 +22,12 @@ class RecommendationForm(forms.Form):
     
     # Skin problems/concerns (internal values match dataset; labels are in English)
     SKIN_PROBLEMS = [
-        ("Kulit Kusam", "Dull Skin"),
+        # Selecting 5 main important options as requested
         ("Jerawat", "Acne"),
-        ("Bekas Jerawat", "Acne Scars"),
-        ("Pori-pori Besar", "Large Pores"),
         ("Flek Hitam", "Dark Spots"),
         ("Garis Halus dan Kerutan", "Fine Lines and Wrinkles"),
-        ("Komedo", "Comedones (Blackheads/Whiteheads)"),
-        ("Warna Kulit Tidak Merata", "Uneven Skin Tone"),
+        ("Pori-pori Besar", "Large Pores"),
         ("Kemerahan", "Redness"),
-        ("Kulit Kendur", "Sagging Skin"),
     ]
     
     # Product category
@@ -50,20 +46,20 @@ class RecommendationForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-control"})
     )
     
-    # Skin problems (multiselect)
-    skin_problems = forms.MultipleChoiceField(
+    # Skin problems (single select)
+    skin_problems = forms.ChoiceField(
         label="Your Skin Concerns",
         choices=SKIN_PROBLEMS,
         required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"})
+        widget=forms.RadioSelect(attrs={"class": "form-check-input"})
     )
     
     # Notable effects (will be populated dynamically)
-    notable_effects = forms.MultipleChoiceField(
+    notable_effects = forms.ChoiceField(
         label="Desired Benefits",
         choices=[],
         required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"})
+        widget=forms.RadioSelect(attrs={"class": "form-check-input"})
     )
     
     # Product selection (will be populated dynamically)

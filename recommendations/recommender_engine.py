@@ -15,11 +15,16 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
 
 
-# Use the updated products dataset with engineered features
-DATASET_PATH = Path(__file__).resolve().parent / "notebooks" / "updated_products.csv"
+# Prefer the updated products dataset that includes image URLs when available
+DATASET_DIR = Path(__file__).resolve().parent / "notebooks"
+DEFAULT_DATASET_NAME = "updated_products_with_images.csv"
+FALLBACK_DATASET_NAME = "updated_products.csv"
+
+# Use the image-enabled dataset if it exists, otherwise fall back to the original
+DATASET_PATH = (DATASET_DIR / DEFAULT_DATASET_NAME) if (DATASET_DIR / DEFAULT_DATASET_NAME).exists() else (DATASET_DIR / FALLBACK_DATASET_NAME)
 
 
 @dataclass
@@ -56,6 +61,7 @@ def _load_artifacts():
         data["product_type"] = _ensure_column(data, "product_type")
         data["brand"] = _ensure_column(data, "brand")
         data["suitable_skin_types"] = _ensure_column(data, "suitable_skin_types")
+        data["image_url"] = _ensure_column(data, "image_url")
 
         # Filter out rows with empty product names
         data = data[data["product_name"].notna() & (data["product_name"] != "")]
@@ -242,8 +248,9 @@ def get_unique_notable_effects(
                 effects_list = [s.strip().strip("'\"") for s in str(effects_str).split(',')]
                 all_effects.update([e for e in effects_list if e])
         
-        # Filter out empty strings and return sorted list
-        unique_effects = sorted([e for e in all_effects if e])
+        # Filter out empty strings and limit to core benefits
+        core_benefits = {"Hydrating", "Brightening", "Anti-aging", "Acne Control", "Barrier Repair"}
+        unique_effects = sorted([e for e in all_effects if e and e in core_benefits])
         return unique_effects
     except Exception as e:
         # Return empty list on any error
@@ -322,7 +329,7 @@ def skincare_recommendations(
     
     # Get product details for the recommendations
     # Use product_url instead of product_href based on the actual dataset structure
-    columns_to_get = ['product_name', 'price', 'product_type']
+    columns_to_get = ['product_name', 'price', 'product_type', 'image_url']
     if 'product_href' in artifacts.data.columns:
         columns_to_get.append('product_href')
     elif 'product_url' in artifacts.data.columns:

@@ -261,11 +261,11 @@
 
                     <div class="form-group">
                         <label>{{ form.skin_problems.label }}</label>
-                        <div class="checkbox-group">
-                            {% for checkbox in form.skin_problems %}
-                            <div class="checkbox-item">
-                                {{ checkbox.tag }}
-                                <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        <div class="radio-group">
+                            {% for radio in form.skin_problems %}
+                            <div class="radio-item">
+                                {{ radio.tag }}
+                                <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
                             </div>
                             {% endfor %}
                         </div>
@@ -273,7 +273,7 @@
 
                     <div class="form-group">
                         <label>{{ form.notable_effects.label }}</label>
-                        <div class="checkbox-group" id="notableEffectsGroup">
+                        <div class="radio-group" id="notableEffectsGroup">
                             <p class="help-text">Please select a product category and skin type to see available
                                 benefits</p>
                         </div>
@@ -358,8 +358,8 @@
                                 let html = '';
                                 data.notable_effects.forEach((effect, index) => {
                                     html += `
-                                    <div class="checkbox-item">
-                                        <input type="checkbox" name="notable_effects" value="${effect}" id="id_notable_effects_${index}" class="form-check-input">
+                                    <div class="radio-item">
+                                        <input type="radio" name="notable_effects" value="${effect}" id="id_notable_effects_${index}" class="form-check-input">
                                         <label for="id_notable_effects_${index}">${effect}</label>
                                     </div>
                                 `;
@@ -396,7 +396,9 @@
             function updateProducts() {
                 const productCategory = productCategorySelect.value;
                 const skinType = skinTypeSelect.value;
-                const notableEffects = Array.from(document.querySelectorAll('input[name="notable_effects"]:checked')).map(cb => cb.value);
+                const skinProblem = document.querySelector('input[name="skin_problems"]:checked')?.value || '';
+                const notableEffectsElement = document.querySelector('input[name="notable_effects"]:checked');
+                const notableEffects = notableEffectsElement ? [notableEffectsElement.value] : [];
 
                 if (productCategory && skinType) {
                     fetch('{% url "recommendations:filtered-options" %}', {
@@ -408,6 +410,7 @@
                         body: JSON.stringify({
                             product_category: productCategory,
                             skin_type: skinType,
+                            skin_problem: skinProblem,
                             notable_effects: notableEffects
                         })
                     })
@@ -437,9 +440,9 @@
             productCategorySelect.addEventListener('change', updateOptions);
             skinTypeSelect.addEventListener('change', updateOptions);
 
-            // Update products when notable effects change
+            // Update products when notable effects or skin problems change
             document.addEventListener('change', function (e) {
-                if (e.target.name === 'notable_effects') {
+                if (e.target.name === 'notable_effects' || e.target.name === 'skin_problems') {
                     updateProducts();
                 }
             });
