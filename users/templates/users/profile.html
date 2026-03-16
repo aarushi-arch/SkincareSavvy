@@ -12,80 +12,85 @@
 /*   SkincareSavvy Profile UI   */
 /* ----------------------------- */
 
-body {
-    background: 
-    
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+:root {
+    --primary: #0b3b17;
+    --primary-soft: rgba(11, 59, 23, 0.12);
+    --text-muted: #5b6471;
+    --bg: #f4f5f6;
+    --glass: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --radius-lg: 24px;
+    --radius-sm: 12px;
+}
 
+body {
+    background-color: var(--bg);
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(11, 59, 23, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(11, 59, 23, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
     font-family: 'Lato', sans-serif;
-    font-weight: 300;
-    min-height: 100vh;
-    margin: 0;
+    color: #1d1f23;
 }
 
 /* CARD */
-.card {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-
-    border-radius: 22px;
-    padding: 10px;
-
-    border: 1.5px solid rgba(11, 59, 23, 0.35);  
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+.profile-card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    padding: 2.5rem;
+    margin-top: 2rem;
+    margin-bottom: 4rem;
 }
 
 /* TITLE */
-.card-header h3 {
-    font-family: 'Lato';
-    font-size: 2.3rem;
-    color: #0b3b17;
-    letter-spacing: 1px;
+.profile-header h3 {
+    font-family: 'Lato', sans-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 2rem;
+    text-align: center;
 }
 
 /* LABELS */
 label.small {
-    font-weight: 400;
-    color: #0b3b17;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
-/* INPUTS (Soft Theme) */
+/* INPUTS */
 input, textarea, select {
-    border-radius: 14px !important;
-    padding: 10px 14px !important;
-    background: rgba(255, 255, 255, 0.8) !important;
-
-    border: 1.8px solid rgba(11, 59, 23, 0.4) !important;
-
-    transition: 0.3s ease;
+    border-radius: var(--radius-sm) !important;
+    padding: 12px 16px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: #1d1f23 !important;
+    transition: all 0.3s ease;
+    width: 100%;
 }
 
 input:focus, textarea:focus, select:focus {
-    border-color: #0b3b17 !important;
-    box-shadow: 0 0 10px rgba(11, 59, 23, 0.35);
-    background: white !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px var(--primary-soft) !important;
     outline: none !important;
-}
-
-/* FILE INPUT */
-input[type="file"] {
-    padding: 8px !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    cursor: pointer;
 }
 
 /* PROFILE IMAGE */
 .profile-image-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
 }
 
 .profile-image-container img {
-    border: 3px solid rgba(11, 59, 23, 0.3);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 4px solid #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 50%;
     transition: transform 0.3s ease;
 }
 
@@ -93,172 +98,143 @@ input[type="file"] {
     transform: scale(1.05);
 }
 
-/* ERROR MESSAGE */
-.alert-danger {
-    border-radius: 14px;
-    border-left: 5px solid #b71c1c;
-    background: rgba(255, 224, 224, 0.85);
-    color: #b71c1c;
+.file-upload-btn {
+    margin-top: 1rem;
 }
 
-/* CTA BUTTON (Same Style as Homepage Button) */
-.btn-dark {
-    display: inline-block;
-    padding: 14px 36px;
-    font-size: 1.08rem;
+/* BUTTON */
+.btn-primary-theme {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px 28px;
     font-weight: 600;
-
-    color: #0b3b17;
-    background: transparent;
-    border: 2px solid rgba(11, 59, 23, 0.5);
-    border-radius: 40px;
-
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(11, 59, 23, 0.2);
     width: 100%;
-
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease,
-        border-color 0.3s ease;
-
-    animation: breathe 3s ease-in-out infinite;
 }
 
-@keyframes breathe {
-    0%, 100% { box-shadow: 0 6px 18px rgba(11, 59, 23, 0.25); }
-    50%      { box-shadow: 0 12px 26px rgba(11, 59, 23, 0.35); }
-}
-
-.btn-dark:hover {
-    transform: translateY(-4px);
-    border-color: #0b3b17;
-    box-shadow: 0 10px 25px rgba(11, 59, 23, 0.35);
-}
-
-.btn-dark:active {
+.btn-primary-theme:hover {
+    background: #094a1e;
     transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(11, 59, 23, 0.3);
+    color: #fff;
 }
 
-/* FORM CONTENT */
-.form-content {
-    padding: 2rem 0;
+.btn-primary-theme:active {
+    transform: translateY(0);
 }
 
-/* CARD BODY */
-.card-body {
-    padding: 2rem !important;
+.alert-danger {
+    background: #fdecea;
+    color: #a83a34;
+    border: 1px solid #f5c6c0;
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
 }
 </style>
 
-    <div class="form-content my-3 p-3">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="card shadow-lg border-0 rounded-lg mt-0 mb-5">
-                        <div class="card-header justify-content-center">
-                            <h3 class="font-weight-light my-4 text-center">Profile Settings</h3>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h3>Profile Settings</h3>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if u_form.errors or p_form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for key, value in u_form.errors.items %}
+                                <div><strong>{{ value }}</strong></div>
+                            {% endfor %}
+                            {% for key, value in p_form.errors.items %}
+                                <div><strong>{{ value }}</strong></div>
+                            {% endfor %}
                         </div>
-                        <div class="card-body">
-                            <form method="POST" enctype="multipart/form-data">
-                                {% csrf_token %}
-                                {% if u_form.errors or p_form.errors %}
-                                    <div class="alert alert-danger alert-dismissible" role="alert">
-                                        <div id="form_errors">
-                                            {% for key, value in u_form.errors.items %}
-                                                <strong>{{ value }}</strong>
-                                            {% endfor %}
-                                            {% for key, value in p_form.errors.items %}
-                                                <strong>{{ value }}</strong>
-                                            {% endfor %}
-                                        </div>
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                {% endif %}
-                                
-                                <!-- Profile Image -->
-                                <div class="form-row">
-                                    <div class="col-md-12">
-                                        <div class="form-group text-center profile-image-container">
-                                            <label class="small mb-1">Profile Image</label>
-                                            {% if user.profile.image and user.profile.image.url %}
-                                                <img src="{{ user.profile.image.url }}" class="rounded-circle mb-2" width="150" height="150" alt="Profile Image">
-                                            {% else %}
-                                                <img src="/media/profile_images/default.jpg" class="rounded-circle mb-2" width="150" height="150" alt="Default Profile Image">
-                                            {% endif %}
-                                            <div class="mt-2">
-                                                {{ p_form.image }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- User Information -->
-                                <div class="form-row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Username</label>
-                                            {{ u_form.username }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Email</label>
-                                            {{ u_form.email }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">First Name</label>
-                                            {{ u_form.first_name }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Last Name</label>
-                                            {{ u_form.last_name }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Profile Information -->
-                                <div class="form-row">
-                                    <div class="col-md-12">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Bio</label>
-                                            {{ p_form.bio }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Location</label>
-                                            {{ p_form.location }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="small mb-1">Birth Date</label>
-                                            {{ p_form.birth_date }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group mt-4 mb-0">
-                                    <button type="submit" class="col-md-12 btn btn-dark">Update Profile</button>
-                                </div>
-                            </form>
+                    {% endif %}
+                    
+                    <!-- Profile Image -->
+                    <div class="profile-image-container">
+                        {% if user.profile.image and user.profile.image.url %}
+                            <img src="{{ user.profile.image.url }}" width="150" height="150" alt="Profile Image">
+                        {% else %}
+                            <img src="/media/profile_images/default.jpg" width="150" height="150" alt="Default Profile Image">
+                        {% endif %}
+                        <div class="file-upload-btn mt-3">
+                            <label class="small text-center">Change Profile Picture</label>
+                            {{ p_form.image }}
                         </div>
                     </div>
-                </div>
+
+                    <!-- User Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">Username</label>
+                                {{ u_form.username }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">Email</label>
+                                {{ u_form.email }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">First Name</label>
+                                {{ u_form.first_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">Last Name</label>
+                                {{ u_form.last_name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Bio -->
+                    <div class="form-group">
+                        <label class="small">Bio</label>
+                        {{ p_form.bio }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">Location</label>
+                                {{ p_form.location }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="small">Birth Date</label>
+                                {{ p_form.birth_date }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-primary-theme">Update Profile</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 {% endblock content %}
 

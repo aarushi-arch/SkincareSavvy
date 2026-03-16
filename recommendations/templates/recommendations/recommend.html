@@ -457,11 +457,6 @@
                         {% if item.description %}
                         <p class="description">{{ item.description }}</p>
                         {% endif %}
-                        {% if item.product_href %}
-                        <a href="{{ item.product_href }}" target="_blank" rel="noopener" class="product-link">
-                            View product
-                        </a>
-                        {% endif %}
                         {% if item.id %}
                         <button type="button" class="btn-secondary add-to-shelf-btn" data-product-id="{{ item.id }}">Add
                             to My Shelf</button>

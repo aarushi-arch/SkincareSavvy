@@ -116,7 +116,7 @@ class FaceAnalysisPipeline:
         self._models_loaded = True
 
     
-    # CLASS NAME HANDLING (FIXES Class_0 BUG)
+    # CLASS NAME HANDLING 
     
     def _parse_class_names(self, model: CNNModel) -> list[str]:
         """

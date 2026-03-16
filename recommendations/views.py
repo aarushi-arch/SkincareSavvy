@@ -60,6 +60,31 @@ def recommend(request):
                     if candidate_products:
                         # Use the first matching product as the anchor for recommendations
                         selected_product = candidate_products[0]
+                    else:
+                        # Fallback 1: ignore notable effects
+                        candidate_products = get_unique_product_names(
+                            product_type=product_category or None,
+                            skin_type=skin_type or None,
+                            notable_effects=None,
+                        )
+                        if candidate_products:
+                            selected_product = candidate_products[0]
+                        else:
+                            # Fallback 2: ignore skin type
+                            candidate_products = get_unique_product_names(
+                                product_type=product_category or None,
+                                skin_type=None,
+                                notable_effects=None,
+                            )
+                            if candidate_products:
+                                selected_product = candidate_products[0]
+                            else:
+                                # Ultimate fallback: just pick any product
+                                candidate_products = get_unique_product_names(
+                                    product_type=None, skin_type=None, notable_effects=None
+                                )
+                                if candidate_products:
+                                    selected_product = candidate_products[0]
                 except Exception as e:
                     error_message = f"Error finding products: {str(e)}"
                     selected_product = ""
@@ -80,9 +105,14 @@ def recommend(request):
                         filtered_product_names = set(filtered_products['product_name'].tolist())
                         
                         # Keep only recommendations that match the filters
-                        recommendations_df = recommendations_df[
+                        strict_recommendations_df = recommendations_df[
                             recommendations_df['product_name'].isin(filtered_product_names)
                         ]
+                        
+                        # Fallback: if strict filtering leaves no recommendations, 
+                        # just show the best recommendations regardless of the exact filter match
+                        if not strict_recommendations_df.empty:
+                            recommendations_df = strict_recommendations_df
                     
 
                     # Fetch Product objects from DB to get IDs
@@ -113,10 +143,23 @@ def recommend(request):
                         # Convert similarity score to percentage and round to 2 decimal places
                         similarity_percentage = round(float(similarity_score) * 100, 2) if pd.notna(similarity_score) else 0.0
                         
+                        raw_price = str(row.get("price", ""))
+                        npr_price = ""
+                        if raw_price:
+                            import re
+                            # Extract all numbers/decimals from the string
+                            numbers = re.findall(r'\d+(?:\.\d+)?', raw_price)
+                            if numbers:
+                                # Take the first number found, assume USD, multiply by 135 for NPR
+                                usd_val = float(numbers[0])
+                                npr_val = int(usd_val * 135)
+                                # Format with commas for Nepali Rupee display
+                                npr_price = f"Rs. {npr_val:,}"
+
                         rec_dict = {
                             "product_name": row.get("product_name", ""),
                             "product_href": normalized_href,
-                            "price": row.get("price", ""),
+                            "price": npr_price or raw_price,
                             "description": row.get("description", ""),
                             "similarity_score": similarity_percentage,
                             "id": product_id,
