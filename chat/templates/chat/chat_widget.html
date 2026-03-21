@@ -1,0 +1,250 @@
+<style>
+.chat-bubble {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #0b3b17;
+    color: white;
+    padding: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.chat-bubble:hover {
+    background: #0b3b17;
+    transform: scale(1.1);
+}
+
+.chat-box {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 360px;
+    height: 420px;
+    background: #f0f9ff; /* light, theme-aligned */
+    border: 1px solid #abb8c1;
+    border-radius: 10px;
+    display: none;
+    padding: 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.chat-header {
+    background: #0b3b17; /* blue theme */
+    color: white;
+    padding: 10px 12px;
+    border-radius: 10px 10px 0 0;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#closeChat {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+.chat-messages {
+    height: 280px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.user-message {
+    background: #0b3b17;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.admin-message {
+    background: #e9ecef;
+    color: #333;
+}
+
+.timestamp {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.no-messages {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+.chat-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: white;
+    border-radius: 0 0 10px 10px;
+}
+
+.chat-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    outline: none;
+    margin-bottom: 0;
+}
+
+.chat-input:focus {
+    border-color: #0b3b17;
+}
+
+.send-btn {
+    background: #0b3b17;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.send-btn:hover {
+    background: #0b3b17;
+}
+</style>
+
+<div class="chat-bubble" onclick="toggleChat()" title="Customer Support">
+    💬
+</div>
+
+<div class="chat-box" id="chatBox">
+    <div class="chat-header">
+        Customer Support
+        <button id="closeChat" type="button" onclick="toggleChat()" aria-label="Close chat">✕</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        {% if chat_messages %}
+            {% for msg in chat_messages %}
+                <div class="message user-message">
+                    {{ msg.message }}
+                    <div class="timestamp">{{ msg.created_at|date:"M d, H:i" }}</div>
+                </div>
+                {% if msg.admin_reply %}
+                    <div class="message admin-message">
+                        {{ msg.admin_reply }}
+                        <div class="timestamp">{{ msg.created_at|date:"M d, H:i" }}</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="no-messages">No messages yet. Start a conversation!</div>
+        {% endif %}
+    </div>
+
+    <form class="chat-form" id="chatForm">
+        {% csrf_token %}
+        <input type="text" name="message" id="chatInput" class="chat-input" placeholder="Type your message..." required maxlength="500">
+        <button type="submit" class="send-btn" title="Send Message">
+            ➤
+        </button>
+    </form>
+</div>
+
+<script>
+function toggleChat() {
+    let box = document.getElementById("chatBox");
+    if (box.style.display === "none" || box.style.display === "") {
+        box.style.display = "block";
+        scrollToBottom();
+    } else {
+        box.style.display = "none";
+    }
+}
+
+function scrollToBottom() {
+    let messages = document.getElementById("chatMessages");
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// Auto-scroll when page loads if chat is open
+window.addEventListener("DOMContentLoaded", function() {
+    let box = document.getElementById("chatBox");
+    if (box.style.display === "block") {
+        scrollToBottom();
+    }
+
+    // Handle form submission
+    const chatForm = document.getElementById("chatForm");
+    chatForm.addEventListener("submit", function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        const messageInput = document.getElementById("chatInput");
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Send AJAX request
+        fetch("{% url 'chat_support' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: new URLSearchParams({
+                "message": message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add the message to the chat
+                const messagesDiv = document.getElementById("chatMessages");
+                const noMessagesDiv = messagesDiv.querySelector(".no-messages");
+                if (noMessagesDiv) {
+                    noMessagesDiv.remove();
+                }
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "message user-message";
+                messageDiv.innerHTML = `${data.message}<div class="timestamp">${data.timestamp}</div>`;
+                messagesDiv.appendChild(messageDiv);
+                scrollToBottom();
+                messageInput.value = ""; // Clear input
+            } else {
+                alert(data.error || "Failed to send message. Please try again.");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("An error occurred. Please try again.");
+        });
+    });
+});
+</script>

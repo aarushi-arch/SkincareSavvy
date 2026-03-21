@@ -25,7 +25,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "products",
     "widget_tweaks",
-
+    "chat",
 ]
 
 # enable optional third-party apps only when installed
@@ -63,6 +63,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "users.context_processors.notifications_processor",
+                "users.context_processors.chat_messages_processor",
             ],
         },
     },

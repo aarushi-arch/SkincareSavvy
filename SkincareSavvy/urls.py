@@ -10,6 +10,7 @@ urlpatterns = [
     path("recommendations/", include("recommendations.urls")),
     path("face-analysis/", include("face_analysis.urls")),
     path("shop/", include("shop.urls")),
+    path("chat/", include("chat.urls")),
 ]
 
 if settings.DEBUG:

@@ -498,6 +498,10 @@
         });
     </script>
 
+{% if user.is_authenticated %}
+{% include 'chat/chat_widget.html' %}
+{% endif %}
+
 </body>
 
 </html>
