@@ -41,62 +41,85 @@ def index(request):
 
                 # Run analysis
                 analysis_result = pipeline.analyze(image_bytes)
-                
-                # Fetch Recommendations
-                if analysis_result and not analysis_result.get("error"):
-                    # Extract Data for dynamic UI flags and recommendations
-                    skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
-                    skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
-                    analysis_result["skin_type_label"] = skin_type
-                    
-                    CONFIDENCE_THRESHOLD = 0.5  # 50%
 
-                    concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
-
-                    # Identify all concerns meeting the threshold
-                    detected_concerns_with_confidence = [
-                        {
-                            "name": p["class"].lower().replace("_", ""),
-                            "confidence": p["confidence"]
-                        }
-                        for p in concerns_preds
-                        if p["confidence"] >= CONFIDENCE_THRESHOLD
-                    ]
-
-                    # Map names for internal flags consistency
-                    concerns_list = [c["name"] for c in detected_concerns_with_confidence]
-
-                    # Identify main concern (highest confidence)
-                    main_concern = None
-                    if detected_concerns_with_confidence:
-                        # Sort by confidence descending
-                        sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
-                        main_concern = sorted_concerns[0]["name"]
-                    
-                    # Create flags for the template to handle dynamic icons/badges (visual feedback for all)
-                    analysis_result["flags"] = {
-                        "acne": "acne" in concerns_list,
-                        "wrinkles": "wrinkles" in concerns_list,
-                        "pores": "pores" in concerns_list or "texture" in concerns_list,
-                        "darkspots": "darkspots" in concerns_list or "dark_spots" in concerns_list or "spots" in concerns_list,
-                        "blackheads": "blackheads" in concerns_list,
-                    }
-                    
-                    # Use ONLY the main concern for recommendations and the results summary
-                    final_concerns = [main_concern] if main_concern else []
-                    analysis_result["detected_concerns"] = final_concerns
-                    
-                    query = {
-                        "skin_type": skin_type,
-                        "concerns": final_concerns
-                    }
-                    
-                    recommended_products = recommend_products(query)
-                    routine = build_routine(query)
-                    print(f"Main concern: {main_concern}. Found {len(recommended_products)} products for {skin_type}.")
-                
+                # If models are missing or pipeline failed, show error only and skip results dashboard
                 if analysis_result and analysis_result.get("error"):
                     error = analysis_result.get("error")
+                    analysis_result = None
+                else:
+                    # Fetch Recommendations
+                    if analysis_result:
+                        skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
+                        skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
+                        analysis_result["skin_type_label"] = skin_type
+                        print(f"✓ Skin Type: {skin_type}")
+
+                        CONFIDENCE_THRESHOLD = 0.3  # 30% (better chance for valid concerns to appear)
+
+                        concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
+                        print(f"✓ Skin Concerns Predictions: {len(concerns_preds)} predictions received")
+
+                        final_concerns = []  # Initialize default value
+                        main_concern = None
+
+                        if not concerns_preds:
+                            print("⚠ WARNING: No skin concerns predictions received! Check if skin concerns model is active.")
+                            analysis_result["flags"] = {
+                                "acne": False,
+                                "wrinkles": False,
+                                "pores": False,
+                                "darkspots": False,
+                                "blackheads": False,
+                            }
+                            analysis_result["detected_concerns"] = []
+                        else:
+                            # Identify all concerns meeting the threshold
+                            detected_concerns_with_confidence = [
+                                {
+                                    "name": p["class"].lower().replace("_", ""),
+                                    "confidence": p["confidence"]
+                                }
+                                for p in concerns_preds
+                                if p["confidence"] >= CONFIDENCE_THRESHOLD
+                            ]
+
+                            # Map names for internal flags consistency
+                            concerns_list = [c["name"] for c in detected_concerns_with_confidence]
+                            print(f"✓ Detected Concerns (>{CONFIDENCE_THRESHOLD}): {concerns_list}")
+
+                            # Identify main concern (highest confidence)
+                            if detected_concerns_with_confidence:
+                                # Sort by confidence descending
+                                sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
+                                main_concern = sorted_concerns[0]["name"]
+                                print(f"✓ Main Concern: {main_concern}")
+
+                            # Create flags for the template to handle dynamic icons/badges (visual feedback for all)
+                            analysis_result["flags"] = {
+                                "acne": "acne" in concerns_list,
+                                "wrinkles": "wrinkles" in concerns_list,
+                                "pores": "pores" in concerns_list or "texture" in concerns_list,
+                                "darkspots": "darkspots" in concerns_list or "dark_spots" in concerns_list or "spots" in concerns_list,
+                                "blackheads": "blackheads" in concerns_list,
+                            }
+
+                            # Use ALL detected concerns for display with confidence scores
+                            # Sort by confidence descending for display
+                            sorted_all_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
+                            analysis_result["all_detected_concerns"] = sorted_all_concerns
+
+                            # Use main concern for recommendations
+                            final_concerns = [main_concern] if main_concern else []
+                            analysis_result["detected_concerns"] = final_concerns
+
+                        query = {
+                            "skin_type": skin_type,
+                            "concerns": final_concerns
+                        }
+
+                        recommended_products = recommend_products(query)
+                        routine = build_routine(query)
+                        print(f"Main concern: {main_concern}. Found {len(recommended_products)} products for {skin_type}.")
 
                 # DEBUG OUTPUT 
                 print("ANALYSIS RESULT:", analysis_result)

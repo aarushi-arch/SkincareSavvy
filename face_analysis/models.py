@@ -98,10 +98,18 @@ class CNNModel(models.Model):
         if self.class_names_file:
             try:
                 with open(self.class_names_file.path, 'r') as f:
-                    return json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                return []
-        return []
+                    data = json.load(f)
+                    # If it's a dict, return it as-is (the pipeline handles conversion)
+                    if isinstance(data, dict):
+                        return data
+                    # If it's a list, return it as-is
+                    if isinstance(data, list):
+                        return data
+                    return None
+            except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
+                print(f"Error reading class_names_file: {e}")
+                return None
+        return None
     
     @property
     def training_history(self):

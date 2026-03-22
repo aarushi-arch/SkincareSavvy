@@ -74,13 +74,46 @@ class FaceAnalysisPipeline:
 
         if concerns and concerns.model_file:
             try:
+                # Try to load with custom objects to handle version mismatches
                 self.skin_concerns_model = tf.keras.models.load_model(
-                    concerns.model_file.path
+                    concerns.model_file.path,
+                    custom_objects=self._compatible_custom_objects(),
+                    compile=False,
                 )
                 self.skin_concerns_classes = self._parse_class_names(concerns)
-                print("Skin concerns model loaded")
+                
+                # Validate class names were loaded
+                if not self.skin_concerns_classes:
+                    print(f"[WARNING] Skin concerns model '{concerns.name}' loaded, but class_names is empty!")
+                    print(f"  - Has class_names_file: {bool(concerns.class_names_file)}")
+                    if concerns.class_names_file:
+                        print(f"  - File path: {concerns.class_names_file.path}")
+                    print(f"  - Raw class_names data: {concerns.class_names}")
+                    # Unload the model if classes are missing
+                    self.skin_concerns_model = None
+                else:
+                    print(f"[OK] Skin concerns model loaded with {len(self.skin_concerns_classes)} classes")
             except Exception as e:
-                print(f"Skin concerns model load failed: {e}")
+                print(f"[ERROR] Skin concerns model load failed: {e}")
+                # Try a second attempt with compatibility mode + custom object wrappers
+                try:
+                    print("[INFO] Attempting to load with compatibility mode (custom layer wrappers)...")
+                    self.skin_concerns_model = tf.keras.models.load_model(
+                        concerns.model_file.path,
+                        custom_objects=self._compatible_custom_objects(),
+                        compile=False,
+                        safe_mode=False,
+                    )
+                    self.skin_concerns_classes = self._parse_class_names(concerns)
+                    print(f"[OK] Skin concerns model loaded in compatibility mode")
+                except Exception as e2:
+                    print(f"[ERROR] Compatibility mode also failed: {e2}")
+                    self.skin_concerns_model = None
+        else:
+            if concerns:
+                print(f"[ERROR] Skin concerns model '{concerns.name}' found but model_file is missing")
+            else:
+                print(f"[WARNING] No active skin concerns model found")
 
         # SKIN TYPES - LOAD FROM LOCAL FILE
         try:
@@ -90,9 +123,9 @@ class FaceAnalysisPipeline:
 
             if model_path.exists():
                 self.skin_types_model = tf.keras.models.load_model(str(model_path))
-                print(f"Skin types model loaded from {model_path}")
+                print(f"[OK] Skin types model loaded from {model_path}")
             else:
-                print(f"Skin types model not found at {model_path}")
+                print(f"[ERROR] Skin types model not found at {model_path}")
 
             if labels_path.exists():
                 with open(labels_path, "r") as f:
@@ -103,21 +136,39 @@ class FaceAnalysisPipeline:
                         self.skin_types_classes = [k for k, v in sorted(labels_data.items(), key=lambda x: x[1])]
                     elif isinstance(labels_data, list):
                         self.skin_types_classes = labels_data
-                    print(f"Skin types classes loaded: {self.skin_types_classes}")
+                    print(f"[OK] Skin types classes loaded: {self.skin_types_classes}")
             else:
-                 print(f"Skin types labels not found at {labels_path}")
+                 print(f"[ERROR] Skin types labels not found at {labels_path}")
 
         except Exception as e:
-            print(f"Skin types model load failed: {e}")
+            print(f"[ERROR] Skin types model load failed: {e}")
 
         if not self.skin_types_model or not self.skin_concerns_model:
-            print("CNN models missing or incomplete. Simulation mode active.")
+            print("[WARNING] CNN models incomplete. Some analysis features may not be available until all models are active.")
             
         self._models_loaded = True
 
     
     # CLASS NAME HANDLING 
     
+    def _compatible_custom_objects(self) -> dict:
+        """Provide fallback custom objects for legacy models containing quantization metadata."""
+        class DenseCompat(tf.keras.layers.Dense):
+            def __init__(self, *args, quantization_config=None, **kwargs):
+                super().__init__(*args, **kwargs)
+
+            def get_config(self):
+                cfg = super().get_config()
+                # Some older saved models include this field (TFLite conversion metadata)
+                if 'quantization_config' in cfg:
+                    cfg.pop('quantization_config')
+                return cfg
+
+        return {
+            'quantization_config': None,
+            'Dense': DenseCompat,
+        }
+
     def _parse_class_names(self, model: CNNModel) -> list[str]:
         """
         Converts JSON class file into ordered class list.
@@ -202,6 +253,9 @@ class FaceAnalysisPipeline:
     ) -> dict[str, Any]:
         if self.skin_concerns_model is None:
             return {"error": "Skin concerns model not loaded"}
+        
+        if not self.skin_concerns_classes:
+            return {"error": "Skin concerns model loaded but classes are missing. Check class_names_file in Django Admin.", "predictions": []}
 
         preds = self.skin_concerns_model.predict(processed, verbose=0)[0]
         k = min(top_k, len(self.skin_concerns_classes))
@@ -485,26 +539,10 @@ class FaceAnalysisPipeline:
             # Face preprocessing failed → return error
             return {"error": status_message}
         
-        # Only use simulation if preprocessing passed but models are missing
+        # If both models are missing, return a clear error (no simulation results)
         if not self.skin_types_model and not self.skin_concerns_model:
-            import random
-            import base64
-            print(f"Using simulation fallback (models missing)")
-            
-            skin_types = ["Oily", "Dry", "Normal", "Combination"]
-            selected_type = random.choice(skin_types)
-            
-            concerns = ["acne", "wrinkles", "pores", "darkspots", "blackheads"]
-            sim_predictions = [
-                {"class": c, "confidence": random.uniform(0.1, 0.95)} 
-                for c in sorted(random.sample(concerns, random.randint(1, 3)))
-            ]
-            
             return {
-                "skin_type": {"predictions": [{"class": selected_type, "confidence": 0.9}]},
-                "skin_concerns": {"predictions": sim_predictions},
-                "simulation": True,
-                "image_base64": base64.b64encode(image_bytes).decode('utf-8') if isinstance(image_bytes, bytes) else None
+                "error": "No active skin models are available. Please upload and activate skin type and skin concerns models in the admin dashboard.",
             }
         
         # Convert BGR to RGB for CNN models (they expect RGB)
@@ -520,52 +558,56 @@ class FaceAnalysisPipeline:
             # Predict concerns
             concerns_result = self.predict_skin_concerns(processed_concerns)
             
-            # Generate heatmaps
-            try:
-                print("Generating heatmaps...")
-                
-                # Determine target size
-                target_size = (224, 224)
+            # Check if predictions have errors
+            if concerns_result.get("error"):
+                print(f"✗ Skin concerns prediction error: {concerns_result['error']}")
+                result["skin_concerns"] = concerns_result
+            else:
+                # Generate heatmaps
                 try:
-                    shape = self.skin_concerns_model.input_shape
-                    if shape and len(shape) >= 3:
-                         target_size = shape[1:3]
-                except AttributeError:
-                    pass
+                    print("Generating heatmaps...")
+                    
+                    # Determine target size
+                    target_size = (224, 224)
+                    try:
+                        shape = self.skin_concerns_model.input_shape
+                        if shape and len(shape) >= 3:
+                             target_size = shape[1:3]
+                    except AttributeError:
+                        pass
 
-                # Note: Generate heatmaps needs the raw cropped image, not the preprocessed one?
-                # The existing function likely takes image bytes or array.
-                # Let's check `generate_multi_skin_concern_heatmaps` signature in previous context or next step.
-                # It was imported. Assuming it can handle the array.
-                # Just passing cropped_face (RGB numpy array) should be fine if it handles it.
-                
-                # However, GradCAM usually needs the preprocessed input to run the model, 
-                # but to overlay, it needs the original image.
-                # Looking at cnn.py imports: `from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps`
-                
-                # Let's pass the cropped_face (as bytes or array) 
-                
-                heatmap_result = generate_multi_skin_concern_heatmaps(
-                    self.skin_concerns_model,
-                    cropped_face_rgb, # Passing the cropped RGB array
-                    self.skin_concerns_classes,
-                    target_size=target_size
-                )
+                    heatmap_result = generate_multi_skin_concern_heatmaps(
+                        self.skin_concerns_model,
+                        cropped_face_rgb, # Passing the cropped RGB array
+                        self.skin_concerns_classes,
+                        target_size=target_size
+                    )
 
-                # Debug info
-                print("Heatmap generation result keys:", heatmap_result.keys() if isinstance(heatmap_result, dict) else type(heatmap_result))
+                    # Debug info
+                    print("Heatmap generation result keys:", heatmap_result.keys() if isinstance(heatmap_result, dict) else type(heatmap_result))
 
-                # Attach combined heatmap and detected concerns
-                if isinstance(heatmap_result, dict):
-                    result["combined_heatmap"] = heatmap_result.get('combined_heatmap')
-                    result["detected_concerns"] = heatmap_result.get('detected_concerns', [])
+                    # Attach combined heatmap and detected concerns
+                    if isinstance(heatmap_result, dict):
+                        result["combined_heatmap"] = heatmap_result.get('combined_heatmap')
+                        result["detected_concerns"] = heatmap_result.get('detected_concerns', [])
 
-                # Keep individual predictions (without per-class heatmap attachments)
-                result["skin_concerns"] = concerns_result
-            except Exception as e:
-                print(f"Heatmap generation failed: {e}")
-                # Fallback to just predictions
-                result["skin_concerns"] = concerns_result
+                    # Keep individual predictions (without per-class heatmap attachments)
+                    result["skin_concerns"] = concerns_result
+                except Exception as e:
+                    print(f"Heatmap generation failed: {e}")
+                    # Fallback to just predictions
+                    result["skin_concerns"] = concerns_result
+        else:
+            print("[WARNING] Skin concerns model not loaded. Skin concerns predictions will be empty.")
+            result["skin_concerns"] = {"predictions": []}
+            result["flags"] = {
+                "acne": False,
+                "wrinkles": False,
+                "pores": False,
+                "darkspots": False,
+                "blackheads": False,
+            }
+            result["detected_concerns"] = []
 
         print(result)
 

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 from .models import CNNModel
 
 
@@ -13,7 +14,8 @@ class CNNModelAdmin(admin.ModelAdmin):
             'fields': ('name', 'model_type', 'version', 'description')
         }),
         ('Model Files', {
-            'fields': ('model_file', 'training_data_file', 'class_names_file')
+            'fields': ('model_file', 'training_data_file', 'class_names_file'),
+            'description': 'For skin concerns models, class_names_file is required.'
         }),
         ('Model Details', {
             'fields': ('base_architecture', 'image_size', 'accuracy', 'is_active')
@@ -22,3 +24,25 @@ class CNNModelAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
+    
+    def clean(self):
+        """Validate that skin concerns models have class names file."""
+        super().clean()
+        if self.model_type == 'skin_concerns' and not self.class_names_file:
+            raise ValidationError(
+                'Skin concerns models require a class_names_file to be uploaded.'
+            )
+    
+    def save_model(self, request, obj, form, change):
+        """Override save to validate before saving."""
+        try:
+            self.clean()
+        except ValidationError as e:
+            raise ValidationError(e.message)
+        super().save_model(request, obj, form, change)
+        
+        # Log the action
+        if obj.is_active:
+            print(f"✓ Activated {obj.model_type} model: {obj.name}")
+        else:
+            print(f"✓ Deactivated {obj.name}")

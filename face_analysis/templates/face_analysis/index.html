@@ -447,7 +447,16 @@
                     </div>
                     {% endif %}
 
-                    {% if analysis_result.detected_concerns %}
+                    {% if analysis_result.all_detected_concerns %}
+                    <div class="concern-summary" style="margin-top:1rem; text-align:left;">
+                        <h4 style="margin:0 0 0.5rem 0;">Detected Concerns</h4>
+                        <ul style="margin:0; padding-left:1.2rem;">
+                            {% for c in analysis_result.all_detected_concerns %}
+                            <li>{{ c.name|title }} <span style="color: #888; font-size: 0.85rem;">({{ c.confidence|floatformat:1 }}%)</span></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% elif analysis_result.detected_concerns %}
                     <div class="concern-summary" style="margin-top:1rem; text-align:left;">
                         <h4 style="margin:0 0 0.5rem 0;">Detected Concerns</h4>
                         <ul style="margin:0; padding-left:1.2rem;">

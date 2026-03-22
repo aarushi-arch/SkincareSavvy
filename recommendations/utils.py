@@ -172,22 +172,58 @@ def build_routine(analysis: dict):
         # Fallback: if no product in top 20 matches, search the whole DB for a category match
         if not routine[cat]:
             skin_type = (analysis.get("skin_type") or "").strip().lower()
-            # Try to find a highly rated product in this category for this skin type
-            # Fetch all products in category and filter in Python (SQLite doesn't support JSONField contains)
+            raw_concerns = [(c or "").strip().lower() for c in (analysis.get("concerns") or []) if c]
+            
+            # Mapping from CNN labels/common terms to DB tags (same as in recommend_products)
+            CONCERN_MAP = {
+                "acne": ["anti-acne", "cleansing", "balancing"],
+                "blackheades": ["cleansing", "exfoliating", "balancing"], # Handling CNN typo
+                "blackheads": ["cleansing", "exfoliating", "balancing"],
+                "dark_spots": ["brightening", "exfoliating", "antioxidant"],
+                "pores": ["cleansing", "balancing", "astringent"],
+                "wrinkles": ["anti-aging", "plumping", "moisturizing", "antioxidant"],
+                "dryness": ["moisturizing", "hydrating", "humectant", "emollient"],
+                "oiliness": ["balancing", "cleansing", "foaming"],
+                "sensitive": ["soothing", "gentle cleansing", "anti-inflammatory"],
+            }
+            
+            # Expand concerns based on map
+            concerns = set()
+            for rc in raw_concerns:
+                if rc in CONCERN_MAP:
+                    concerns.update(CONCERN_MAP[rc])
+                else:
+                    concerns.add(rc)
+            
+            # Try to find a highly rated product in this category for this skin type and concerns
             fallback_candidates = Product.objects.filter(
                 category__iexact=cat
             ).order_by('-rating')
             
-            # Find first product that has skin_type
+            # Find first product that matches skin_type or concerns
             fallback = None
             for p in fallback_candidates:
                 stypes = [str(s).lower() for s in (p.skin_types or [])]
-                if not skin_type or skin_type in stypes or "all" in stypes:
+                sconcs = [str(s).lower() for s in (p.skin_concerns or [])]
+                
+                type_match = not skin_type or skin_type in stypes or "all" in stypes
+                concern_match = bool(concerns and concerns.intersection(sconcs))
+                
+                if type_match or concern_match:
                     fallback = p
+                    # Set match reason based on what matched
+                    if concern_match:
+                        matching_concerns = [c for c in concerns if c in sconcs]
+                        if matching_concerns:
+                            display_name = matching_concerns[0].title()
+                            fallback.match_reason = f"Essential {cat} targeting {display_name}"
+                        else:
+                            fallback.match_reason = f"Essential {cat} for your skin concerns"
+                    else:
+                        fallback.match_reason = f"Essential {cat} for your skin type"
                     break
             
             if fallback:
-                fallback.match_reason = f"Essential {cat} for your skin type"
                 routine[cat] = fallback
 
     return routine

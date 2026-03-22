@@ -166,10 +166,10 @@
         {% endif %}
     </div>
 
-    <form class="chat-form" id="chatForm">
+    <form class="chat-form" id="chatForm" onsubmit="return false;">
         {% csrf_token %}
         <input type="text" name="message" id="chatInput" class="chat-input" placeholder="Type your message..." required maxlength="500">
-        <button type="submit" class="send-btn" title="Send Message">
+        <button type="button" class="send-btn" title="Send Message" onclick="sendMessage()">
             ➤
         </button>
     </form>
@@ -197,54 +197,55 @@ window.addEventListener("DOMContentLoaded", function() {
     if (box.style.display === "block") {
         scrollToBottom();
     }
-
-    // Handle form submission
-    const chatForm = document.getElementById("chatForm");
-    chatForm.addEventListener("submit", function(e) {
-        e.preventDefault(); // Prevent default form submission
-
-        const messageInput = document.getElementById("chatInput");
-        const message = messageInput.value.trim();
-        if (!message) return;
-
-        // Get CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        // Send AJAX request
-        fetch("{% url 'chat_support' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRFToken": csrfToken,
-                "X-Requested-With": "XMLHttpRequest"
-            },
-            body: new URLSearchParams({
-                "message": message
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Add the message to the chat
-                const messagesDiv = document.getElementById("chatMessages");
-                const noMessagesDiv = messagesDiv.querySelector(".no-messages");
-                if (noMessagesDiv) {
-                    noMessagesDiv.remove();
-                }
-                const messageDiv = document.createElement("div");
-                messageDiv.className = "message user-message";
-                messageDiv.innerHTML = `${data.message}<div class="timestamp">${data.timestamp}</div>`;
-                messagesDiv.appendChild(messageDiv);
-                scrollToBottom();
-                messageInput.value = ""; // Clear input
-            } else {
-                alert(data.error || "Failed to send message. Please try again.");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("An error occurred. Please try again.");
-        });
-    });
 });
+
+function sendMessage() {
+    const messageInput = document.getElementById("chatInput");
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Send AJAX request
+    fetch("{% url 'chat_support' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: new URLSearchParams({
+            "message": message
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Add the message to the chat
+            const messagesDiv = document.getElementById("chatMessages");
+            const noMessagesDiv = messagesDiv.querySelector(".no-messages");
+            if (noMessagesDiv) {
+                noMessagesDiv.remove();
+            }
+            const messageDiv = document.createElement("div");
+            messageDiv.className = "message user-message";
+            messageDiv.innerHTML = `${data.message}<div class="timestamp">${data.timestamp}</div>`;
+            messagesDiv.appendChild(messageDiv);
+            setTimeout(() => scrollToBottom(), 0);
+            messageInput.value = ""; // Clear input
+        } else {
+            alert(data.error || "Failed to send message. Please try again.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred. Please try again.");
+    });
+}
 </script>
