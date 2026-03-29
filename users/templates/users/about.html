@@ -1,0 +1,144 @@
+{% extends "users/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+    .about-container {
+        padding: 60px 0;
+        animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(15px) saturate(160%);
+        -webkit-backdrop-filter: blur(15px) saturate(160%);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 30px;
+        padding: 50px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-family: 'Allura', cursive;
+        font-size: 3.5rem;
+        color: #0b3b17;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .about-text {
+        font-size: 1.15rem;
+        line-height: 1.8;
+        color: #2c3e50;
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto 40px auto;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+        margin-top: 50px;
+    }
+
+    .feature-card {
+        background: rgba(11, 59, 23, 0.05);
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid rgba(11, 59, 23, 0.1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 20px rgba(11, 59, 23, 0.1);
+        background: rgba(11, 59, 23, 0.1);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        color: #0b3b17;
+        margin-bottom: 20px;
+    }
+
+    .feature-title {
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #0b3b17;
+        margin-bottom: 15px;
+    }
+
+    .feature-desc {
+        font-size: 0.95rem;
+        color: #555;
+    }
+
+    .cta-section {
+        text-align: center;
+        margin-top: 60px;
+    }
+
+    .btn-elegant {
+        background: #0b3b17;
+        color: white;
+        padding: 15px 40px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        display: inline-block;
+        border: none;
+    }
+
+    .btn-elegant:hover {
+        background: #0d4d1f;
+        transform: scale(1.05);
+        color: white;
+        box-shadow: 0 10px 20px rgba(11, 59, 23, 0.2);
+    }
+</style>
+
+<div class="about-container">
+    <div class="glass-card">
+        <h1 class="section-title">Elevate Your Radiance</h1>
+        <p class="about-text">
+            Welcome to <strong>SkincareSavvy</strong>, where cutting-edge technology meets the timeless pursuit of glowing skin. 
+            We believe that skincare should be personal, scientific, and accessible to everyone. Our mission is to empower you 
+            with the knowledge and tools needed to achieve your skin goals with confidence.
+        </p>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <i class="fas fa-magic feature-icon"></i>
+                <h3 class="feature-title">AI Powered Analysis</h3>
+                <p class="feature-desc">Our advanced AI scans your skin to detect concerns and provide professional-grade insights tailored to your unique profile.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-flask feature-icon"></i>
+                <h3 class="feature-title">Expert Recommendations</h3>
+                <p class="feature-desc">Receive curated product suggestions backed by science, ensuring every step of your routine serves a purpose.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-spa feature-icon"></i>
+                <h3 class="feature-title">Personalized Routines</h3>
+                <p class="feature-desc">Build and manage your daily skincare rituals with our intuitive routine builder, tracking your journey to perfection.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="cta-section">
+        <h2 style="font-family: 'Lato', sans-serif; color: #0b3b17; margin-bottom: 20px;">Ready to start your journey?</h2>
+        <a href="{% url 'face_analysis:face_analysis_index' %}" class="btn-elegant">Analyze Your Skin Now</a>
+    </div>
+</div>
+{% endblock %}

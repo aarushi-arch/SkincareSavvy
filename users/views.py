@@ -19,6 +19,10 @@ def home(request):
     return render(request, 'users/home.html')
 
 
+def about(request):
+    return render(request, 'users/about.html', {'page_title': 'About Us'})
+
+
 class RegisterView(View):
     form_class = RegisterForm
     initial = {'key': 'value'}

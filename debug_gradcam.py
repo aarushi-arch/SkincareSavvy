@@ -71,6 +71,7 @@ def debug_gradcam():
                 model, 
                 img_rgb, 
                 class_names, 
+                target_size=target_size, # Pass the correct size
                 confidence_threshold=0.0, # Force all classes
                 activation_threshold=0.0  # Force all activations
             )

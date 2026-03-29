@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+import keras
 import base64
 from io import BytesIO
 from PIL import Image
@@ -16,7 +17,7 @@ def get_gradcam_heatmap(model, img_array, class_index, last_conv_layer_name):
     """
     Generates Grad-CAM heatmap for a specific class.
     """
-    grad_model = tf.keras.models.Model(
+    grad_model = keras.Model(
         model.input, [model.get_layer(last_conv_layer_name).output, model.output]
     )
 
@@ -87,7 +88,7 @@ def generate_multi_skin_concern_heatmaps(
     img_bytes,
     class_names,
     last_conv_layer_name=None,
-    target_size=(224, 224),
+    target_size=None,
     confidence_threshold=0.30,   # only show meaningful concerns
     activation_threshold=0.45,   # remove weak heatmap noise
     alpha=0.25                   # subtle overlay
@@ -97,6 +98,7 @@ def generate_multi_skin_concern_heatmaps(
     - Noise reduction
     - Strong activation filtering
     - Smoother, more professional look
+    - Individual heatmaps for each detected concern
     """
 
     if last_conv_layer_name is None:
@@ -111,6 +113,25 @@ def generate_multi_skin_concern_heatmaps(
     else:
         raise ValueError("Unsupported image type provided")
 
+    # Determine target size if not provided
+    if target_size is None:
+        try:
+            # model.input_shape might be (None, 128, 128, 3)
+            shape = model.input_shape
+            if shape and len(shape) >= 3:
+                # Some models have (None, H, W, C), others (H, W, C)
+                if len(shape) == 4:
+                    target_size = shape[1:3]
+                else:
+                    target_size = shape[0:2]
+        except Exception:
+            pass
+            
+    if target_size is None:
+        target_size = (224, 224) # Final fallback
+
+    print(f"DEBUG: Grad-CAM using target_size={target_size}")
+
     # Preprocess image
     img_array = preprocess_image(img_bytes, target_size=target_size, normalize=True)
 
@@ -120,6 +141,7 @@ def generate_multi_skin_concern_heatmaps(
     combined_heatmap = None
     total_weight = 0.0
     detected_concerns = []
+    individual_heatmaps = {}  # Store individual heatmaps
 
     orig_h, orig_w = img_rgb.shape[:2]
 
@@ -147,15 +169,33 @@ def generate_multi_skin_concern_heatmaps(
             heatmap = cv2.GaussianBlur(heatmap, (21, 21), 0)
 
             # Weight by confidence
-            heatmap = heatmap * confidence
+            heatmap_weighted = heatmap * confidence
+
+            # Create individual heatmap visualization
+            colored_individual_heatmap = cv2.applyColorMap(
+                (heatmap * 255).astype(np.uint8),
+                cv2.COLORMAP_INFERNO
+            )
+            
+            original_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+            individual_overlay = cv2.addWeighted(original_bgr, 1 - alpha, colored_individual_heatmap, alpha, 0)
+            individual_overlay_rgb = cv2.cvtColor(individual_overlay, cv2.COLOR_BGR2RGB)
+            
+            # Convert to base64
+            individual_base64 = convert_heatmap_to_base64(individual_overlay_rgb)
+            individual_heatmaps[class_name] = individual_base64
 
             if combined_heatmap is None:
-                combined_heatmap = heatmap
+                combined_heatmap = heatmap_weighted
             else:
-                combined_heatmap += heatmap
+                combined_heatmap += heatmap_weighted
 
             total_weight += confidence
-            detected_concerns.append(class_name)
+            detected_concerns.append({
+                "name": class_name,
+                "confidence": int(confidence * 100),
+                "heatmap": individual_base64
+            })
 
         except Exception as e:
             print(f"GradCAM error for {class_name}: {e}")
@@ -183,4 +223,5 @@ def generate_multi_skin_concern_heatmaps(
     return {
         "combined_heatmap": combined_base64,
         "detected_concerns": detected_concerns,
+        "individual_heatmaps": individual_heatmaps,
     }

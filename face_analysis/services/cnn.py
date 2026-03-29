@@ -589,7 +589,8 @@ class FaceAnalysisPipeline:
                     # Attach combined heatmap and detected concerns
                     if isinstance(heatmap_result, dict):
                         result["combined_heatmap"] = heatmap_result.get('combined_heatmap')
-                        result["detected_concerns"] = heatmap_result.get('detected_concerns', [])
+                        result["detected_concerns_from_heatmap"] = heatmap_result.get('detected_concerns', [])
+                        result["individual_heatmaps"] = heatmap_result.get('individual_heatmaps', {})
 
                     # Keep individual predictions (without per-class heatmap attachments)
                     result["skin_concerns"] = concerns_result

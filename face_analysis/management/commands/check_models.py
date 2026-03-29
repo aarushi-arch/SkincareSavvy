@@ -17,11 +17,11 @@ class Command(BaseCommand):
 
         if skin_types_active:
             self.stdout.write(
-                self.style.SUCCESS(f'✓ Skin Types Model Active: {skin_types_active.name}')
+                self.style.SUCCESS(f'Skin Types Model Active: {skin_types_active.name}')
             )
         else:
             self.stdout.write(
-                self.style.WARNING('✗ No active Skin Types model')
+                self.style.WARNING('No active Skin Types model')
             )
             skin_types = CNNModel.objects.filter(model_type='skin_types')
             if skin_types.exists():
@@ -46,12 +46,12 @@ class Command(BaseCommand):
             if not skin_concerns_active.class_names:
                 self.stdout.write(
                     self.style.WARNING(
-                        f'  ⚠ {skin_concerns_active.name} is missing class_names_file!'
+                        f'  {skin_concerns_active.name} is missing class_names_file!'
                     )
                 )
         else:
             self.stdout.write(
-                self.style.WARNING('✗ No active Skin Concerns model')
+                self.style.WARNING(' No active Skin Concerns model')
             )
             skin_concerns = CNNModel.objects.filter(model_type='skin_concerns')
             if skin_concerns.exists():

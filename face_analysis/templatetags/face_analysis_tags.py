@@ -32,3 +32,17 @@ def multiply(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return ""
+
+@register.filter
+def split(value, arg):
+    """Splits a string by the given argument."""
+    if not isinstance(value, str):
+        return value
+    return value.split(arg)
+
+@register.filter
+def strip(value):
+    """Strips whitespace from a string."""
+    if not isinstance(value, str):
+        return value
+    return value.strip()

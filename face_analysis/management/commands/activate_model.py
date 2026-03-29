@@ -27,7 +27,7 @@ class Command(BaseCommand):
         if not model.class_names_file:
             self.stdout.write(
                 self.style.WARNING(
-                    f'⚠ {model.name} is missing class_names_file. '
+                    f'{model.name} is missing class_names_file. '
                     f'Please upload it before activating.'
                 )
             )
@@ -43,5 +43,5 @@ class Command(BaseCommand):
         model.save()
 
         self.stdout.write(
-            self.style.SUCCESS(f'✓ Activated skin concerns model: {model.name}')
+            self.style.SUCCESS(f'Activated skin concerns model: {model.name}')
         )

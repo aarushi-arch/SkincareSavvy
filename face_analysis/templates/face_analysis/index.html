@@ -211,6 +211,133 @@
             font-weight: 600;
             text-decoration: none;
         }
+
+        /* Concern Cards Styling */
+        .concern-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .concern-card {
+            background: var(--card);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            border: 2px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .concern-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .concern-card-with-heatmap {
+            background: var(--card);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            border: 2px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .concern-card-with-heatmap:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .concern-heatmap-wrapper {
+            flex-grow: 1;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+
+        .concern-heatmap {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .concern-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .concern-confidence {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .concern-bar {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .concern-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        /* Color-coded concern cards */
+        .acne-card {
+            border-left: 4px solid #F44336;
+        }
+
+        .acne-card .concern-bar-fill {
+            background: #F44336;
+        }
+
+        .wrinkles-card {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .wrinkles-card .concern-bar-fill {
+            background: #4CAF50;
+        }
+
+        .pores-card {
+            border-left: 4px solid #9C27B0;
+        }
+
+        .pores-card .concern-bar-fill {
+            background: #9C27B0;
+        }
+
+        .darkspots-card {
+            border-left: 4px solid #2196F3;
+        }
+
+        .darkspots-card .concern-bar-fill {
+            background: #2196F3;
+        }
+
+        .blackheads-card {
+            border-left: 4px solid #333333;
+        }
+
+        .blackheads-card .concern-bar-fill {
+            background: #333333;
+        }
+
+        .default-card {
+            border-left: 4px solid #FF9800;
+        }
+
+        .default-card .concern-bar-fill {
+            background: #FF9800;
+        }
     </style>
 </head>
 
@@ -448,17 +575,28 @@
                     {% endif %}
 
                     {% if analysis_result.all_detected_concerns %}
-                    <div class="concern-summary" style="margin-top:1rem; text-align:left;">
-                        <h4 style="margin:0 0 0.5rem 0;">Detected Concerns</h4>
-                        <ul style="margin:0; padding-left:1.2rem;">
+                    <div class="concern-cards-section" style="margin-top:1.5rem;">
+                        <h4 style="margin:0 0 1rem 0; color: var(--text); font-weight: 600;">Detected Concerns & Heatmaps</h4>
+                        <div class="concern-cards-grid">
                             {% for c in analysis_result.all_detected_concerns %}
-                            <li>{{ c.name|title }} <span style="color: #888; font-size: 0.85rem;">({{ c.confidence|floatformat:1 }}%)</span></li>
+                            <div class="concern-card-with-heatmap {% if c.name == 'acne' %}acne-card{% elif c.name == 'wrinkles' %}wrinkles-card{% elif c.name == 'pores' %}pores-card{% elif c.name == 'darkspots' or c.name == 'dark_spots' %}darkspots-card{% elif c.name == 'blackheads' %}blackheads-card{% else %}default-card{% endif %}">
+                                <div class="concern-name">{{ c.name|title }}</div>
+                                <div class="concern-confidence">{{ c.confidence }} out of 100</div>
+                                <div class="concern-bar">
+                                    <div class="concern-bar-fill" style="width: {{ c.confidence }}%;"></div>
+                                </div>
+                                {% if c.heatmap %}
+                                <div class="concern-heatmap-wrapper" style="margin-top: 1rem;">
+                                    <img src="data:image/jpeg;base64,{{ c.heatmap }}" alt="{{ c.name|title }} Heatmap" class="concern-heatmap" style="width: 100%; border-radius: 6px; max-height: 200px; object-fit: cover;">
+                                </div>
+                                {% endif %}
+                            </div>
                             {% endfor %}
-                        </ul>
+                        </div>
                     </div>
                     {% elif analysis_result.detected_concerns %}
-                    <div class="concern-summary" style="margin-top:1rem; text-align:left;">
-                        <h4 style="margin:0 0 0.5rem 0;">Detected Concerns</h4>
+                    <div class="concern-cards-section" style="margin-top:1.5rem;">
+                        <h4 style="margin:0 0 1rem 0; color: var(--text); font-weight: 600;">Detected Concerns</h4>
                         <ul style="margin:0; padding-left:1.2rem;">
                             {% for c in analysis_result.detected_concerns %}
                             <li>{{ c|title }}</li>
@@ -500,7 +638,100 @@
             </div>
 
             <!-- ROUTINE ROADMAP -->
-            {% if routine %}
+            {% if routine and routine.cleanser and routine.treatment and routine.moisturizer and routine.sunscreen %}
+            <div class="routine-roadmap">
+                <div class="panel-head" style="margin-bottom: 2rem;">
+                    <div>
+                        <p class="eyebrow">Personalized Regimen</p>
+                        <h2>Your Step-by-Step Routine</h2>
+                        <p class="muted">A custom plan designed to address your specific skin needs.</p>
+                    </div>
+                </div>
+
+                <div class="routine-steps">
+                    <!-- Step 1: Cleanser -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">1</span>
+                            <span class="step-label">Cleanse</span>
+                        </div>
+                        <img src="{% if routine.cleanser.image_url %}{{ routine.cleanser.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img" alt="{{ routine.cleanser.name }}">
+                        <div class="step-product-info">
+                            <p>{{ routine.cleanser.brand }}</p>
+                            <h4>{{ routine.cleanser.name|truncatechars:45 }}</h4>
+                        </div>
+                        <div class="step-instruction">
+                            Apply to damp skin, massage gently for 60 seconds, and rinse with lukewarm water.
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Treatment -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">2</span>
+                            <span class="step-label">Treat</span>
+                        </div>
+                        <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img" alt="{{ routine.treatment.name }}">
+                        <div class="step-product-info">
+                            <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.treatment.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            Apply 2-3 drops to clean, dry skin. Focus on areas with
+                            {% if analysis_result.skin_concerns.predictions %}
+                            {% for concern in analysis_result.skin_concerns.predictions %}
+                            <strong>{{ concern.class }}</strong>{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                            {% else %}
+                            <strong>no specific concerns detected</strong>
+                            {% endif %}.
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Moisturizer -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">3</span>
+                            <span class="step-label">Moisturize</span>
+                        </div>
+                        <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img" alt="{{ routine.moisturizer.name }}">
+                        <div class="step-product-info">
+                            <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
+                            <p>{{ routine.moisturizer.brand }}</p>
+                        </div>
+                        <div class="step-instruction">
+                            Massage into skin to lock in hydration. Provides a healthy barrier for
+                            {% if analysis_result.skin_type.predictions %}
+                            <strong>{{ analysis_result.skin_type.predictions.0.class }}</strong>
+                            {% else %}
+                            <strong>skin type not detected</strong>
+                            {% endif %} skin.
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Sunscreen -->
+                    <div class="routine-step">
+                        <div class="step-header">
+                            <span class="step-count">4</span>
+                            <span class="step-label">Protect</span>
+                        </div>
+                        <div class="am-badge">AM Only</div>
+                        <img src="{% if routine.sunscreen.image_url %}{{ routine.sunscreen.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
+                            class="step-product-img" alt="{{ routine.sunscreen.name }}">
+                        <div class="step-product-info">
+                            <p>{{ routine.sunscreen.brand }}</p>
+                            <h4>{{ routine.sunscreen.name|truncatechars:45 }}</h4>
+                        </div>
+                        <div class="step-instruction">
+                            Apply generously as the final step to protect from UV damage and premature aging.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% elif routine %}
             <div class="routine-roadmap">
                 <div class="panel-head" style="margin-bottom: 2rem;">
                     <div>
@@ -519,17 +750,19 @@
                         </div>
                         {% if routine.cleanser %}
                         <img src="{% if routine.cleanser.image_url %}{{ routine.cleanser.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
+                            class="step-product-img" alt="{{ routine.cleanser.name }}">
                         <div class="step-product-info">
                             <p>{{ routine.cleanser.brand }}</p>
                             <h4>{{ routine.cleanser.name|truncatechars:45 }}</h4>
                         </div>
+                        {% else %}
+                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
+                        </div>
+                        {% endif %}
                         <div class="step-instruction">
                             Apply to damp skin, massage gently for 60 seconds, and rinse with lukewarm water.
                         </div>
-                        {% else %}
-                        <p class="muted">No cleanser matched. Use a gentle, pH-balanced wash.</p>
-                        {% endif %}
                     </div>
 
                     <!-- Step 2: Treatment -->
@@ -538,14 +771,18 @@
                             <span class="step-count">2</span>
                             <span class="step-label">Treat</span>
                         </div>
-
                         {% if routine.treatment %}
                         <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
+                            class="step-product-img" alt="{{ routine.treatment.name }}">
                         <div class="step-product-info">
                             <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
                             <p>{{ routine.treatment.brand }}</p>
                         </div>
+                        {% else %}
+                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
+                        </div>
+                        {% endif %}
                         <div class="step-instruction">
                             Apply 2-3 drops to clean, dry skin. Focus on areas with
                             {% if analysis_result.skin_concerns.predictions %}
@@ -556,9 +793,6 @@
                             <strong>no specific concerns detected</strong>
                             {% endif %}.
                         </div>
-                        {% else %}
-                        <p class="muted">Search for a targeted serum for your skin.</p>
-                        {% endif %}
                     </div>
 
                     <!-- Step 3: Moisturizer -->
@@ -567,14 +801,18 @@
                             <span class="step-count">3</span>
                             <span class="step-label">Moisturize</span>
                         </div>
-
                         {% if routine.moisturizer %}
                         <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
+                            class="step-product-img" alt="{{ routine.moisturizer.name }}">
                         <div class="step-product-info">
                             <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
                             <p>{{ routine.moisturizer.brand }}</p>
                         </div>
+                        {% else %}
+                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
+                        </div>
+                        {% endif %}
                         <div class="step-instruction">
                             Massage into skin to lock in hydration. Provides a healthy barrier for
                             {% if analysis_result.skin_type.predictions %}
@@ -583,9 +821,6 @@
                             <strong>skin type not detected</strong>
                             {% endif %} skin.
                         </div>
-                        {% else %}
-                        <p class="muted">Search for a moisturizer suitable for your skin.</p>
-                        {% endif %}
                     </div>
 
                     <!-- Step 4: Sunscreen -->
@@ -597,17 +832,19 @@
                         <div class="am-badge">AM Only</div>
                         {% if routine.sunscreen %}
                         <img src="{% if routine.sunscreen.image_url %}{{ routine.sunscreen.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img">
+                            class="step-product-img" alt="{{ routine.sunscreen.name }}">
                         <div class="step-product-info">
                             <p>{{ routine.sunscreen.brand }}</p>
                             <h4>{{ routine.sunscreen.name|truncatechars:45 }}</h4>
                         </div>
+                        {% else %}
+                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
+                        </div>
+                        {% endif %}
                         <div class="step-instruction">
                             Apply generously as the final step to protect from UV damage and premature aging.
                         </div>
-                        {% else %}
-                        <p class="muted">Never skip sunscreen! Look for an SPF 30+ product.</p>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -673,14 +910,14 @@
                         </div>
                         {% endif %}
                         <span class="badge" style="
-                            background: #f8f9fa; 
-                            color: #6c757d; 
-                            padding: 0.25rem 0.6rem; 
-                            border-radius: 20px; 
-                            font-size: 0.75rem; 
-                            text-transform: uppercase; 
+                            background: #f8f9fa;
+                            color: #6c757d;
+                            padding: 0.25rem 0.6rem;
+                            border-radius: 20px;
+                            font-size: 0.75rem;
+                            text-transform: uppercase;
                             letter-spacing: 0.5px;">
-                            {{ product.category|default:'Skincare' }}
+                            {{ product.type|default:'Skincare' }}
                         </span>
                     </div>
 
@@ -698,41 +935,139 @@
                         {{ product.brand }}
                     </p>
 
-                    {% if product.match_reason %}
-                    <p style="
-                        font-size: 0.85rem; 
-                        color: #155724; 
-                        margin: 0 0 1rem 0; 
-                        display: flex; 
-                        align-items: flex-start; 
-                        gap: 0.5rem;
-                        background: #d4edda;
-                        padding: 0.5rem;
-                        border-radius: 6px;
-                        line-height: 1.4;">
-                        <span style="font-size: 1rem; line-height: 1;">✓</span>
-                        <span>{{ product.match_reason }}</span>
+                    <!-- Key Benefits -->
+                    {% if product.concern %}
+                    <div style="margin-bottom: 1.2rem; padding: 0.9rem; background: linear-gradient(135deg, rgba(11, 59, 23, 0.04) 0%, rgba(11, 59, 23, 0.02) 100%); border-left: 3px solid #0b3b17; border-radius: 6px;">
+                        <p style="font-size: 0.8rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.6rem 0; letter-spacing: 0.5px; text-transform: uppercase;">
+                            Key Benefits
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+                            {% if product.concern is list %}
+                                {% for effect in product.concern %}
+                                    {% if effect %}
+                                    <span style="
+                                        background: white;
+                                        color: #0b3b17;
+                                        padding: 0.35rem 0.75rem;
+                                        border-radius: 20px;
+                                        font-size: 0.8rem;
+                                        font-weight: 500;
+                                        border: 1px solid rgba(11, 59, 23, 0.15);
+                                        box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
+                                        {{ effect|stringformat:"s"|cut:"'"|cut:'"' }}
+                                    </span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% if product.concern|stringformat:"s"|slice:":1" == "[" %}
+                                    <!-- Handle stringified list - parse and display each item separately -->
+                                    {% with effect_str=product.concern|stringformat:"s"|slice:"1:-1" %}
+                                        {% for item in effect_str|split:"," %}
+                                        <span style="
+                                            background: white;
+                                            color: #0b3b17;
+                                            padding: 0.35rem 0.75rem;
+                                            border-radius: 20px;
+                                            font-size: 0.8rem;
+                                            font-weight: 500;
+                                            border: 1px solid rgba(11, 59, 23, 0.15);
+                                            box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
+                                            {{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}
+                                        </span>
+                                        {% endfor %}
+                                    {% endwith %}
+                                {% else %}
+                                    <span style="
+                                        background: white;
+                                        color: #0b3b17;
+                                        padding: 0.35rem 0.75rem;
+                                        border-radius: 20px;
+                                        font-size: 0.8rem;
+                                        font-weight: 500;
+                                        border: 1px solid rgba(11, 59, 23, 0.15);
+                                        box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
+                                        {{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Active Ingredients -->
+                    {% if product.active_ingredients %}
+                    <div style="margin-bottom: 1rem;">
+                        <p style="font-size: 0.85rem; font-weight: 600; color: #0b3b17; margin-bottom: 0.5rem;">
+                             Active Ingredients:
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                            {% for ingredient in product.active_ingredients %}
+                            <span style="
+                                background: #e8f5e8;
+                                color: #2e7d32;
+                                padding: 0.2rem 0.5rem;
+                                border-radius: 12px;
+                                font-size: 0.75rem;
+                                font-weight: 500;">
+                                {{ ingredient }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Allergy Warning -->
+                    {% if product.allergy_warning %}
+                    <div style="
+                        background: #ffebee;
+                        border: 1px solid #ffcdd2;
+                        border-radius: 8px;
+                        padding: 0.75rem;
+                        margin-bottom: 1rem;">
+                        <p style="
+                            font-size: 0.85rem;
+                            color: #c62828;
+                            margin: 0 0 0.5rem 0;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;">
+                            ⚠️ Allergy Alert
+                        </p>
+                        <p style="font-size: 0.8rem; color: #c62828; margin: 0;">
+                            Contains: {{ product.matched_allergens|join:", " }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Product Description -->
+                    {% if product.description %}
+                    <p style="font-size: 0.85rem; color: #666; margin: 0 0 1rem 0; line-height: 1.4;">
+                        {{ product.description|truncatechars:120 }}
                     </p>
                     {% endif %}
 
-                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
-                        <div class="rating" style="color: #ffc107; font-weight: bold;">
-                            ★ {{ product.rating|default:'4.5' }}
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid rgba(11, 59, 23, 0.08);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% if product.rating %}
+                                <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
+                                    ★ {{ product.rating|floatformat:1 }}
+                                </span>
+                                <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
+                                    ({{ product.rating|floatformat:1 }}/5)
+                                </span>
+                            {% else %}
+                                <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
+                                    ★ {{ product.score|floatformat:1 }}
+                                </span>
+                                <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
+                                    ({{ product.score|floatformat:1 }}/5)
+                                </span>
+                            {% endif %}
                         </div>
                         <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                            <a href="{{ product.product_url }}" target="_blank" class="btn ghost small"
-                                style="padding: 0.5rem 1rem;">View</a>
-                            {% if user.is_authenticated %}
-                            <button type="button" class="btn primary small add-to-shelf-btn"
-                                data-product-id="{{ product.id }}" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
-                                + Shelf
-                            </button>
-                            {% else %}
-                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn ghost small"
-                                style="padding: 0.5rem 1rem; font-size: 0.8rem; opacity: 0.7;">
-                                + Shelf (Login)
-                            </a>
-                            {% endif %}
+                            <a href="{% url 'my_orders' %}" class="btn primary small"
+                                style="padding: 0.5rem 1rem;">Add to Shelf</a>
                         </div>
                     </div>
                 </div>

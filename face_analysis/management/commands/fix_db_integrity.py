@@ -23,8 +23,8 @@ class Command(BaseCommand):
             for model in deactivate:
                 model.is_active = False
                 model.save()
-                self.stdout.write(f"  ✓ Deactivated: {model.name}")
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Kept active: {keep.name}\n'))
+                self.stdout.write(f"   Deactivated: {model.name}")
+            self.stdout.write(self.style.SUCCESS(f'   Kept active: {keep.name}\n'))
 
         # Check skin_concerns
         skin_concerns_active = CNNModel.objects.filter(
@@ -40,7 +40,7 @@ class Command(BaseCommand):
             for model in deactivate:
                 model.is_active = False
                 model.save()
-                self.stdout.write(f"  ✓ Deactivated: {model.name}")
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Kept active: {keep.name}\n'))
+                self.stdout.write(f"   Deactivated: {model.name}")
+            self.stdout.write(self.style.SUCCESS(f'   Kept active: {keep.name}\n'))
 
-        self.stdout.write(self.style.SUCCESS('✓ Database integrity restored!'))
+        self.stdout.write(self.style.SUCCESS(' Database integrity restored!'))
