@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="fade-in">Welcome to Skincare Savvy</h1>
+        <p class="fade-in delay-1">Discover the perfect products for your skin type.</p>
+        <a href="{% url 'recommendations:home' %}" class="cta-button fade-in delay-2">Shop Now</a>
+    </div>
+</section>
+
+<!-- Features / Product Highlights -->
+<section class="features">
+    <div class="feature-card slide-up">
+        <h3>Hydration</h3>
+        <p>Keep your skin moisturized all day.</p>
+    </div>
+    <div class="feature-card slide-up delay-1">
+        <h3>Anti-Aging</h3>
+        <p>Reduce fine lines and wrinkles naturally.</p>
+    </div>
+    <div class="feature-card slide-up delay-2">
+        <h3>Brightening</h3>
+        <p>Reveal a radiant and glowing complexion.</p>
+    </div>
+</section>
+
+<!-- Optional Testimonials Section -->
+<section class="testimonials slide-up delay-3">
+    <h2>What our users say</h2>
+    <div class="testimonial-card">
+        <p>"Skincare Savvy helped me find the perfect moisturizer!"</p>
+        <span>- Jane D.</span>
+    </div>
+    <div class="testimonial-card">
+        <p>"I finally understand which products suit my sensitive skin."</p>
+        <span>- Mark S.</span>
+    </div>
+</section>
+
+  <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+  <script src="{% static 'js/animations.js' %}"></script>
+{% endblock %}
