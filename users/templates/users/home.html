@@ -29,52 +29,20 @@
             min-height: 100vh;
         }
 
-        /* ========================
-           HERO SECTION (UPGRADED)
-           ======================== */
         .hero-section {
-            height: 100vh;
-            background: linear-gradient(135deg, #e8f5f0 0%, #d4ebe8 50%, #c0e1e0 100%);
+            height: 90vh; /* Reduced height as it no longer overlaps header */
+            background: url("/static/images/HeroSection.jpg") no-repeat center center;
             background-size: cover;
-            background-position: center;
             background-attachment: fixed;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 120px 40px 0;
+            padding: 40px 40px 0; /* Reduced top padding */
             position: relative;
-            margin-top: -120px;
+            /* Removed margin-top: -120px; to allow header visibility */
         }
 
-        .hero-bg-upload {
-            position: absolute;
-            top: 20px;
-            right: 40px;
-            z-index: 10;
-        }
-
-        .hero-bg-upload input[type="file"] {
-            display: none;
-        }
-
-        .hero-bg-upload label {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #0b3b17;
-            transition: all 0.3s ease;
-            display: inline-block;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .hero-bg-upload label:hover {
-            background: white;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        }
-
+       
         .hero-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -172,6 +140,7 @@
             padding: 0 40px 60px 40px;
             min-height: 280px;
             display: flex;
+            flex-direction: column; /* Place dots below */
             align-items: center;
             justify-content: center;
         }
@@ -179,6 +148,8 @@
         .testimonials-wrapper {
             position: relative;
             width: 100%;
+            max-width: 800px; /* Limit width of testimonial section */
+            margin: 0 auto;
             overflow: hidden;
             border-radius: 20px;
         }
@@ -189,21 +160,23 @@
         }
 
         .testimonial-card {
-            flex: 0 0 100%;
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            position: relative;
+            flex: 0 0 100%; /* Take full width of the wrapper */
+            width: 100%;
+            background: #f8f8f8;
             border-radius: 20px;
-            padding: 40px;
+            padding: 60px 30px 30px; /* top space for avatar */
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin: 60px 0; /* centers nicely in height */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
+
+        
 
         .testimonial-text {
             font-size: 1.1rem;
             color: #5a5a5a;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             line-height: 1.8;
             font-style: italic;
             max-width: 600px;
@@ -211,16 +184,33 @@
             margin-right: auto;
         }
 
+        .testimonial-avatar {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .testimonial-avatar img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
         .testimonial-author {
             font-size: 0.95rem;
             font-weight: 700;
             color: #0b3b17;
+            margin-bottom: 8px;
         }
 
         .testimonial-role {
             font-size: 0.85rem;
             color: #999;
-            margin-top: 5px;
+            margin-top: 0;
         }
 
         .testimonial-dots {
@@ -914,10 +904,7 @@
     </header>
 
     <div class="hero-section" id="heroSection">
-        <div class="hero-bg-upload">
-            <input type="file" id="heroBgUpload" accept="image/*">
-            <label for="heroBgUpload">🖼️ Upload Background</label>
-        </div>
+        
 
         <div class="hero-content">
             <div class="hero-text">
@@ -934,16 +921,25 @@
             <div class="testimonials-wrapper">
                 <div class="testimonials-carousel" id="testimonialCarousel">
                     <div class="testimonial-card">
+                        <div class="testimonial-avatar">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Sarah Johnson">
+                        </div>
                         <p class="testimonial-text">"SkincareSavvy completely transformed my skincare routine! The AI analysis was spot-on and helped me find products that actually work for my skin type."</p>
                         <div class="testimonial-author">Sarah Johnson</div>
                         <div class="testimonial-role">Beauty Enthusiast</div>
                     </div>
                     <div class="testimonial-card">
+                        <div class="testimonial-avatar">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Sarah Johnson">
+                        </div>
                         <p class="testimonial-text">"I love how easy it is to find affordable dupes for expensive products. The recommendations are accurate and the interface is so user-friendly!"</p>
                         <div class="testimonial-author">Emily Chen</div>
                         <div class="testimonial-role">Skincare Blogger</div>
                     </div>
                     <div class="testimonial-card">
+                        <div class="testimonial-avatar">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Sarah Johnson">
+                        </div>
                         <p class="testimonial-text">"The skin analysis feature is incredible! It identified my concerns perfectly and suggested products I would have never found on my own."</p>
                         <div class="testimonial-author">Michael Torres</div>
                         <div class="testimonial-role">Product Reviewer</div>
@@ -964,8 +960,7 @@
                 <div class="blob-shape"></div>
                 <div class="about-image-wrapper">
                     <img src="{% static 'images/Registration.jpg' %}" alt="Skincare with AI insights" id="aboutImage">
-                    <input type="file" id="aboutImageUpload" accept="image/*">
-                    <label for="aboutImageUpload" class="about-image-label">📸 Change</label>
+                    
                 </div>
             </div>
             <div class="about-text">
@@ -1021,64 +1016,9 @@
                 });
             }
 
-            // ============================================
-            // HERO BACKGROUND IMAGE UPLOAD
-            // ============================================
-            const heroBgUpload = document.getElementById('heroBgUpload');
-            const heroSection = document.getElementById('heroSection');
+            
 
-            if (heroBgUpload) {
-                heroBgUpload.addEventListener('change', function (e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function (event) {
-                            heroSection.style.backgroundImage = `url('${event.target.result}')`;
-                            heroSection.style.backgroundSize = 'cover';
-                            heroSection.style.backgroundPosition = 'center';
-                            // Store in localStorage for persistence
-                            localStorage.setItem('heroBgImage', event.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-
-                // Load saved background image from localStorage
-                const savedBgImage = localStorage.getItem('heroBgImage');
-                if (savedBgImage) {
-                    heroSection.style.backgroundImage = `url('${savedBgImage}')`;
-                    heroSection.style.backgroundSize = 'cover';
-                    heroSection.style.backgroundPosition = 'center';
-                }
-            }
-
-            // ============================================
-            // ABOUT SECTION IMAGE UPLOAD
-            // ============================================
-            const aboutImageUpload = document.getElementById('aboutImageUpload');
-            const aboutImage = document.getElementById('aboutImage');
-
-            if (aboutImageUpload && aboutImage) {
-                aboutImageUpload.addEventListener('change', function (e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function (event) {
-                            aboutImage.src = event.target.result;
-                            // Store in localStorage for persistence
-                            localStorage.setItem('aboutImage', event.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-
-                // Load saved about image from localStorage
-                const savedAboutImage = localStorage.getItem('aboutImage');
-                if (savedAboutImage) {
-                    aboutImage.src = savedAboutImage;
-                }
-            }
-
+            
             // ============================================
             // TESTIMONIALS CAROUSEL
             // ============================================

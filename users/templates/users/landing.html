@@ -27,16 +27,26 @@
     </div>
 </section>
 
-<!-- Optional Testimonials Section -->
+<!-- Testimonials Section -->
 <section class="testimonials slide-up delay-3">
     <h2>What our users say</h2>
-    <div class="testimonial-card">
-        <p>"Skincare Savvy helped me find the perfect moisturizer!"</p>
-        <span>- Jane D.</span>
-    </div>
-    <div class="testimonial-card">
-        <p>"I finally understand which products suit my sensitive skin."</p>
-        <span>- Mark S.</span>
+    <div class="testimonial-carousel">
+        <div class="testimonial-container">
+            <div class="testimonial-card active">
+                <p>"Skincare Savvy helped me find the perfect moisturizer!"</p>
+                <span>- Jane D.</span>
+            </div>
+            <div class="testimonial-card">
+                <p>"I finally understand which products suit my sensitive skin."</p>
+                <span>- Mark S.</span>
+            </div>
+        </div>
+        <button class="carousel-btn prev-btn" onclick="changeTestimonial(-1)">‹</button>
+        <button class="carousel-btn next-btn" onclick="changeTestimonial(1)">›</button>
+        <div class="carousel-dots">
+            <span class="dot active" onclick="currentTestimonial(1)"></span>
+            <span class="dot" onclick="currentTestimonial(2)"></span>
+        </div>
     </div>
 </section>
 
