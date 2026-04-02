@@ -41,6 +41,7 @@
         overflow: hidden;
         margin: 0;
         padding: 0;
+        position: relative;
     }
 
     .hero-content {
@@ -106,186 +107,97 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
+        height: 100%;
+        width: 100%;
     }
 
-    .floating-gallery {
+    .vertical-carousel-container {
         position: absolute;
-        right: 0%;
+        left: 50%;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translate(-50%, -50%);
+        width: 320px;
+        height: 480px; /* Viewport for the vertical slider */
+        overflow: hidden;
+        z-index: 10;
+        mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+    }
+
+    .vertical-carousel-track {
         display: flex;
         flex-direction: column;
-        gap: 24px;
-        z-index: 2;
-        margin-top: 40px;
+        gap: 20px;
+        transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
     }
 
-    .floating-card {
-        width: 200px;
-        height: 200px;
+    .side-testimonial-card {
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-        animation: floating 6s ease-in-out infinite;
-        transition: transform 0.3s ease;
-    }
-
-    .floating-card:nth-child(2) {
-        animation-delay: -2s;
-        margin-right: 40px;
-    }
-
-    .floating-card:nth-child(3) {
-        animation-delay: -4s;
-    }
-
-    .floating-card:hover {
-        transform: scale(1.05);
-        z-index: 5;
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .floating-card img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    @keyframes floating {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-15px) rotate(2deg); }
-    }
-
-    .testimonials-container {
-        position: absolute;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-        max-width: 900px;
-        display: flex;
-        justify-content: center;
-        z-index: 999; 
-    }
-
-    .testimonials-wrapper {
-        position: relative;
-        width: 100%;
-        max-width: 800px;
-        margin: 0 auto;
-        overflow: hidden;
         border-radius: 20px;
-    }
-
-    .testimonials-carousel {
+        padding: 25px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+        color: #1a1a1a;
+        transition: all 0.4s ease;
+        opacity: 0.6;
+        transform: scale(0.9);
         display: flex;
-        transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .testimonial-card {
-        position: relative;
-        flex: 0 0 100%;
-        width: 100%;
-        background: #f8f8f8;
-        border-radius: 20px;
-        padding: 60px 30px 30px;
-        text-align: center;
-        margin: 60px 0;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    }
-
-    .testimonial-text {
-        font-size: 1.1rem;
-        color: #5a5a5a;
-        margin-bottom: 20px;
-        line-height: 1.8;
-        font-style: italic;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .testimonial-avatar {
-        position: absolute;
-        top: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-    .testimonial-avatar img {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    .testimonial-author {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #0b3b17;
-        margin-bottom: 8px;
-    }
-
-    .testimonial-role {
-        font-size: 0.85rem;
-        color: #999;
-        margin-top: 0;
-    }
-
-    .testimonial-dots {
-        display: flex;
-        justify-content: center;
+        flex-direction: column;
         gap: 12px;
-        margin-top: 25px;
     }
 
-    .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: rgba(11, 59, 23, 0.2);
-        cursor: pointer;
-        transition: all 0.3s ease;
+    .side-testimonial-card.active {
+        opacity: 1;
+        transform: scale(1);
+        background: rgba(255, 255, 255, 0.35); /* Slightly more solid */
+        border-color: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
     }
 
-    .dot.active {
-        background: #0b3b17;
-        width: 28px;
-        border-radius: 5px;
+    .side-testimonial-card.active .side-testimonial-text {
+        color: #000; /* Darker text for active card */
+        font-weight: 500;
     }
 
-    .testimonial-nav {
-        display: none;
-        justify-content: space-between;
-        position: absolute;
-        top: 50%;
-        width: 100%;
-        padding: 0 20px;
-        transform: translateY(-50%);
-        z-index: 10;
-        pointer-events: none;
+    .side-testimonial-card.active .side-author-info h4 {
+        color: #051d0b; /* Even darker green for active author */
     }
 
-    .testimonial-nav button {
-        pointer-events: all;
-        background: rgba(11, 59, 23, 0.8);
-        color: white;
-        border: none;
+    .side-testimonial-text {
+        font-size: 0.95rem;
+        font-style: italic;
+        line-height: 1.5;
+        color: #333;
+    }
+
+    .side-testimonial-author {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .side-testimonial-author img {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: bold;
+        object-fit: cover;
     }
 
-    
+    .side-author-info h4 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin: 0;
+        color: #0b3b17;
+    }
+
+    .side-author-info p {
+        font-size: 0.75rem;
+        margin: 0;
+        color: #666;
+    }
+
 
     .about-section {
         background: white;
@@ -413,56 +325,56 @@
             <a href="{% url 'recommendations:home' %}" class="cta-button">Find My Skincare Match →</a>
         </div>
         <div class="hero-image">
-            <div class="floating-gallery">
-                <div class="floating-card">
-                    <img src="{% static 'images/product_jar.png' %}" alt="Product Core">
-                </div>
-                <div class="floating-card">
-                    <img src="{% static 'images/user1.jpg' %}" alt="Natural Results">
-                </div>
-                <div class="floating-card">
-                    <img src="{% static 'images/Registration.jpg' %}" alt="Clinical Skincare">
+            <div class="vertical-carousel-container">
+                <div class="vertical-carousel-track" id="verticalTrack">
+                    <!-- Duplicate or add 4-5 cards for infinite loop effect -->
+                    <div class="side-testimonial-card">
+                        <p class="side-testimonial-text">"SkincareSavvy completely transformed my skincare routine! The AI analysis was spot-on."</p>
+                        <div class="side-testimonial-author">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Sarah">
+                            <div class="side-author-info">
+                                <h4>Sarah Johnson</h4>
+                                <p>Beauty Enthusiast</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-testimonial-card active">
+                        <p class="side-testimonial-text">"Found amazing dupes for my favorite premium products. Truly a game changer."</p>
+                        <div class="side-testimonial-author">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Emily">
+                            <div class="side-author-info">
+                                <h4>Emily Chen</h4>
+                                <p>Skincare Blogger</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-testimonial-card">
+                        <p class="side-testimonial-text">"Highly accurate face analysis. It knows my skin better than I do!"</p>
+                        <div class="side-testimonial-author">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Michael">
+                            <div class="side-author-info">
+                                <h4>Michael Torres</h4>
+                                <p>Product Reviewer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-testimonial-card">
+                        <p class="side-testimonial-text">"The routine builder keeps me consistent. My skin has never looked better."</p>
+                        <div class="side-testimonial-author">
+                            <img src="{% static 'images/user1.jpg' %}" alt="Aarushi">
+                            <div class="side-author-info">
+                                <h4>Aarushi Arch</h4>
+                                <p>Dedicated User</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="testimonials-container">
-        <div class="testimonials-wrapper">
-            <div class="testimonials-carousel" id="testimonialCarousel">
-                <div class="testimonial-card">
-                    <div class="testimonial-avatar">
-                        <img src="{% static 'images/user1.jpg' %}" alt="Sarah Johnson">
-                    </div>
-                    <p class="testimonial-text">"SkincareSavvy completely transformed my skincare routine! The AI analysis was spot-on and helped me find products that actually work for my skin type."</p>
-                    <div class="testimonial-author">Sarah Johnson</div>
-                    <div class="testimonial-role">Beauty Enthusiast</div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-avatar">
-                        <img src="{% static 'images/user1.jpg' %}" alt="Emily Chen">
-                    </div>
-                    <p class="testimonial-text">"I love how easy it is to find affordable dupes for expensive products. The recommendations are accurate and the interface is so user-friendly!"</p>
-                    <div class="testimonial-author">Emily Chen</div>
-                    <div class="testimonial-role">Skincare Blogger</div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-avatar">
-                        <img src="{% static 'images/user1.jpg' %}" alt="Michael Torres">
-                    </div>
-                    <p class="testimonial-text">"The skin analysis feature is incredible! It identified my concerns perfectly and suggested products I would have never found on my own."</p>
-                    <div class="testimonial-author">Michael Torres</div>
-                    <div class="testimonial-role">Product Reviewer</div>
-                </div>
-            </div>
-            <div class="testimonial-nav">
-                <button id="prevTestimonial">❮</button>
-                <button id="nextTestimonial">❯</button>
-            </div>
-        </div>
-        <div class="testimonial-dots" id="testimonialDots"></div>
+
     </div>
-</div>
 
 <div class="about-section">
     <div class="about-container">
@@ -504,62 +416,30 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // TESTIMONIALS CAROUSEL
-        const carousel = document.getElementById('testimonialCarousel');
-        const dotsContainer = document.getElementById('testimonialDots');
-        const prevBtn = document.getElementById('prevTestimonial');
-        const nextBtn = document.getElementById('nextTestimonial');
-        
-        if (carousel) {
-            const cards = carousel.querySelectorAll('.testimonial-card');
-            let currentIndex = 0;
-            let autoSlideInterval;
 
-            cards.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.className = `dot ${index === 0 ? 'active' : ''}`;
-                dot.addEventListener('click', () => goToSlide(index));
-                dotsContainer.appendChild(dot);
-            });
+        // VERTICAL TESTIMONIAL CAROUSEL
+        const verticalTrack = document.getElementById('verticalTrack');
+        if (verticalTrack) {
+            const sideCards = verticalTrack.querySelectorAll('.side-testimonial-card');
+            let verticalIndex = 0;
 
-            function updateCarousel() {
-                const offset = -currentIndex * 100;
-                carousel.style.transform = `translateX(${offset}%)`;
-                document.querySelectorAll('.dot').forEach((dot, index) => {
-                    dot.classList.toggle('active', index === currentIndex);
+            function updateVerticalCarousel() {
+                const cardHeight = sideCards[0].offsetHeight + 20; // card height + gap
+                verticalTrack.style.transform = `translateY(-${verticalIndex * cardHeight}px)`;
+
+                // Update active states - active on the center card
+                sideCards.forEach((card, index) => {
+                    card.classList.toggle('active', index === (verticalIndex + 1) % sideCards.length);
                 });
+
+                verticalIndex = (verticalIndex + 1) % sideCards.length;
             }
 
-            function goToSlide(index) {
-                currentIndex = index;
-                updateCarousel();
-                resetAutoSlide();
-            }
-
-            function nextSlide() {
-                currentIndex = (currentIndex + 1) % cards.length;
-                updateCarousel();
-                resetAutoSlide();
-            }
-
-            function prevSlide() {
-                currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-                updateCarousel();
-                resetAutoSlide();
-            }
-
-            function startAutoSlide() {
-                autoSlideInterval = setInterval(nextSlide, 5000);
-            }
-
-            function resetAutoSlide() {
-                clearInterval(autoSlideInterval);
-                startAutoSlide();
-            }
-
-            if (nextBtn) nextBtn.addEventListener('click', nextSlide);
-            if (prevBtn) prevBtn.addEventListener('click', prevSlide);
-            setTimeout(startAutoSlide, 2000);
+            // Slide every 4 seconds
+            setInterval(updateVerticalCarousel, 4000);
+            
+            // Initial call
+            setTimeout(updateVerticalCarousel, 4000);
         }
 
         // SCROLL ANIMATIONS
