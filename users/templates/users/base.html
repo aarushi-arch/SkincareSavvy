@@ -414,19 +414,10 @@
     </header>
     {% endblock header %}
 
-    <div class="container p-3 my-3">
-        <div class="row">
-            <div class="col-md-12">
-
-                {# Flash messages are now handled by showToast via JS at the bottom #}
-
-                {# ---------------------- #}
-                {# MAIN CONTENT #}
-                {# ---------------------- #}
-                {% block content %}{% endblock %}
-            </div>
-        </div>
-    </div>
+    {# ---------------------- #}
+    {# MAIN CONTENT #}
+    {# ---------------------- #}
+    {% block content %}{% endblock %}
 
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
