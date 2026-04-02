@@ -339,6 +339,8 @@
     </style>
 
     <title>{% block title %}{% endblock %}</title>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
@@ -497,6 +499,8 @@
             }
         });
     </script>
+
+    {% block extra_js %}{% endblock %}
 
 {% if user.is_authenticated %}
 {% include 'chat/chat_widget.html' %}
