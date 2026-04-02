@@ -236,6 +236,14 @@
         border: 8px solid white;
     }
 
+    .feature-item-icon img {
+        width: 80px; /* adjust size as needed */
+        height: 80px;
+        object-fit: contain;
+        display: block;
+        margin: 0 2 2px; /* centers the image and adds spacing below */
+    }
+
     .blob-shape {
         position: absolute;
         width: 350px;
@@ -341,7 +349,7 @@
                     <div class="side-testimonial-card active">
                         <p class="side-testimonial-text">"Found amazing dupes for my favorite premium products. Truly a game changer."</p>
                         <div class="side-testimonial-author">
-                            <img src="{% static 'images/user1.jpg' %}" alt="Emily">
+                            <img src="{% static 'images/user2.jpg' %}" alt="Emily">
                             <div class="side-author-info">
                                 <h4>Emily Chen</h4>
                                 <p>Skincare Blogger</p>
@@ -351,7 +359,7 @@
                     <div class="side-testimonial-card">
                         <p class="side-testimonial-text">"Highly accurate face analysis. It knows my skin better than I do!"</p>
                         <div class="side-testimonial-author">
-                            <img src="{% static 'images/user1.jpg' %}" alt="Michael">
+                            <img src="{% static 'images/user3.jpg' %}" alt="Michael">
                             <div class="side-author-info">
                                 <h4>Michael Torres</h4>
                                 <p>Product Reviewer</p>
@@ -388,22 +396,30 @@
             <h2>With AI-powered insights, Skincare Savvy helps you understand what truly works for you.</h2>
             <div class="feature-grid">
                 <div class="feature-item">
-                    <div class="feature-item-icon">🔍</div>
+                    <div class="feature-item-icon">
+                         <img src="{% static 'images/smart-analysis.png' %}" alt="Smart Analysis" />
+                    </div>
                     <h3>Smart Analysis</h3>
                     <p>Advanced face recognition to identify your skin condition.</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-item-icon">💡</div>
+                    <div class="feature-item-icon">
+                        <img src="{% static 'images/ai-insights.png' %}" alt="AI Insights" />
+                    </div>
                     <h3>AI Insights</h3>
                     <p>Machine learning powered product recommendations.</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-item-icon">🛒</div>
+                    <div class="feature-item-icon">
+                        <img src="{% static 'images/affordable-dupes.png' %}" alt="Affordable Dupes" />
+                    </div>
                     <h3>Affordable Dupes</h3>
                     <p>Find budget-friendly alternatives to premium products.</p>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-item-icon">⭐</div>
+                    <div class="feature-item-icon">
+                        <img src="{% static 'images/trusted-reviews.png' %}" alt="Trusted Reviews" />
+                    </div>
                     <h3>Trusted Reviews</h3>
                     <p>Curated product reviews from real users.</p>
                 </div>
