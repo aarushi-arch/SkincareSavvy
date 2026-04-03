@@ -143,18 +143,8 @@ def recommend(request):
                         # Convert similarity score to percentage and round to 2 decimal places
                         similarity_percentage = round(float(similarity_score) * 100, 2) if pd.notna(similarity_score) else 0.0
                         
-                        raw_price = str(row.get("price", ""))
-                        npr_price = ""
-                        if raw_price:
-                            import re
-                            # Extract all numbers/decimals from the string
-                            numbers = re.findall(r'\d+(?:\.\d+)?', raw_price)
-                            if numbers:
-                                # Take the first number found, assume USD, multiply by 135 for NPR
-                                usd_val = float(numbers[0])
-                                npr_val = int(usd_val * 135)
-                                # Format with commas for Nepali Rupee display
-                                npr_price = f"Rs. {npr_val:,}"
+                        # The price from the CSV is now pre-formatted as "Rs. X,XXX"
+                        npr_price = str(row.get("price", ""))
 
                         rec_dict = {
                             "product_name": row.get("product_name", ""),

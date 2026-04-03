@@ -20,7 +20,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Prefer the updated products dataset that includes image URLs when available
 DATASET_DIR = Path(__file__).resolve().parent / "notebooks"
-DEFAULT_DATASET_NAME = "updated_products_with_images.csv"
+DEFAULT_DATASET_NAME = "updated_products_with_images_npr.csv"
 FALLBACK_DATASET_NAME = "updated_products.csv"
 
 # Use the image-enabled dataset if it exists, otherwise fall back to the original
