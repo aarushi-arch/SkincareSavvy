@@ -430,7 +430,7 @@
                     <p class="muted">Latest prediction</p>
                     <p>
                         <strong>Skin Type:</strong>
-                        {{ analysis_result.skin_type.predictions.0.class|title }}
+                        {{ analysis_result.skin_type_label|title }}
                     </p>
                     {% else %}
                     <p class="muted">Upload an image to see results here</p>
@@ -518,7 +518,7 @@
             </div>
         </section>
 
-        <!-- RESULTS DASHBOARD -->
+        <!-- RESULTS CARD -->
         {% if analysis_result %}
         <section class="dashboard-container">
             <div class="panel-head" style="margin-bottom: 2.5rem; text-align: center; display: block;">
@@ -527,333 +527,56 @@
                 <p class="muted">AI-powered detection of your unique skin characteristics.</p>
             </div>
 
-            <div class="skin-dashboard">
-                <!-- Left Column: Concerns -->
-                <div class="dashboard-left">
-                    <div class="score-badge wrinkles {% if not analysis_result.flags.wrinkles %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.wrinkles %} ✓ {% else %} — {% endif %}
-                        </div>
-                        <span class="score-label">Wrinkles</span>
+            <div class="results-card" style="background: white; border-radius: 30px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05); padding: 3rem; max-width: 800px; margin: 0 auto;">
+                <!-- Detected Image -->
+                <div class="result-image-section" style="text-align: center; margin-bottom: 2rem;">
+                    {% if analysis_result.image_base64 %}
+                    <div class="main-face-image-wrapper" style="position: relative; display: inline-block; width: 100%; max-width: 450px; margin: 0 auto;">
+                        <img id="result-face-image" src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}" alt="Your Face Analysis"
+                            class="main-face-image" style="display: block; width: 100%; height: auto;">
+                        {% if analysis_result.face_bbox %}
+                        <div id="face-box" class="face-box"></div>
+                        {% endif %}
                     </div>
-                    <div class="score-badge texture {% if not analysis_result.flags.pores %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.pores %} ✓ {% else %} — {% endif %}
-                        </div>
-                        <span class="score-label">Pores</span>
-                    </div>
-                    <div class="score-badge spots {% if not analysis_result.flags.darkspots %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.darkspots %} ✓ {% else %} — {% endif %}
-                        </div>
-                        <span class="score-label">Darkspots</span>
-                    </div>
-                </div>
-
-                <!-- Center: Image & Connectors -->
-                <div class="dashboard-center">
-                    {% if analysis_result.skin_type_label %}
-                    <div class="skin-type-badge">
-                        <span class="type-label">Skin Type</span>
-                        <span class="type-value">{{ analysis_result.skin_type_label }}</span>
-                    </div>
-                    {% endif %}
-
-                    {% if analysis_result.combined_heatmap %}
-                    <div class="face-wrapper" style="display:flex; justify-content:center;">
-                        <img class="main-face-image" src="data:image/jpeg;base64,{{ analysis_result.combined_heatmap }}"
-                            alt="Combined Skin Analysis" style="max-width:100%; height:auto; border-radius:8px;">
-                    </div>
-                    {% elif analysis_result.image_base64 %}
-                    <img src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}" alt="Your Face Analysis"
-                        class="main-face-image">
                     {% else %}
                     <div class="main-face-image"
-                        style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center;">
+                        style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center; border-radius: 20px;">
                         <p class="muted">Analysis Image</p>
                     </div>
                     {% endif %}
-
-                    {% if analysis_result.all_detected_concerns %}
-                    <div class="concern-cards-section" style="margin-top:1.5rem;">
-                        <h4 style="margin:0 0 1rem 0; color: var(--text); font-weight: 600;">Detected Concerns & Heatmaps</h4>
-                        <div class="concern-cards-grid">
-                            {% for c in analysis_result.all_detected_concerns %}
-                            <div class="concern-card-with-heatmap {% if c.name == 'acne' %}acne-card{% elif c.name == 'wrinkles' %}wrinkles-card{% elif c.name == 'pores' %}pores-card{% elif c.name == 'darkspots' or c.name == 'dark_spots' %}darkspots-card{% elif c.name == 'blackheads' %}blackheads-card{% else %}default-card{% endif %}">
-                                <div class="concern-name">{{ c.name|title }}</div>
-                                <div class="concern-confidence">{{ c.confidence }} out of 100</div>
-                                <div class="concern-bar">
-                                    <div class="concern-bar-fill" style="width: {{ c.confidence }}%;"></div>
-                                </div>
-                                {% if c.heatmap %}
-                                <div class="concern-heatmap-wrapper" style="margin-top: 1rem;">
-                                    <img src="data:image/jpeg;base64,{{ c.heatmap }}" alt="{{ c.name|title }} Heatmap" class="concern-heatmap" style="width: 100%; border-radius: 6px; max-height: 200px; object-fit: cover;">
-                                </div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% elif analysis_result.detected_concerns %}
-                    <div class="concern-cards-section" style="margin-top:1.5rem;">
-                        <h4 style="margin:0 0 1rem 0; color: var(--text); font-weight: 600;">Detected Concerns</h4>
-                        <ul style="margin:0; padding-left:1.2rem;">
-                            {% for c in analysis_result.detected_concerns %}
-                            <li>{{ c|title }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <svg class="dashboard-svg" viewBox="0 0 500 500">
-                        <path class="connector-line {% if not analysis_result.flags.wrinkles %}inactive{% endif %}"
-                            d="M 100 120 Q 180 120 230 160" stroke="#4CAF50" />
-                        <path class="connector-line {% if not analysis_result.flags.pores %}inactive{% endif %}"
-                            d="M 100 230 Q 180 230 220 200" stroke="#9C27B0" />
-                        <path class="connector-line {% if not analysis_result.flags.darkspots %}inactive{% endif %}"
-                            d="M 100 340 Q 180 340 210 280" stroke="#2196F3" />
-                        <path class="connector-line {% if not analysis_result.flags.acne %}inactive{% endif %}"
-                            d="M 400 280 Q 320 280 280 250" stroke="#F44336" />
-                        <path class="connector-line {% if not analysis_result.flags.blackheads %}inactive{% endif %}"
-                            d="M 400 390 Q 320 390 290 320" stroke="#333" />
-                    </svg>
                 </div>
 
-                <!-- Right Column: Oiliness & Redness -->
-                <div class="dashboard-right">
-                    <div class="score-badge redness {% if not analysis_result.flags.acne %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.acne %} ✓ {% else %} — {% endif %}
+                <!-- Skin Type -->
+                {% if analysis_result.skin_type_label %}
+                <div class="skin-type-section" style="text-align: center; margin-bottom: 2rem;">
+                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 0.5rem;">Skin Type</h3>
+                    <span style="font-size: 1.5rem; font-weight: 700; color: #0b3b17;">{{ analysis_result.skin_type_label }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Detected Concerns -->
+                {% if analysis_result.all_detected_concerns %}
+                <div class="concerns-section">
+                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 1rem; text-align: center;">Detected Concerns</h3>
+                    <div class="concerns-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for c in analysis_result.all_detected_concerns %}
+                        <div class="concern-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(11, 59, 23, 0.05); border-radius: 10px; border-left: 4px solid #0b3b17;">
+                            <span class="concern-name" style="font-weight: 600; color: var(--text);">{{ c.name|title }}</span>
+                            <span class="concern-confidence" style="font-weight: 700; color: #0b3b17;">{{ c.confidence }}%</span>
                         </div>
-                        <span class="score-label">Acne</span>
-                    </div>
-                    <div
-                        class="score-badge blackheads {% if not analysis_result.flags.blackheads %}inactive{% endif %}">
-                        <div class="score-circle">
-                            {% if analysis_result.flags.blackheads %} ✓ {% else %} — {% endif %}
-                        </div>
-                        <span class="score-label">Blackheads</span>
+                        {% endfor %}
                     </div>
                 </div>
-            </div>
-
-            <!-- ROUTINE ROADMAP -->
-            {% if routine and routine.cleanser and routine.treatment and routine.moisturizer and routine.sunscreen %}
-            <div class="routine-roadmap">
-                <div class="panel-head" style="margin-bottom: 2rem;">
-                    <div>
-                        <p class="eyebrow">Personalized Regimen</p>
-                        <h2>Your Step-by-Step Routine</h2>
-                        <p class="muted">A custom plan designed to address your specific skin needs.</p>
-                    </div>
+                {% elif analysis_result.detected_concerns %}
+                <div class="concerns-section">
+                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 1rem; text-align: center;">Detected Concerns</h3>
+                    <ul style="margin:0; padding-left:1.2rem; text-align: center;">
+                        {% for c in analysis_result.detected_concerns %}
+                        <li style="font-weight: 600; color: var(--text);">{{ c|title }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-
-                <div class="routine-steps">
-                    <!-- Step 1: Cleanser -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">1</span>
-                            <span class="step-label">Cleanse</span>
-                        </div>
-                        <img src="{% if routine.cleanser.image_url %}{{ routine.cleanser.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.cleanser.name }}">
-                        <div class="step-product-info">
-                            <p>{{ routine.cleanser.brand }}</p>
-                            <h4>{{ routine.cleanser.name|truncatechars:45 }}</h4>
-                        </div>
-                        <div class="step-instruction">
-                            Apply to damp skin, massage gently for 60 seconds, and rinse with lukewarm water.
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Treatment -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">2</span>
-                            <span class="step-label">Treat</span>
-                        </div>
-                        <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.treatment.name }}">
-                        <div class="step-product-info">
-                            <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
-                            <p>{{ routine.treatment.brand }}</p>
-                        </div>
-                        <div class="step-instruction">
-                            Apply 2-3 drops to clean, dry skin. Focus on areas with
-                            {% if analysis_result.skin_concerns.predictions %}
-                            {% for concern in analysis_result.skin_concerns.predictions %}
-                            <strong>{{ concern.class }}</strong>{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                            {% else %}
-                            <strong>no specific concerns detected</strong>
-                            {% endif %}.
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Moisturizer -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">3</span>
-                            <span class="step-label">Moisturize</span>
-                        </div>
-                        <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.moisturizer.name }}">
-                        <div class="step-product-info">
-                            <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
-                            <p>{{ routine.moisturizer.brand }}</p>
-                        </div>
-                        <div class="step-instruction">
-                            Massage into skin to lock in hydration. Provides a healthy barrier for
-                            {% if analysis_result.skin_type.predictions %}
-                            <strong>{{ analysis_result.skin_type.predictions.0.class }}</strong>
-                            {% else %}
-                            <strong>skin type not detected</strong>
-                            {% endif %} skin.
-                        </div>
-                    </div>
-
-                    <!-- Step 4: Sunscreen -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">4</span>
-                            <span class="step-label">Protect</span>
-                        </div>
-                        <div class="am-badge">AM Only</div>
-                        <img src="{% if routine.sunscreen.image_url %}{{ routine.sunscreen.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.sunscreen.name }}">
-                        <div class="step-product-info">
-                            <p>{{ routine.sunscreen.brand }}</p>
-                            <h4>{{ routine.sunscreen.name|truncatechars:45 }}</h4>
-                        </div>
-                        <div class="step-instruction">
-                            Apply generously as the final step to protect from UV damage and premature aging.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% elif routine %}
-            <div class="routine-roadmap">
-                <div class="panel-head" style="margin-bottom: 2rem;">
-                    <div>
-                        <p class="eyebrow">Personalized Regimen</p>
-                        <h2>Your Step-by-Step Routine</h2>
-                        <p class="muted">A custom plan designed to address your specific skin needs.</p>
-                    </div>
-                </div>
-
-                <div class="routine-steps">
-                    <!-- Step 1: Cleanser -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">1</span>
-                            <span class="step-label">Cleanse</span>
-                        </div>
-                        {% if routine.cleanser %}
-                        <img src="{% if routine.cleanser.image_url %}{{ routine.cleanser.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.cleanser.name }}">
-                        <div class="step-product-info">
-                            <p>{{ routine.cleanser.brand }}</p>
-                            <h4>{{ routine.cleanser.name|truncatechars:45 }}</h4>
-                        </div>
-                        {% else %}
-                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
-                        </div>
-                        {% endif %}
-                        <div class="step-instruction">
-                            Apply to damp skin, massage gently for 60 seconds, and rinse with lukewarm water.
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Treatment -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">2</span>
-                            <span class="step-label">Treat</span>
-                        </div>
-                        {% if routine.treatment %}
-                        <img src="{% if routine.treatment.image_url %}{{ routine.treatment.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.treatment.name }}">
-                        <div class="step-product-info">
-                            <h4>{{ routine.treatment.name|truncatechars:35 }}</h4>
-                            <p>{{ routine.treatment.brand }}</p>
-                        </div>
-                        {% else %}
-                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
-                        </div>
-                        {% endif %}
-                        <div class="step-instruction">
-                            Apply 2-3 drops to clean, dry skin. Focus on areas with
-                            {% if analysis_result.skin_concerns.predictions %}
-                            {% for concern in analysis_result.skin_concerns.predictions %}
-                            <strong>{{ concern.class }}</strong>{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                            {% else %}
-                            <strong>no specific concerns detected</strong>
-                            {% endif %}.
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Moisturizer -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">3</span>
-                            <span class="step-label">Moisturize</span>
-                        </div>
-                        {% if routine.moisturizer %}
-                        <img src="{% if routine.moisturizer.image_url %}{{ routine.moisturizer.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.moisturizer.name }}">
-                        <div class="step-product-info">
-                            <h4>{{ routine.moisturizer.name|truncatechars:35 }}</h4>
-                            <p>{{ routine.moisturizer.brand }}</p>
-                        </div>
-                        {% else %}
-                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
-                        </div>
-                        {% endif %}
-                        <div class="step-instruction">
-                            Massage into skin to lock in hydration. Provides a healthy barrier for
-                            {% if analysis_result.skin_type.predictions %}
-                            <strong>{{ analysis_result.skin_type.predictions.0.class }}</strong>
-                            {% else %}
-                            <strong>skin type not detected</strong>
-                            {% endif %} skin.
-                        </div>
-                    </div>
-
-                    <!-- Step 4: Sunscreen -->
-                    <div class="routine-step">
-                        <div class="step-header">
-                            <span class="step-count">4</span>
-                            <span class="step-label">Protect</span>
-                        </div>
-                        <div class="am-badge">AM Only</div>
-                        {% if routine.sunscreen %}
-                        <img src="{% if routine.sunscreen.image_url %}{{ routine.sunscreen.image_url }}{% else %}{% static 'images/product_jar.png' %}{% endif %}"
-                            class="step-product-img" alt="{{ routine.sunscreen.name }}">
-                        <div class="step-product-info">
-                            <p>{{ routine.sunscreen.brand }}</p>
-                            <h4>{{ routine.sunscreen.name|truncatechars:45 }}</h4>
-                        </div>
-                        {% else %}
-                        <div class="step-product-img" style="background: #f9f9f9; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #ccc; font-size: 2rem;">No product found</span>
-                        </div>
-                        {% endif %}
-                        <div class="step-instruction">
-                            Apply generously as the final step to protect from UV damage and premature aging.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <div
-                style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; text-align: center;">
-                <p class="muted"><strong>Calculated Skin Type:</strong> {{
-                    analysis_result.skin_type.predictions.0.class|title }}</p>
+                {% endif %}
             </div>
 
             <div class="medical-disclaimer"
@@ -875,8 +598,8 @@
                 <div>
                     <p class="eyebrow">Recommendations</p>
                     <h2>Expert Picks for You</h2>
-                    <p class="muted">Based on your {{ analysis_result.skin_type.predictions.0.class|title }} skin and
-                        top concerns.</p>
+                    <p class="muted">Based on your {{ analysis_result.skin_type_label|title }} skin and
+                        detected concerns.</p>
                 </div>
             </div>
 
@@ -1214,7 +937,6 @@
                         "Applying skin extraction...",
                         "Predicting skin type...",
                         "Identifying skin concerns...",
-                        "Generating visual heatmaps...",
                         "Finalizing expert picks..."
                     ];
 
@@ -1266,6 +988,44 @@
                     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }, 300);
+
+            {% if analysis_result.face_bbox %}
+            // Draw face bounding box overlay on the displayed result image
+            (function() {
+                const faceBBox = {
+                    x: {{ analysis_result.face_bbox.x }},
+                    y: {{ analysis_result.face_bbox.y }},
+                    width: {{ analysis_result.face_bbox.width }},
+                    height: {{ analysis_result.face_bbox.height }}
+                };
+
+                const image = document.getElementById('result-face-image');
+                const faceBox = document.getElementById('face-box');
+
+                function renderBox() {
+                    if (!image || !faceBox || !image.naturalWidth || !image.naturalHeight) return;
+
+                    const scaleX = image.clientWidth / image.naturalWidth;
+                    const scaleY = image.clientHeight / image.naturalHeight;
+
+                    faceBox.style.display = 'block';
+                    faceBox.style.left = `${Math.max(0, Math.round(faceBBox.x * scaleX))}px`;
+                    faceBox.style.top = `${Math.max(0, Math.round(faceBBox.y * scaleY))}px`;
+                    faceBox.style.width = `${Math.max(0, Math.round(faceBBox.width * scaleX))}px`;
+                    faceBox.style.height = `${Math.max(0, Math.round(faceBBox.height * scaleY))}px`;
+                }
+
+                if (image) {
+                    if (image.complete) {
+                        renderBox();
+                    } else {
+                        image.addEventListener('load', renderBox);
+                    }
+                    window.addEventListener('resize', renderBox);
+                }
+            })();
+            {% endif %}
+
             {% endif %}
 
             // Scroll to error if it exists

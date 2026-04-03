@@ -32,7 +32,7 @@ def run_test():
         else:
             print("Analysis successful!")
             print(f"Skin type: {result.get('skin_type')}")
-            print(f"Detected concerns: {result.get('detected_concerns_from_heatmap')}")
+            print(f"Detected concerns: {result.get('detected_concerns')}")
     except Exception as e:
         print(f"Analysis failed with exception: {e}")
         import traceback

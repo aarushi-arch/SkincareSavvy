@@ -12,7 +12,6 @@ import keras
 
 from face_analysis.models import CNNModel # Import CNN model stored in database
 from face_analysis.utils.image_utils import preprocess_image # For consistent preprocessing
-from face_analysis.utils.gradcam import generate_multi_skin_concern_heatmaps # For heatmap generation
 
 import cv2 # For image processing and face detection
 import mediapipe as mp # For advanced face detection and landmark recognition
@@ -30,6 +29,7 @@ class FaceAnalysisPipeline:
         self.skin_types_classes: list[str] = []
         self.skin_concerns_classes: list[str] = []
         self._models_loaded = False
+        self.face_bbox: dict[str, int] | None = None
         
         
         # Initialize MediaPipe FaceDetection (better for face detection)
@@ -488,6 +488,21 @@ class FaceAnalysisPipeline:
         print(f"{message}")
 
         detection = results.detections[0]
+        bbox = detection.location_data.relative_bounding_box
+        h, w, _ = image_bgr.shape
+        x = int(bbox.xmin * w)
+        y = int(bbox.ymin * h)
+        width = int(bbox.width * w)
+        height = int(bbox.height * h)
+
+        # Clamp values
+        x = max(0, x)
+        y = max(0, y)
+        width = min(w - x, width)
+        height = min(h - y, height)
+
+        self.face_bbox = {"x": x, "y": y, "width": width, "height": height}
+
         face = self.crop_face(image_bgr, detection)
 
         if face is None or face.size == 0:
@@ -518,6 +533,7 @@ class FaceAnalysisPipeline:
         self.load_models_from_db()
 
         result = {}
+        self.face_bbox = None
         
         
         # Step 1: Convert bytes to BGR numpy array
@@ -561,43 +577,10 @@ class FaceAnalysisPipeline:
             # Check if predictions have errors
             if concerns_result.get("error"):
                 print(f"✗ Skin concerns prediction error: {concerns_result['error']}")
-                result["skin_concerns"] = concerns_result
-            else:
-                # Generate heatmaps
-                try:
-                    print("Generating heatmaps...")
-                    
-                    # Determine target size
-                    target_size = (224, 224)
-                    try:
-                        shape = self.skin_concerns_model.input_shape
-                        if shape and len(shape) >= 3:
-                             target_size = shape[1:3]
-                    except AttributeError:
-                        pass
 
-                    heatmap_result = generate_multi_skin_concern_heatmaps(
-                        self.skin_concerns_model,
-                        cropped_face_rgb, # Passing the cropped RGB array
-                        self.skin_concerns_classes,
-                        target_size=target_size
-                    )
+            # Keep individual predictions only (no heatmaps output)
+            result["skin_concerns"] = concerns_result
 
-                    # Debug info
-                    print("Heatmap generation result keys:", heatmap_result.keys() if isinstance(heatmap_result, dict) else type(heatmap_result))
-
-                    # Attach combined heatmap and detected concerns
-                    if isinstance(heatmap_result, dict):
-                        result["combined_heatmap"] = heatmap_result.get('combined_heatmap')
-                        result["detected_concerns_from_heatmap"] = heatmap_result.get('detected_concerns', [])
-                        result["individual_heatmaps"] = heatmap_result.get('individual_heatmaps', {})
-
-                    # Keep individual predictions (without per-class heatmap attachments)
-                    result["skin_concerns"] = concerns_result
-                except Exception as e:
-                    print(f"Heatmap generation failed: {e}")
-                    # Fallback to just predictions
-                    result["skin_concerns"] = concerns_result
         else:
             print("[WARNING] Skin concerns model not loaded. Skin concerns predictions will be empty.")
             result["skin_concerns"] = {"predictions": []}
@@ -616,5 +599,10 @@ class FaceAnalysisPipeline:
         import base64
         _, buffer = cv2.imencode(".jpg", image_bgr)
         result["image_base64"] = base64.b64encode(buffer).decode("utf-8")
+
+        if self.face_bbox is not None:
+            result["face_bbox"] = self.face_bbox
+        else:
+            result["face_bbox"] = None
 
         return result

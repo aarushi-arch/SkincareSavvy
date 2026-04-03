@@ -528,22 +528,39 @@ def get_recommendations(user_inputs: Dict, top_k: int = 5, ingredient_weight: fl
     artifacts = _load_artifacts()
     data = artifacts.data.copy()
     
-    concern = user_inputs.get("main_concern", "").strip()
+    concern = user_inputs.get("main_concern", "").strip()  # Backward compatibility
+    concerns = user_inputs.get("concerns", [])
+    if isinstance(concerns, str):
+        concerns = [concerns] if concerns else []
+    elif not isinstance(concerns, list):
+        concerns = []
+    
+    # If concerns list is provided, use it; otherwise fall back to main_concern
+    if concerns:
+        concern_text = " ".join(concerns)
+    else:
+        concern_text = concern
+    
     ingredients_input = user_inputs.get("ingredients", "").strip()  # New: support for ingredient input
     
-    # Map concerns to related beneficial effects
+    # Map concerns to related beneficial effects (using actual dataset effect names)
     concern_to_effects = {
-        "acne": ["acne control", "oil control", "pore cleansing"],
-        "wrinkles": ["anti-aging", "firming", "elasticity"],
-        "pores": ["pore minimizing", "mattifying", "texture refinement"],
-        "darkspots": ["brightening", "dark spot correction", "evening skin tone"],
-        "blackheads": ["blackhead removal", "deep cleansing", "pore cleansing"],
-        "dark_spots": ["brightening", "dark spot correction", "evening skin tone"],
+        "acne": ["Acne Control", "Exfoliating"],
+        "wrinkles": ["Anti-aging"],
+        "pores": ["Acne Control", "Exfoliating"],  # Pores often relate to acne/exfoliation
+        "darkspots": ["Brightening"],
+        "blackheads": ["Acne Control", "Exfoliating"],
+        "dark_spots": ["Brightening"],
     }
     
-    relevant_effects = concern_to_effects.get(concern.lower() if concern else "", [])
+    # Get relevant effects for all concerns
+    relevant_effects = []
+    for c in concerns:
+        relevant_effects.extend(concern_to_effects.get(c.lower() if c else "", []))
+    # Remove duplicates
+    relevant_effects = list(set(relevant_effects))
     
-    if concern or ingredients_input:
+    if concern_text or ingredients_input:
         # Create separate vectors for ingredients and other features
         if ingredients_input:
             ingredients_vector = artifacts.tfidf_ingredients.transform([ingredients_input])
@@ -553,8 +570,8 @@ def get_recommendations(user_inputs: Dict, top_k: int = 5, ingredient_weight: fl
             # If no ingredients provided, use zero scores
             ingredients_scores = np.zeros(len(data))
         
-        if concern:
-            other_vector = artifacts.tfidf_other.transform([concern])
+        if concern_text:
+            other_vector = artifacts.tfidf_other.transform([concern_text])
             # Compute similarity scores for other features
             other_scores = cosine_similarity(other_vector, artifacts.tfidf_matrix_other).flatten()
         else:
@@ -590,6 +607,31 @@ def get_recommendations(user_inputs: Dict, top_k: int = 5, ingredient_weight: fl
                 lambda x: skin_type in parse_skin_types(x) if pd.notna(x) else False
             )
             data = data[mask]
+    
+    # Filter by relevant effects if concerns are specified
+    if relevant_effects:
+        def has_relevant_effect(effects_str):
+            """Check if product has any of the relevant effects."""
+            if pd.isna(effects_str) or not effects_str:
+                return False
+            try:
+                if isinstance(effects_str, str) and effects_str.startswith('['):
+                    effects = ast.literal_eval(effects_str)
+                else:
+                    effects = [effects_str]
+                
+                # Check if any product effect matches any relevant effect
+                for product_effect in effects:
+                    for relevant in relevant_effects:
+                        if str(product_effect).lower() == relevant.lower():
+                            return True
+                return False
+            except:
+                return False
+        
+        # Only keep products that have at least one relevant effect
+        mask = data['notable_effects'].apply(has_relevant_effect)
+        data = data[mask]
     
     filtered = data.sort_values("score", ascending=False).head(top_k)
     

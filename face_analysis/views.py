@@ -73,46 +73,29 @@ def index(request):
                                 "blackheads": False,
                             }
                             analysis_result["detected_concerns"] = []
+                            analysis_result["all_detected_concerns"] = []
                         else:
-                            # Check if we have detected concerns from heatmap generation (which includes heatmaps)
-                            heatmap_detected_concerns = analysis_result.get("detected_concerns_from_heatmap", [])
-                            
-                            if heatmap_detected_concerns:
-                                # Use concerns from heatmap generation (they already have heatmap data)
-                                # Ensure they're sorted by confidence
-                                all_detected_concerns = sorted(heatmap_detected_concerns, key=lambda x: x.get("confidence", 0), reverse=True)
-                                analysis_result["all_detected_concerns"] = all_detected_concerns
-                                
-                                # Extract names for flags
-                                concerns_list = [c["name"] for c in all_detected_concerns]
-                                main_concern = all_detected_concerns[0]["name"] if all_detected_concerns else None
+                            detected_concerns_with_confidence = [
+                                {
+                                    "name": p["class"].lower().replace("_", ""),
+                                    "confidence": int(p["confidence"] * 100)  # Convert to 0-100 scale
+                                }
+                                for p in concerns_preds
+                                if p["confidence"] >= CONFIDENCE_THRESHOLD
+                            ]
+
+                            concerns_list = [c["name"] for c in detected_concerns_with_confidence]
+                            print(f"✓ Detected Concerns (>{CONFIDENCE_THRESHOLD}): {concerns_list}")
+
+                            if detected_concerns_with_confidence:
+                                sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
+                                main_concern = sorted_concerns[0]["name"]
+                                analysis_result["all_detected_concerns"] = sorted_concerns
                             else:
-                                # Fallback: build from raw predictions
-                                detected_concerns_with_confidence = [
-                                    {
-                                        "name": p["class"].lower().replace("_", ""),
-                                        "confidence": int(p["confidence"] * 100)  # Convert to 0-100 scale
-                                    }
-                                    for p in concerns_preds
-                                    if p["confidence"] >= CONFIDENCE_THRESHOLD
-                                ]
+                                main_concern = None
+                                analysis_result["all_detected_concerns"] = []
 
-                                # Map names for internal flags consistency
-                                concerns_list = [c["name"] for c in detected_concerns_with_confidence]
-                                print(f"✓ Detected Concerns (>{CONFIDENCE_THRESHOLD}): {concerns_list}")
-
-                                # Identify main concern (highest confidence)
-                                if detected_concerns_with_confidence:
-                                    # Sort by confidence descending
-                                    sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
-                                    main_concern = sorted_concerns[0]["name"]
-                                    print(f"✓ Main Concern: {main_concern}")
-                                else:
-                                    main_concern = None
-
-                                # Use all detected concerns for display
-                                sorted_all_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
-                                analysis_result["all_detected_concerns"] = sorted_all_concerns
+                            analysis_result["detected_concerns"] = [main_concern] if main_concern else []
 
                             # Create flags for the template to handle dynamic icons/badges (visual feedback for all)
                             analysis_result["flags"] = {
@@ -123,13 +106,13 @@ def index(request):
                                 "blackheads": "blackheads" in concerns_list,
                             }
 
-                            # Use main concern for recommendations
-                            final_concerns = [main_concern] if main_concern else []
+                            # Use all detected concerns for recommendations
+                            final_concerns = concerns_list if concerns_list else []
                             analysis_result["detected_concerns"] = final_concerns
 
                         query = {
                             "skin_type": skin_type,
-                            "main_concern": main_concern or "",
+                            "concerns": final_concerns,
                             "allergies": []  # Can be extended to include user allergies
                         }
 
