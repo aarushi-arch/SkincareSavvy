@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Real-Time Skin Detection{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-1">Real-Time Skin Concern Detection</h2>
+  <p class="text-muted mb-3">YOLO detects skin concern regions live on your webcam.</p>
+
+  <div class="row">
+
+    <!-- Webcam canvas -->
+    <div class="col-md-8">
+      <div style="position:relative;background:#111;border-radius:10px;overflow:hidden;">
+        <!-- video is hidden — canvas shows the feed + boxes -->
+        <video id="video" autoplay playsinline muted style="display:none;"></video>
+        <canvas id="canvas" style="width:100%;border-radius:10px;display:block;"></canvas>
+
+        <span id="status-badge"
+              style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.7);
+                     color:#fff;padding:4px 14px;border-radius:20px;font-size:.78rem;">
+          Starting camera…
+        </span>
+      </div>
+      <div class="mt-2">
+        <button id="btn-stop" class="btn btn-secondary btn-sm" disabled>Stop</button>
+      </div>
+    </div>
+
+    <!-- Results panel -->
+    <div class="col-md-4 mt-3 mt-md-0">
+      <div class="card" style="min-height:280px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>Detections</strong>
+          <span id="region-badge" class="badge badge-info" style="display:none;"></span>
+        </div>
+        <div class="card-body p-2" id="results-panel">
+          <p class="text-muted small mb-0">Waiting for camera…</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .det-row {
+    display:flex;align-items:center;gap:8px;padding:5px 8px;
+    margin-bottom:5px;border-radius:5px;background:#f8f9fa;
+    border-left:4px solid #ccc;font-size:.83rem;
+  }
+  .det-dot  { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+  .det-name { font-weight:600;flex:1; }
+  .det-conf { color:#888;font-size:.75rem; }
+  .err-box  { background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;
+              border-radius:6px;padding:8px;font-size:.82rem; }
+  .summary-pill {
+    display:inline-block;padding:2px 10px;border-radius:12px;
+    background:#fff3cd;color:#856404;font-size:.78rem;margin:2px;
+  }
+</style>
+
+<script>
+const ANALYZE_URL = "{% url 'face_analysis:realtime_yolo_analyze' %}";
+const CSRF        = "{{ csrf_token }}";
+
+const video    = document.getElementById("video");
+const canvas   = document.getElementById("canvas");
+const ctx      = canvas.getContext("2d");
+const badge    = document.getElementById("status-badge");
+const panel    = document.getElementById("results-panel");
+const regBadge = document.getElementById("region-badge");
+const btnStop  = document.getElementById("btn-stop");
+
+const COLORS = {
+  acne:"#ff6b6b", blackheads:"#ffa94d", blackheades:"#ffa94d",
+  dark_spots:"#cc5de8", darkspots:"#cc5de8",
+  wrinkles:"#74c0fc", pores:"#63e6be",
+};
+function getColor(l) { return COLORS[(l||"").toLowerCase()] || "#00e676"; }
+function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1).replace(/_/g," ") : ""; }
+
+// Last detections — drawn every animation frame so boxes stay visible
+let lastDetections = [];
+let isProcessing   = false;
+let running        = false;
+let detectionTimer = null;
+
+// ── Start webcam ──────────────────────────────────────────────────────────────
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    video.srcObject = stream;
+    video.play();
+    video.addEventListener("loadedmetadata", () => {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      running = true;
+      requestAnimationFrame(renderLoop);   // continuous video draw
+      detectionTimer = setInterval(sendFrame, 400);  // YOLO every 400ms
+      badge.textContent = "YOLO active";
+      btnStop.disabled  = false;
+    });
+  })
+  .catch(err => { badge.textContent = "Camera error: " + err.message; });
+
+// ── Continuous render loop (smooth video + overlay) ───────────────────────────
+function renderLoop() {
+  if (!running) return;
+  requestAnimationFrame(renderLoop);
+
+  if (!video.videoWidth) return;
+
+  // Draw live video frame
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Overlay last known YOLO boxes
+  lastDetections.forEach(det => {
+    const [x1, y1, x2, y2] = det.box;
+    const color = getColor(det.label);
+    const text  = capitalize(det.label) + " " + Math.round(det.confidence * 100) + "%";
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+    ctx.font = "bold 13px sans-serif";
+    const tw = ctx.measureText(text).width;
+    const ly = y1 > 20 ? y1 - 18 : y2 + 2;
+    ctx.fillStyle = color;
+    ctx.fillRect(x1, ly, tw + 10, 18);
+    ctx.fillStyle = "#000";
+    ctx.fillText(text, x1 + 5, ly + 13);
+  });
+}
+
+// ── Send frame to YOLO backend ────────────────────────────────────────────────
+function sendFrame() {
+  if (isProcessing || !video.videoWidth) return;
+  isProcessing = true;
+
+  // Capture at native resolution — YOLO gets the real frame
+  const tmpCanvas = document.createElement("canvas");
+  tmpCanvas.width  = video.videoWidth;
+  tmpCanvas.height = video.videoHeight;
+  tmpCanvas.getContext("2d").drawImage(video, 0, 0);
+  const frame = tmpCanvas.toDataURL("image/jpeg", 0.7);
+
+  fetch(ANALYZE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+    body: JSON.stringify({ frame }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) {
+      badge.textContent = "Error";
+      panel.innerHTML   = `<div class="err-box">${data.error}</div>`;
+      lastDetections    = [];
+    } else {
+      lastDetections = data.detections || [];
+      const n = lastDetections.length;
+      badge.textContent = n > 0 ? `${n} region${n !== 1 ? "s" : ""} detected` : "No regions";
+      renderPanel(data);
+    }
+  })
+  .catch(() => { badge.textContent = "Network error"; })
+  .finally(() => { isProcessing = false; });
+}
+
+// ── Results panel ─────────────────────────────────────────────────────────────
+function renderPanel(data) {
+  const dets    = data.detections || [];
+  const summary = data.summary    || {};
+
+  if (dets.length === 0) {
+    regBadge.style.display = "none";
+    panel.innerHTML = '<p class="text-success small mb-0"><i class="fas fa-check-circle"></i> No concerns detected</p>';
+    return;
+  }
+
+  regBadge.textContent   = dets.length + " region" + (dets.length !== 1 ? "s" : "");
+  regBadge.style.display = "inline-block";
+
+  let html = "";
+  Object.entries(summary.concern_counts || {}).forEach(([k, v]) => {
+    html += `<span class="summary-pill">${capitalize(k)}: ${v}</span>`;
+  });
+  if (html) html = `<div class="mb-2">${html}</div>`;
+
+  dets.forEach(det => {
+    const col = getColor(det.label);
+    html += `
+      <div class="det-row" style="border-left-color:${col};">
+        <div class="det-dot" style="background:${col};"></div>
+        <span class="det-name">${capitalize(det.label)}</span>
+        <span class="det-conf">${Math.round(det.confidence * 100)}%</span>
+      </div>`;
+  });
+
+  panel.innerHTML = html;
+}
+
+// ── Stop ──────────────────────────────────────────────────────────────────────
+btnStop.addEventListener("click", () => {
+  running = false;
+  clearInterval(detectionTimer);
+  if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+  video.srcObject        = null;
+  lastDetections         = [];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  badge.textContent      = "Stopped";
+  btnStop.disabled       = true;
+  panel.innerHTML        = '<p class="text-muted small mb-0">Camera stopped.</p>';
+  regBadge.style.display = "none";
+});
+</script>
+{% endblock %}

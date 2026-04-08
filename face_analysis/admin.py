@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
-from .models import CNNModel
+from .models import CNNModel, YOLOModel
 
 
 @admin.register(CNNModel)
@@ -46,3 +46,11 @@ class CNNModelAdmin(admin.ModelAdmin):
             print(f"✓ Activated {obj.model_type} model: {obj.name}")
         else:
             print(f"✓ Deactivated {obj.name}")
+
+
+@admin.register(YOLOModel)
+class YOLOModelAdmin(admin.ModelAdmin):
+    list_display = ['name', 'is_active', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['name', 'description']
+    readonly_fields = ['created_at']

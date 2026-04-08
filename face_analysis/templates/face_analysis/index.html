@@ -212,6 +212,179 @@
             text-decoration: none;
         }
 
+        /* --- Modern Footer Styles --- */
+        .main-footer {
+            background: linear-gradient(135deg, #0b3b17 0%, #0d4820 100%);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 80px 0 30px;
+            margin-top: 60px;
+            font-family: 'Lato', sans-serif;
+            text-align: left;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .footer-column h4 {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .footer-column h4::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 30px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .footer-column p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-link {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: #fff;
+            color: #0b3b17;
+            transform: translateY(-3px);
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .newsletter-form input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 25px;
+            color: white;
+            flex: 1;
+            font-size: 0.85rem;
+        }
+
+        .newsletter-form input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .newsletter-btn {
+            background: #fff;
+            color: #0b3b17;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .footer-bottom p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0;
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-legal a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 991px) {
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            .main-footer {
+                padding: 60px 0 30px;
+            }
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
         /* Concern Cards Styling */
         .concern-cards-grid {
             display: grid;
@@ -234,32 +407,80 @@
         }
 
        
-        .concern-name {
-            font-weight: 600;
-            color: var(--text);
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .concern-confidence {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-bottom: 0.75rem;
-            font-weight: 500;
-        }
-
-        .concern-bar {
-            height: 6px;
-            background: rgba(0, 0, 0, 0.08);
-            border-radius: 3px;
+        
+        /* Real-time YOLO Styles */
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto 1.5rem;
+            border-radius: 15px;
             overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            background: #000;
         }
-
-        .concern-bar-fill {
+        #camera-stream {
+            width: 100%;
+            display: block;
+        }
+        #drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
-            border-radius: 3px;
-            transition: width 0.4s ease;
+            pointer-events: none;
+            z-index: 5;
         }
+        .realtime-status-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(11, 59, 23, 0.85);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .realtime-sidebar {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto 1.5rem;
+            background: #fff;
+            border-radius: 15px;
+            padding: 1.2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: none;
+        }
+        .realtime-sidebar h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rt-det-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(11, 59, 23, 0.03);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            border-left: 4px solid #ccc;
+        }
+        .rt-det-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .rt-det-name { font-weight: 600; flex: 1; color: var(--text); }
+        .rt-det-conf { color: var(--muted); font-size: 0.75rem; }
 
         
     </style>
@@ -381,10 +602,23 @@
                     <button type="button" id="start-camera" class="btn ghost">Use Camera</button>
                 </div>
 
-                <div id="camera-container"
-                    style="display: none; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
-                    <video id="camera-stream" autoplay playsinline
-                        style="width: 100%; max-width: 500px; border-radius: 8px; background: #000; margin-bottom: 1rem;"></video>
+                <div id="camera-container" style="display: none; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
+                    <div class="camera-wrapper">
+                        <span id="rt-badge" class="realtime-status-badge">Initializing YOLO...</span>
+                        <video id="camera-stream" autoplay playsinline></video>
+                        <canvas id="drawing-canvas"></canvas>
+                    </div>
+
+                    <div id="rt-sidebar" class="realtime-sidebar">
+                        <h4>
+                            Live Detections
+                            <span id="rt-count" class="badge" style="background: var(--primary); color: white;">0</span>
+                        </h4>
+                        <div id="rt-results-list">
+                            <p class="muted small text-center">Scanning for skin concerns...</p>
+                        </div>
+                    </div>
+
                     <canvas id="camera-canvas" style="display: none;"></canvas>
                     <div class="camera-actions">
                         <button type="button" id="capture-image" class="btn primary">Capture Photo</button>
@@ -713,8 +947,11 @@
                             {% endif %}
                         </div>
                         <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                            <a href="{% url 'my_orders' %}" class="btn primary small"
-                                style="padding: 0.5rem 1rem;">Add to Shelf</a>
+                            {% if product.id %}
+                            <button class="btn primary small add-to-shelf-btn" 
+                                data-product-id="{{ product.id }}"
+                                style="padding: 0.5rem 1rem;">Add to Shelf</button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -758,6 +995,69 @@
 
     </main>
 
+    {# ---------------------- #}
+    {# MODERN FOOTER #}
+    {# ---------------------- #}
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Column 1: Brand Info -->
+                <div class="footer-column">
+                    <img src="{% static 'images/Skincare.png' %}" alt="Logo" style="width: 120px; margin-bottom: 20px; filter: brightness(0) invert(1);">
+                    <p>Empowering you to understand your skin through AI-powered analysis and expert recommendations. Your skin, Your story.</p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links -->
+                <div class="footer-column">
+                    <h4>Explore</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'users-home' %}">Home</a></li>
+                        <li><a href="{% url 'about' %}">About Us</a></li>
+                        <li><a href="{% url 'recommendations:home' %}">Our Recommendations</a></li>
+                        <li><a href="{% url 'face_analysis:face_analysis_index' %}">AI Skin Analysis</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Support -->
+                <div class="footer-column">
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Newsletter -->
+                <div class="footer-column">
+                    <h4>Stay Updated</h4>
+                    <p>Join our newsletter for weekly skincare tips and exclusive routine insights.</p>
+                    <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Thanks for subscribing!');">
+                        <input type="email" placeholder="Your email address" required>
+                        <button type="submit" class="newsletter-btn">Join</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} SkincareSavvy. Crafted with care for your skin.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const fileInput = document.getElementById('face_image_input');
@@ -984,15 +1284,10 @@
 
                 const toast = document.createElement('div');
                 toast.className = `toast-item toast-${type}`;
-
                 toast.innerHTML = `<span>${message}</span>`;
-
                 container.appendChild(toast);
 
-                // Animation in
                 setTimeout(() => toast.classList.add('show'), 10);
-
-                // Auto remove
                 setTimeout(() => {
                     toast.classList.remove('show');
                     toast.style.transform = 'translateY(-20px)';
@@ -1002,25 +1297,128 @@
                 }, duration);
             }
 
-            // Camera Logic
+            // --- Real-time YOLO & Camera Logic ---
+            const drawingCanvas = document.getElementById('drawing-canvas');
+            const rtCtx = drawingCanvas.getContext('2d');
+            const rtBadge = document.getElementById('rt-badge');
+            const rtSidebar = document.getElementById('rt-sidebar');
+            const rtList = document.getElementById('rt-results-list');
+            const rtCount = document.getElementById('rt-count');
+
+            const YOLO_URL = "{% url 'face_analysis:realtime_yolo_analyze' %}";
+            const DETECTION_INTERVAL = 400; // ms
+
+            let lastDetections = [];
+            let isProcessingRT = false;
+            let rtRunning = false;
+            let rtInterval = null;
+
+            const YOLO_COLORS = {
+                acne: "#ff6b6b", blackheads: "#ffa94d", blackheades: "#ffa94d",
+                dark_spots: "#cc5de8", darkspots: "#cc5de8",
+                wrinkles: "#74c0fc", pores: "#63e6be",
+            };
+
+            function getYOLOColor(label) {
+                return YOLO_COLORS[(label || "").toLowerCase().replace(/ /g, "_")] || "#00e676";
+            }
+
+            function renderRTLoop() {
+                if (!rtRunning) return;
+                requestAnimationFrame(renderRTLoop);
+                if (!video.videoWidth) return;
+
+                rtCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+                lastDetections.forEach(det => {
+                    const [x1, y1, x2, y2] = det.box;
+                    const color = getYOLOColor(det.label);
+                    const labelStr = `${det.label} ${Math.round(det.confidence * 100)}%`;
+
+                    rtCtx.strokeStyle = color;
+                    rtCtx.lineWidth = 3;
+                    rtCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                    rtCtx.font = "bold 14px Lato, sans-serif";
+                    const textWidth = rtCtx.measureText(labelStr).width;
+                    const labelY = y1 > 25 ? y1 - 22 : y2 + 5;
+                    
+                    rtCtx.fillStyle = color;
+                    rtCtx.fillRect(x1 - 1, labelY, textWidth + 12, 20);
+                    rtCtx.fillStyle = "#fff";
+                    rtCtx.fillText(labelStr, x1 + 5, labelY + 15);
+                });
+            }
+
+            async function sendRTFrame() {
+                if (isProcessingRT || !rtRunning || !video.videoWidth) return;
+                isProcessingRT = true;
+
+                const tmpCanvas = document.createElement('canvas');
+                tmpCanvas.width = video.videoWidth;
+                tmpCanvas.height = video.videoHeight;
+                tmpCanvas.getContext('2d').drawImage(video, 0, 0);
+                const frameData = tmpCanvas.toDataURL('image/jpeg', 0.6);
+
+                try {
+                    const response = await fetch(YOLO_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ frame: frameData })
+                    });
+                    const data = await response.json();
+                    if (data.detections) {
+                        lastDetections = data.detections;
+                        updateRTPanel(data);
+                        rtBadge.textContent = lastDetections.length > 0 
+                            ? `${lastDetections.length} concern${lastDetections.length !== 1 ? 's' : ''} detected` 
+                            : 'Live Scanning...';
+                    }
+                } catch (err) { console.error("YOLO Error:", err); }
+                finally { isProcessingRT = false; }
+            }
+
+            function updateRTPanel(data) {
+                const dets = data.detections || [];
+                rtCount.textContent = dets.length;
+                if (dets.length === 0) {
+                    rtList.innerHTML = '<p class="muted small text-center">No concerns detected in current view.</p>';
+                    return;
+                }
+                let html = "";
+                dets.forEach(det => {
+                    const col = getYOLOColor(det.label);
+                    html += `<div class="rt-det-row" style="border-left-color:${col};"><div class="rt-det-dot" style="background:${col};"></div><span class="rt-det-name">${det.label}</span><span class="rt-det-conf">${Math.round(det.confidence * 100)}%</span></div>`;
+                });
+                rtList.innerHTML = html;
+            }
+
             startCameraBtn.addEventListener('click', async function () {
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                     video.srcObject = stream;
+                    video.onloadedmetadata = () => {
+                        drawingCanvas.width = video.videoWidth;
+                        drawingCanvas.height = video.videoHeight;
+                        rtRunning = true;
+                        rtSidebar.style.display = 'block';
+                        requestAnimationFrame(renderRTLoop);
+                        rtInterval = setInterval(sendRTFrame, DETECTION_INTERVAL);
+                        rtBadge.textContent = "Live Scanning...";
+                    };
                     cameraContainer.style.display = 'flex';
                     uploadDrop.style.display = 'none';
                     startCameraBtn.style.display = 'none';
-                } catch (err) {
-                    console.error("Error accessing camera:", err);
-                    alert("Could not access camera. Please check permissions.");
-                }
+                } catch (err) { alert("Could not access camera. Please check permissions."); }
             });
 
-            stopCameraBtn.addEventListener('click', function () {
-                stopCamera();
-            });
+            stopCameraBtn.addEventListener('click', stopCamera);
 
             function stopCamera() {
+                rtRunning = false;
+                if (rtInterval) clearInterval(rtInterval);
+                rtInterval = null;
+                lastDetections = [];
+                rtSidebar.style.display = 'none';
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
                     stream = null;
@@ -1032,102 +1430,69 @@
 
             captureBtn.addEventListener('click', function () {
                 if (!stream) return;
-
-                // Set canvas dimensions to match video
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-
-                // Draw video frame to canvas
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Convert to blob/file
+                canvas.getContext('2d').drawImage(video, 0, 0);
                 canvas.toBlob(function (blob) {
                     const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-
-                    // Create a DataTransfer to set the file input files
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(file);
                     fileInput.files = dataTransfer.files;
-
-                    // Trigger change event manually
                     fileInput.dispatchEvent(new Event('change'));
-
-                    // Stop camera and show upload UI
                     stopCamera();
-
                 }, 'image/jpeg', 0.95);
             });
 
-            // Add to Shelf Logic (POST with CSRF)
+            // --- Shelf Logic ---
             const buttons = document.querySelectorAll('.add-to-shelf-btn');
             const csrfTokenElem = document.getElementById('csrf-token');
-            const csrfToken = csrfTokenElem ? csrfTokenElem.value : '';
+            const localCsrfToken = csrfTokenElem ? csrfTokenElem.value : '{{ csrf_token }}';
 
             buttons.forEach(button => {
-                button.addEventListener('click', function () {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
                     const productId = this.dataset.productId;
                     const btn = this;
                     const originalText = btn.textContent;
-
-                    // Optimistic UI update
+                    if ('{{ user.is_authenticated|yesno:"true,false" }}' === 'false') {
+                        showToast('Please login to add products to your shelf', 'error');
+                        return;
+                    }
                     btn.textContent = 'Adding...';
                     btn.disabled = true;
-
-                    fetch('/shop/add-to-cart/', {
+                    fetch(`/add-to-shelf/${productId}/`, {
                         method: 'POST',
                         credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
-                        },
-                        body: JSON.stringify({ product_id: productId, quantity: 1 })
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': localCsrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({ product_id: productId })
                     })
-                        .then(response => {
-                            if (!response.ok) {
-                                if (response.status === 401) {
-                                    showToast('Please login to save to your shelf', 'error');
-                                } else {
-                                    showToast('Could not add to shelf. Try again.', 'error');
-                                }
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.status === 'success') {
-                                showToast('Added to shelf', 'success');
-                                btn.textContent = 'Added';
-                                btn.style.background = '#28a745';
-                                btn.style.borderColor = '#28a745';
-                                btn.style.color = 'white';
-                            } else {
-                                showToast(data.message || 'Could not add to shelf. Try again.', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Add to shelf error:', error);
-                            // Restore optimistic UI if adding failed
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success' || data.status === 'info') {
+                            showToast(data.message || 'Added to shelf', 'success');
+                            btn.textContent = 'Added';
+                            btn.style.background = '#28a745';
+                            setTimeout(() => { window.location.href = data.redirect_url || '/my-shelf/'; }, 1000);
+                        } else {
+                            showToast(data.message || 'Error adding to shelf', 'error');
                             btn.textContent = originalText;
                             btn.disabled = false;
-                        });
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error adding to shelf', 'error');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    });
                 });
             });
 
             // Notification dropdown toggle
             const notificationBtn = document.getElementById('notificationBtn');
             const notificationContent = document.getElementById('notificationContent');
-
             if (notificationBtn && notificationContent) {
-                notificationBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    notificationContent.classList.toggle('show');
-                });
-
-                document.addEventListener('click', function (e) {
-                    if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) {
-                        notificationContent.classList.remove('show');
-                    }
-                });
+                notificationBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationContent.classList.toggle('show'); });
+                document.addEventListener('click', (e) => { if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) notificationContent.classList.remove('show'); });
             }
         });
     </script>

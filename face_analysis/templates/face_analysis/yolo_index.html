@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}YOLO Skin Concern Detection{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-1">YOLO + MobileNet Skin Analysis</h2>
+  <p class="text-muted mb-4">Upload a face image. YOLO detects concern regions, MobileNet classifies each one.</p>
+
+  <!-- Upload form -->
+  <div class="row">
+    <div class="col-md-5">
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="font-weight-bold mb-2 d-block">Upload Image</label>
+          <input type="file" id="img-input" accept="image/*" class="form-control-file mb-3">
+          <div id="preview-wrap" style="display:none;margin-bottom:12px;">
+            <img id="preview" style="max-width:100%;border-radius:6px;" alt="preview">
+          </div>
+          <button id="btn-analyze" class="btn btn-primary btn-block" disabled>
+            Analyze
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotated result image -->
+    <div class="col-md-7">
+      <div id="annotated-wrap" style="display:none;">
+        <p class="font-weight-bold mb-1">Detected Regions</p>
+        <img id="annotated-img" style="max-width:100%;border-radius:8px;border:1px solid #dee2e6;" alt="annotated">
+      </div>
+      <div id="spinner" style="display:none;text-align:center;padding:40px;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Running YOLO + MobileNet…</p>
+      </div>
+      <div id="error-box" class="alert alert-danger mt-2" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div id="summary-section" style="display:none;" class="mt-3">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Summary</strong>
+        <span id="total-badge" class="badge badge-secondary"></span>
+      </div>
+      <div class="card-body" id="summary-body"></div>
+    </div>
+  </div>
+
+  <!-- Per-crop detail cards -->
+  <div id="crops-section" class="mt-3">
+    <div class="row" id="crops-row"></div>
+  </div>
+</div>
+
+<style>
+  .crop-card img { width:100%;border-radius:6px;object-fit:cover;height:120px; }
+  .concern-pill {
+    display:inline-block;padding:2px 10px;border-radius:12px;
+    background:#fff3cd;color:#856404;font-size:.8rem;margin:2px;
+  }
+  .yolo-label {
+    font-size:.75rem;background:#d4edda;color:#155724;
+    padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:4px;
+  }
+</style>
+
+<script>
+const ANALYZE_URL = "{% url 'face_analysis:yolo_analyze' %}";
+
+const imgInput    = document.getElementById('img-input');
+const btnAnalyze  = document.getElementById('btn-analyze');
+const preview     = document.getElementById('preview');
+const previewWrap = document.getElementById('preview-wrap');
+const spinner     = document.getElementById('spinner');
+const errorBox    = document.getElementById('error-box');
+const annotatedWrap = document.getElementById('annotated-wrap');
+const annotatedImg  = document.getElementById('annotated-img');
+const summarySection = document.getElementById('summary-section');
+const summaryBody    = document.getElementById('summary-body');
+const totalBadge     = document.getElementById('total-badge');
+const cropsRow       = document.getElementById('crops-row');
+
+// Preview on file select
+imgInput.addEventListener('change', () => {
+  const file = imgInput.files[0];
+  if (!file) return;
+  preview.src = URL.createObjectURL(file);
+  previewWrap.style.display = 'block';
+  btnAnalyze.disabled = false;
+  clearResults();
+});
+
+btnAnalyze.addEventListener('click', runAnalysis);
+
+async function runAnalysis() {
+  const file = imgInput.files[0];
+  if (!file) return;
+
+  clearResults();
+  spinner.style.display = 'block';
+  btnAnalyze.disabled = true;
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const resp = await fetch(ANALYZE_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      body: formData,
+    });
+    const data = await resp.json();
+    spinner.style.display = 'none';
+    btnAnalyze.disabled = false;
+
+    if (data.error) {
+      showError(data.error);
+      return;
+    }
+
+    renderResults(data);
+  } catch (e) {
+    spinner.style.display = 'none';
+    btnAnalyze.disabled = false;
+    showError('Network error: ' + e.message);
+  }
+}
+
+function renderResults(data) {
+  // Annotated image
+  if (data.annotated_b64) {
+    annotatedImg.src = 'data:image/jpeg;base64,' + data.annotated_b64;
+    annotatedWrap.style.display = 'block';
+  }
+
+  // Summary
+  const s = data.summary || {};
+  totalBadge.textContent = `${s.total_regions || 0} region(s) detected`;
+  let summaryHtml = '';
+
+  if (s.top_concern) {
+    summaryHtml += `<p class="mb-1">Top concern: <strong>${capitalize(s.top_concern)}</strong></p>`;
+  }
+
+  const counts = s.concern_counts || {};
+  if (Object.keys(counts).length) {
+    summaryHtml += Object.entries(counts)
+      .map(([k, v]) => `<span class="concern-pill">${capitalize(k)}: ${v}</span>`)
+      .join(' ');
+  } else {
+    summaryHtml = '<p class="text-success mb-0">No skin concerns detected.</p>';
+  }
+
+  summaryBody.innerHTML = summaryHtml;
+  summarySection.style.display = 'block';
+
+  // Per-crop cards
+  cropsRow.innerHTML = '';
+  (data.detections || []).forEach((det, i) => {
+    const cnnConcerns = det.cnn?.skin_concerns?.predictions || [];
+    const skinType = det.cnn?.skin_type?.predictions?.[0]?.class || null;
+
+    const concernPills = cnnConcerns
+      .filter(p => p.confidence >= 0.25)
+      .map(p => `<span class="concern-pill">${capitalize(p.class)} ${Math.round(p.confidence*100)}%</span>`)
+      .join('');
+
+    cropsRow.innerHTML += `
+      <div class="col-6 col-md-3 mb-3 crop-card">
+        <div class="card h-100">
+          <img src="data:image/jpeg;base64,${det.crop_b64}" alt="crop ${i+1}">
+          <div class="card-body p-2">
+            <div class="yolo-label">${capitalize(det.label)} ${Math.round(det.yolo_confidence*100)}%</div>
+            ${skinType ? `<p class="mb-1" style="font-size:.8rem;">Skin: ${capitalize(skinType)}</p>` : ''}
+            <div>${concernPills || '<span style="font-size:.8rem;color:#6c757d;">No concerns</span>'}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+function clearResults() {
+  annotatedWrap.style.display = 'none';
+  summarySection.style.display = 'none';
+  cropsRow.innerHTML = '';
+  errorBox.style.display = 'none';
+}
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = 'block';
+}
+
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : '';
+}
+</script>
+{% endblock %}

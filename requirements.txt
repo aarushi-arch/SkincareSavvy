@@ -22,3 +22,7 @@ mediapipe==0.10.14
 jupyter>=1.0
 beautifulsoup4>=4.12,<4.13
 requests>=2.31,<3.0
+
+# YOLO Object Detection
+ultralytics>=8.3.0
+lapx>=0.5.11

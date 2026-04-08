@@ -5,6 +5,11 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 
 
+def yolo_model_upload_path(instance, filename):
+    """Generate upload path for YOLO model files."""
+    return f'face_analysis/models/yolo/{filename}'
+
+
 def model_file_upload_path(instance, filename):
     """Generate upload path for model files."""
     return f'face_analysis/models/{instance.model_type}/{filename}'
@@ -130,4 +135,34 @@ class CNNModel(models.Model):
                 model_type=self.model_type,
                 is_active=True
             ).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+
+class YOLOModel(models.Model):
+    """Stores an uploaded YOLO .pt model used for acne/lesion region detection."""
+
+    name = models.CharField(max_length=200)
+    model_file = models.FileField(
+        upload_to=yolo_model_upload_path,
+        validators=[FileExtensionValidator(allowed_extensions=['pt'])],
+        help_text="Upload YOLO model weights (.pt)",
+    )
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(
+        default=False,
+        help_text="Only one YOLO model should be active at a time",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "YOLO Model"
+        verbose_name_plural = "YOLO Models"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            YOLOModel.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)

@@ -140,8 +140,8 @@ def recommend(request):
                         # We need an ID to add to shelf.
                         
                         similarity_score = row.get("similarity_score", 0.0)
-                        # Convert similarity score to percentage and round to 2 decimal places
-                        similarity_percentage = round(float(similarity_score) * 100, 2) if pd.notna(similarity_score) else 0.0
+                        # Convert similarity score to percentage and round to 2 decimal places, capping at 100%
+                        similarity_percentage = min(round(float(similarity_score) * 100, 2), 100.0) if pd.notna(similarity_score) else 0.0
                         
                         # The price from the CSV is now pre-formatted as "Rs. X,XXX"
                         npr_price = str(row.get("price", ""))

@@ -112,13 +112,27 @@ def my_shelf(request):
 @login_required
 def add_to_shelf(request, product_id):
     """View to add a product to user's shelf."""
-    product = get_object_or_404(Product, id=product_id)
+    print(f"DEBUG: add_to_shelf called with product_id={product_id}, user={request.user}")
+    
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        print(f"DEBUG: Found product: {product.name}")
+    except Exception as e:
+        print(f"DEBUG: Product not found: {e}")
+        from django.http import JsonResponse
+        return JsonResponse({'status': 'error', 'message': 'Product not found'}, status=404)
     
     # Check if item already exists
-    shelf_item, created = ShelfItem.objects.get_or_create(
-        user=request.user, 
-        product=product
-    )
+    try:
+        shelf_item, created = ShelfItem.objects.get_or_create(
+            user=request.user, 
+            product=product
+        )
+        print(f"DEBUG: ShelfItem created={created}")
+    except Exception as e:
+        print(f"DEBUG: Error creating ShelfItem: {e}")
+        from django.http import JsonResponse
+        return JsonResponse({'status': 'error', 'message': 'Error adding to shelf'}, status=500)
     
     
     if created:
@@ -131,12 +145,17 @@ def add_to_shelf(request, product_id):
     # JSON Response for AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.META.get('HTTP_ACCEPT', ''):
         from django.http import JsonResponse
-        return JsonResponse({'status': 'success' if created else 'info', 'message': msg, 'crated': created})
+        response_data = {
+            'status': 'success' if created else 'info', 
+            'message': msg, 
+            'created': created,
+            'redirect_url': '/my-shelf/'
+        }
+        print(f"DEBUG: Returning JSON response: {response_data}")
+        return JsonResponse(response_data)
 
-    # Redirect back to the previous page or my_shelf
-    next_url = request.META.get('HTTP_REFERER')
-    if next_url:
-        return redirect(next_url)
+    # Redirect to my_shelf page
+    print(f"DEBUG: Redirecting to my_shelf")
     return redirect('my_shelf')
 
 

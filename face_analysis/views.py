@@ -1,6 +1,12 @@
 import base64
+import json
+import numpy as np
+import cv2
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from PIL import Image, UnidentifiedImageError
 
@@ -8,11 +14,14 @@ from .forms import CNNModelUploadForm
 from .models import CNNModel
 from .routine_builder import build_routine
 from .services.cnn import FaceAnalysisPipeline
+from .services.yolo_pipeline import YOLOAnalysisPipeline
 from recommendations.recommender_engine import get_recommendations
+from recommendations.models import Product
 
 
-# Initialize pipeline (models will be loaded lazily)
+# Initialize pipelines (models loaded lazily)
 pipeline = FaceAnalysisPipeline()
+yolo_pipeline = YOLOAnalysisPipeline()
 
 
 def index(request):
@@ -119,6 +128,27 @@ def index(request):
                         # Use TF-IDF based recommendations with active ingredients and allergy warnings
                         recommended_products = get_recommendations(query, top_k=10)
 
+                        # Fetch Product objects from DB to get IDs and synchronized data
+                        product_urls = [p.get('link') for p in recommended_products if p.get('link')]
+                        product_names = [p.get('name') for p in recommended_products if p.get('name')]
+                        
+                        db_products_by_url = {p.product_url: p for p in Product.objects.filter(product_url__in=product_urls)}
+                        db_products_by_name = {p.name: p for p in Product.objects.filter(name__in=product_names)}
+
+                        # Update recommended products with database info
+                        for p in recommended_products:
+                            url = p.get('link')
+                            name = p.get('name')
+                            db_prod = db_products_by_url.get(url) or db_products_by_name.get(name)
+                            
+                            if db_prod:
+                                p['id'] = db_prod.id
+                                # Prefer DB image and brand if available
+                                if db_prod.image_url:
+                                    p['image_url'] = db_prod.image_url
+                                if db_prod.brand:
+                                    p['brand'] = db_prod.brand
+
                         # Build a personalized routine based on detected skin type and concerns
                         try:
                             routine = build_routine({
@@ -218,3 +248,131 @@ def delete_model(request, pk):
         "face_analysis/model_confirm_delete.html",
         {"model": model},
     )
+
+
+def realtime(request):
+    """Render the real-time webcam skin concern detection page."""
+    return render(request, "face_analysis/realtime.html")
+
+
+@csrf_exempt
+@require_POST
+def realtime_analyze(request):
+    """
+    Accept a base64-encoded webcam frame, run the CNN pipeline,
+    and return JSON with skin type + concern predictions.
+    """
+    try:
+        body = json.loads(request.body)
+        frame_b64 = body.get("frame", "")
+
+        # Decode base64 → numpy BGR image
+        header, _, data = frame_b64.partition(",")
+        img_bytes = base64.b64decode(data if data else frame_b64)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if frame_bgr is None:
+            return JsonResponse({"error": "Could not decode frame"}, status=400)
+
+        result = pipeline.analyze(frame_bgr)
+
+        if result.get("error"):
+            return JsonResponse({"error": result["error"]})
+
+        CONFIDENCE_THRESHOLD = 0.30
+
+        # Skin type
+        skin_type_preds = result.get("skin_type", {}).get("predictions", [])
+        skin_type = skin_type_preds[0]["class"] if skin_type_preds else None
+
+        # Skin concerns
+        concerns_preds = result.get("skin_concerns", {}).get("predictions", [])
+        detected = [
+            {"name": p["class"], "confidence": round(p["confidence"] * 100)}
+            for p in concerns_preds
+            if p["confidence"] >= CONFIDENCE_THRESHOLD
+        ]
+        detected.sort(key=lambda x: x["confidence"], reverse=True)
+
+        # Face bounding box (relative coords for overlay)
+        face_bbox = result.get("face_bbox")
+
+        return JsonResponse({
+            "skin_type": skin_type,
+            "concerns": detected,
+            "face_bbox": face_bbox,
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def realtime_yolo_analyze(request):
+    """
+    Accept a base64-encoded webcam frame, run YOLO-only detection (no MobileNet)
+    for fast real-time response. Returns boxes + labels for canvas overlay.
+    """
+    print("REALTIME YOLO CALLED")
+    try:
+        body = json.loads(request.body)
+        frame_b64 = body.get("frame", "")
+
+        # Strip the data URI prefix if present (e.g. "data:image/jpeg;base64,...")
+        if "," in frame_b64:
+            frame_b64 = frame_b64.split(",", 1)[1]
+
+        img_bytes = base64.b64decode(frame_b64)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if frame_bgr is None:
+            return JsonResponse({"error": "Could not decode frame"}, status=400)
+
+        print(f"[YOLO] Frame shape: {frame_bgr.shape}")
+
+        result = yolo_pipeline.detect_only(frame_bgr)
+        print("YOLO RESULT:", result)
+        return JsonResponse(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def yolo_index(request):
+    """Page for YOLO + MobileNet image upload analysis."""
+    return render(request, "face_analysis/yolo_index.html")
+
+
+@csrf_exempt
+@require_POST
+def yolo_analyze(request):
+    """
+    Accepts a multipart image upload OR base64 JSON body.
+    Runs YOLO detection → crops → MobileNet per crop.
+    Returns JSON results.
+    """
+    print("FULL ANALYSIS CALLED")
+    try:
+        # Support both multipart file upload and base64 JSON
+        if request.FILES.get("image"):
+            image_bytes = request.FILES["image"].read()
+        else:
+            body = json.loads(request.body)
+            frame_b64 = body.get("frame", "")
+            _, _, data = frame_b64.partition(",")
+            image_bytes = base64.b64decode(data if data else frame_b64)
+
+        result = yolo_pipeline.analyze(image_bytes)
+        return JsonResponse(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
