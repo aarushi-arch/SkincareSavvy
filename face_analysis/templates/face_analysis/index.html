@@ -540,7 +540,7 @@
                             </div>
                         </div>
                     </li>
-                    <li><a href="{% url 'my_cart' %}">My Shelf</a></li>
+                    <li><a href="{% url 'my_cart' %}">My Cart</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}
@@ -1460,27 +1460,34 @@
                     }
                     btn.textContent = 'Adding...';
                     btn.disabled = true;
-                    fetch(`/add-to-shelf/${productId}/`, {
+
+                    // Update: Use shop:add_to_cart endpoint instead of user:add_to_shelf
+                    fetch("{% url 'add_to_cart' %}", {
                         method: 'POST',
                         credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': localCsrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                        body: JSON.stringify({ product_id: productId })
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'X-CSRFToken': localCsrfToken, 
+                            'X-Requested-With': 'XMLHttpRequest' 
+                        },
+                        body: JSON.stringify({ product_id: productId, quantity: 1 })
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data.status === 'success' || data.status === 'info') {
-                            showToast(data.message || 'Added to shelf', 'success');
+                        if (data.message || data.status === 'success') {
+                            showToast('Added to your shelf!', 'success');
                             btn.textContent = 'Added';
                             btn.style.background = '#28a745';
-                            setTimeout(() => { window.location.href = data.redirect_url || '/my-shelf/'; }, 1000);
+                            // Redirect to shop cart as requested
+                            setTimeout(() => { window.location.href = "{% url 'my_cart' %}"; }, 800);
                         } else {
-                            showToast(data.message || 'Error adding to shelf', 'error');
+                            showToast(data.error || 'Error adding to shelf', 'error');
                             btn.textContent = originalText;
                             btn.disabled = false;
                         }
                     })
                     .catch(() => {
-                        showToast('Error adding to shelf', 'error');
+                        showToast('Error connecting to shop', 'error');
                         btn.textContent = originalText;
                         btn.disabled = false;
                     });
