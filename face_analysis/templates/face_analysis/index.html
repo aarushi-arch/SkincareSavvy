@@ -598,49 +598,79 @@
                     <div class="tag">JPG / PNG</div>
                 </div>
 
-                <div class="camera-section" style="margin-bottom: 1rem; text-align: center;">
-                    <button type="button" id="start-camera" class="btn ghost">Use Camera</button>
+                <!-- Side-by-side: Camera | Upload -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+
+                    <!-- Camera pane -->
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                                border:2px dashed var(--border);border-radius:var(--radius-sm);
+                                padding:2rem 1rem;min-height:180px;background:var(--primary-soft);
+                                cursor:pointer;transition:border-color .2s,background .2s;"
+                         onclick="document.getElementById('start-camera').click()"
+                         onmouseover="this.style.borderColor='var(--primary)';this.style.background='#e8f5ec'"
+                         onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--primary-soft)'">
+                        <span style="font-size:2.4rem;margin-bottom:.6rem;"></span>
+                        <p style="margin:0;font-weight:600;color:var(--text);font-size:.95rem;">Use Camera</p>
+                        <p style="margin:.3rem 0 1rem;font-size:.8rem;color:var(--muted);text-align:center;">
+                            Take a live photo
+                        </p>
+                        <button type="button" id="start-camera" class="btn ghost"
+                                style="pointer-events:none;">Open Camera</button>
+                    </div>
+
+                    <!-- Upload pane -->
+                    <label id="upload-drop"
+                           style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                                  border:2px dashed var(--border);border-radius:var(--radius-sm);
+                                  padding:2rem 1rem;min-height:180px;cursor:pointer;margin:0;
+                                  transition:border-color .2s,background .2s;"
+                           onmouseover="this.style.borderColor='var(--primary)';this.style.background='#f7faf8'"
+                           onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                        <input type="file" name="face_image" accept="image/*" class="file-input"
+                               id="face_image_input" required style="display:none;">
+                        <div id="upload-placeholder" style="text-align:center;">
+                            <span style="font-size:2.4rem;display:block;margin-bottom:.6rem;"></span>
+                            <p style="margin:0;font-weight:600;color:var(--text);font-size:.95rem;">Upload Image</p>
+                            <p style="margin:.3rem 0 0;font-size:.8rem;color:var(--muted);">
+                                Drag & drop or click to choose
+                            </p>
+                            <p style="margin:.25rem 0 0;font-size:.75rem;color:var(--muted);">
+                                JPG / PNG · Max 10MB
+                            </p>
+                        </div>
+                        <div id="image-preview" style="display:none;text-align:center;">
+                            <img id="preview-img" src="" alt="Preview"
+                                 style="max-width:100%;max-height:200px;border-radius:8px;margin-bottom:.75rem;">
+                            <p class="muted" id="file-name" style="font-size:.8rem;"></p>
+                            <button type="button" id="remove-image" class="btn ghost"
+                                    style="margin-top:.4rem;font-size:.8rem;">Remove</button>
+                        </div>
+                    </label>
+
                 </div>
 
-                <div id="camera-container" style="display: none; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
+                <!-- Camera feed (expands below when active) -->
+                <div id="camera-container" style="display:none;flex-direction:column;align-items:center;margin-bottom:1.5rem;">
                     <div class="camera-wrapper">
                         <span id="rt-badge" class="realtime-status-badge">Initializing YOLO...</span>
                         <video id="camera-stream" autoplay playsinline></video>
                         <canvas id="drawing-canvas"></canvas>
                     </div>
-
                     <div id="rt-sidebar" class="realtime-sidebar">
                         <h4>
                             Live Detections
-                            <span id="rt-count" class="badge" style="background: var(--primary); color: white;">0</span>
+                            <span id="rt-count" class="badge" style="background:var(--primary);color:white;">0</span>
                         </h4>
                         <div id="rt-results-list">
                             <p class="muted small text-center">Scanning for skin concerns...</p>
                         </div>
                     </div>
-
-                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <canvas id="camera-canvas" style="display:none;"></canvas>
                     <div class="camera-actions">
                         <button type="button" id="capture-image" class="btn primary">Capture Photo</button>
                         <button type="button" id="stop-camera" class="btn ghost">Cancel</button>
                     </div>
                 </div>
-
-                <label class="upload-drop" id="upload-drop">
-                    <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input"
-                        required>
-                    <div id="upload-placeholder">
-                        <p class="muted">Drag & drop or click to choose a file.</p>
-                        <p class="fine-print">Max size 10MB. Image is processed securely.</p>
-                    </div>
-                    <div id="image-preview" style="display: none;">
-                        <img id="preview-img" src="" alt="Preview"
-                            style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem;">
-                        <p class="muted" id="file-name"></p>
-                        <button type="button" id="remove-image" class="btn ghost" style="margin-top: 0.5rem;">Remove
-                            Image</button>
-                    </div>
-                </label>
 
                 <div class="upload-actions">
                     <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
