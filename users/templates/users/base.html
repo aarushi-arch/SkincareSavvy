@@ -37,20 +37,20 @@
         }
 
         header {
-            background: rgba(11, 59, 23, 0.15);
-            /* subtle green-tinted transparency */
-            backdrop-filter: blur(8px) saturate(150%);
-            -webkit-backdrop-filter: blur(8px) saturate(150%);
-            border: 2px solid rgba(11, 59, 23, 0.4);
-            /* soft green border */
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(11, 59, 23, 0.12);
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+            border: 2px solid rgba(11, 59, 23, 0.35);
             border-radius: 40px;
             padding: 12px 20px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            margin: 10px auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            margin: 14px auto;
             width: 90%;
-            /* makes the header look like a floating glass bar */
             max-width: 1200px;
-            /* keeps it neat */
+            transition: all 0.3s ease;
         }
 
         nav {
@@ -215,9 +215,7 @@
             transition: transform 0.2s ease;
         }
 
-        .notification-btn:hover {
-            /* transform: scale(1.1); */
-        }
+
 
         .notification-btn::after {
             content: "";
@@ -572,7 +570,7 @@
                             </div>
                         </div>
                     </li>
-                    <li><a href="{% url 'my_cart' %}">My Shelf</a></li>
+                    <li><a href="{% url 'my_cart' %}">My Cart</a></li>
                     <li><a href="{% url 'my_orders' %}">My Orders</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>

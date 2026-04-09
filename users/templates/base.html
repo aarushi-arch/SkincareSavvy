@@ -1,60 +1,726 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
 <head>
-  <!-- Required meta tags -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600&family=Allura&display=swap"
+        rel="stylesheet">
 
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
-    integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
-  <title>{% block title %} {% endblock %} </title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+        integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(11, 59, 23, 0.12);
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+            border: 2px solid rgba(11, 59, 23, 0.35);
+            border-radius: 40px;
+            padding: 12px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            margin: 14px auto;
+            width: 90%;
+            max-width: 1200px;
+            transition: all 0.3s ease;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            /* distance under the text */
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff;
+            /* underline color */
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border-radius: 50px;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+            margin-left: 0;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 14px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f0f5f3;
+            color: #0b3b17;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        /* Elegant Toast System */
+        #toast-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            padding: 16px 32px;
+            box-shadow: 0 8px 32px 0 rgba(11, 59, 23, 0.15);
+            color: #0b3b17;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(-40px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px;
+        }
+
+        .toast-item.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-color: rgba(40, 167, 69, 0.4);
+        }
+
+        .toast-error {
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+
+        .toast-info {
+            border-color: rgba(11, 59, 23, 0.4);
+        }
+
+        .toast-success i,
+        .toast-error i,
+        .toast-info i {
+            display: none;
+        }
+
+        /* Removed icons as per user request to avoid "tick" */
+
+        /* Notification Styles */
+        .notification-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .notification-btn {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: transform 0.2s ease;
+        }
+
+
+
+        .notification-btn::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 0%;
+            height: 2px;
+            background-color: #0b3b17ff;
+            transition: width 0.3s ease;
+        }
+
+        .notification-btn:hover::after {
+            width: 100%;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .notification-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            z-index: 2000;
+            border-radius: 15px;
+            top: 100%;
+            margin-top: 15px;
+            border: 1px solid rgba(11, 59, 23, 0.1);
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+            text-align: left;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-content.show {
+            display: block;
+        }
+
+        .notification-header {
+            padding: 12px 16px;
+            background: rgba(11, 59, 23, 0.05);
+            font-weight: 600;
+            color: #0b3b17;
+            border-bottom: 1px solid rgba(11, 59, 23, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(11, 59, 23, 0.05);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: rgba(11, 59, 23, 0.03);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item .message {
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            display: block;
+        }
+
+        .notification-item .time {
+            font-size: 0.75rem;
+            color: #7a8b81;
+        }
+
+        .notification-footer {
+            padding: 10px;
+            text-align: center;
+            background: rgba(11, 59, 23, 0.02);
+            border-top: 1px solid rgba(11, 59, 23, 0.05);
+        }
+
+        .notification-footer a {
+            font-size: 0.85rem;
+            color: #0b3b17;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* --- Modern Footer Styles --- */
+        .main-footer {
+            background: linear-gradient(135deg, #0b3b17 0%, #0d4820 100%);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 80px 0 30px;
+            margin-top: 60px;
+            font-family: 'Lato', sans-serif;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .footer-column h4 {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .footer-column h4::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 30px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .footer-column p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-link {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: #fff;
+            color: #0b3b17;
+            transform: translateY(-3px);
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .newsletter-form input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 25px;
+            color: white;
+            flex: 1;
+            font-size: 0.85rem;
+        }
+
+        .newsletter-form input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .newsletter-btn {
+            background: #fff;
+            color: #0b3b17;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .footer-bottom p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0;
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-legal a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 991px) {
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            .main-footer {
+                padding: 60px 0 30px;
+            }
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+
+    <title>{% block title %}{% endblock %}</title>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-  <div class="container p-3 my-3">
-    <div class="row">
-      <div class="col-md-12">
-        <nav class="navbar navbar-expand-md navbar-light " style="background-color: #f0f5f5">
-          <a href="/" class="navbar-brand">Home</a>
-          <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarCollapse">
-            <div class="navbar-nav ml-auto">
-              {% if user.is_authenticated %}
-              <a href="{% url 'my_cart' %}" class="nav-item nav-link">My Shelf</a>
-              <a href="{% url 'my_orders' %}" class="nav-item nav-link">My Orders</a>
-              <a href="{% url 'chat_support' %}" class="nav-item nav-link">Support Chat</a>
-              <a href="{% url 'profile' %}" class="nav-item nav-link">Profile</a>
-              <a href="{% url 'logout' %}" class="nav-item nav-link">Logout</a>
-              {% else %}
-              <a href="{% url 'login' %}" class="nav-item nav-link">Sign in</a>
-              {% endif %}
-            </div>
-          </div>
-        </nav>
-        {% block content %}{% endblock %}
-      </div>
-    </div>
-  </div>
 
-  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-    crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-    crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-    crossorigin="anonymous"></script>
+    {# ---------------------- #}
+    {# GLASSMORPHIC NAVBAR #}
+    {# ---------------------- #}
+    {% block header %}
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo"><img src="{% static 'images/Skincare.png' %}" alt="Logo"></div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'users-home' %}">Home</a></li>
+                    <li><a href="{% url 'about' %}">About</a></li>
+                    <li class="dropdown">
+                        <a href="#features">Features</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
+                            <a href="{% url 'recommendations:home' %}">Recommendations</a>
+                            <a href="#routine-builder">Routine Builder</a>
+                        </div>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="notification-dropdown">
+                        <button class="notification-btn" id="notificationBtn">
+                            Notification
+                            {% if unread_count > 0 %}
+                            <span class="notification-badge">{{ unread_count }}</span>
+                            {% endif %}
+                        </button>
+                        <div class="notification-content" id="notificationContent">
+                            <div class="notification-header">
+                                Notifications
+                                {% if unread_count > 0 %}
+                                <span
+                                    style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">{{
+                                    unread_count }} new</span>
+                                {% endif %}
+                            </div>
+                            <div class="notification-body">
+                                {% if unread_notifications %}
+                                {% for notification in unread_notifications %}
+                                <div class="notification-item">
+                                    <span class="message">{{ notification.message }}</span>
+                                    <span class="time">{{ notification.created_at|timesince }} ago</span>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="notification-item" style="text-align: center; padding: 20px;">
+                                    <p style="color: #7a8b81; margin: 0;">No unread notifications</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="notification-footer">
+                                <a href="{% url 'notifications' %}">View All Notifications</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li><a href="{% url 'my_cart' %}">My Cart</a></li>
+                    <li><a href="{% url 'my_orders' %}">My Orders</a></li>
+                    <li><a href="{% url 'profile' %}">Profile</a></li>
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% else %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'users-register' %}">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+    {% endblock header %}
+
+    {% block content %}{% endblock %}
+
+    {# ---------------------- #}
+    {# MODERN FOOTER #}
+    {# ---------------------- #}
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Column 1: Brand Info -->
+                <div class="footer-column">
+                    <img src="{% static 'images/Skincare.png' %}" alt="Logo" style="width: 120px; margin-bottom: 20px; filter: brightness(0) invert(1);">
+                    <p>Empowering you to understand your skin through AI-powered analysis and expert recommendations. Your skin, Your story.</p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links -->
+                <div class="footer-column">
+                    <h4>Explore</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'users-home' %}">Home</a></li>
+                        <li><a href="{% url 'about' %}">About Us</a></li>
+                        <li><a href="{% url 'recommendations:home' %}">Our Recommendations</a></li>
+                        <li><a href="{% url 'face_analysis:face_analysis_index' %}">AI Skin Analysis</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Support -->
+                <div class="footer-column">
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Newsletter -->
+                <div class="footer-column">
+                    <h4>Stay Updated</h4>
+                    <p>Join our newsletter for weekly skincare tips and exclusive routine insights.</p>
+                    <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Thanks for subscribing!');">
+                        <input type="email" placeholder="Your email address" required>
+                        <button type="submit" class="newsletter-btn">Join</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} SkincareSavvy. Crafted with care for your skin.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+    <!-- Password Show/Hide Plugin -->
+    <script src="https://unpkg.com/bootstrap-show-password@1.2.1/dist/bootstrap-show-password.min.js"></script>
+
+    <script>
+        function showToast(message, type = 'info', duration = 4000) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast-item toast-${type}`;
+
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Animation in
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 500);
+            }, duration);
+        }
+
+        // Auto-show Django messages as toasts
+        document.addEventListener('DOMContentLoaded', function () {
+            {% if messages %}
+            {% for message in messages %}
+            showToast("{{ message }}", "{{ message.tags }}");
+            {% endfor %}
+            {% endif %}
+
+            // Notification dropdown toggle
+            const navBtn = document.getElementById('notificationBtn');
+            const navContent = document.getElementById('notificationContent');
+
+            if (navBtn && navContent) {
+                navBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    navContent.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!navBtn.contains(e.target) && !navContent.contains(e.target)) {
+                        navContent.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
 
 {% if user.is_authenticated %}
 {% include 'chat/chat_widget.html' %}

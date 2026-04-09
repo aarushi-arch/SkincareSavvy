@@ -747,10 +747,157 @@
                     qualified skin health professional with any questions regarding a medical condition.
                 </p>
             </div>
+
+            <!-- ── Second Opinion popup (auto-shows after results) ── -->
+            <div id="second-opinion-modal"
+                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+                        z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+                <div style="background:#fff;border-radius:28px;padding:3rem 2.5rem;
+                            max-width:520px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.2);
+                            text-align:center;animation:soSlideUp .35s cubic-bezier(.23,1,.32,1);">
+
+                    <div style="font-size:3rem;margin-bottom:1rem;"></div>
+                    <h2 style="margin:0 0 .6rem;color:#0b3b17;font-size:1.6rem;font-weight:700;">
+                        Does this look correct?
+                    </h2>
+                    <p style="color:#7a8b81;font-size:.95rem;margin:0 0 2rem;line-height:1.6;">
+                        Our AI has analysed your skin. Let us know if the results look right —
+                        we'll only show product recommendations if you're happy with the analysis.
+                    </p>
+
+                    <div style="display:flex;flex-direction:column;gap:.9rem;">
+                        <button onclick="secondOpinionYes()"
+                                style="padding:16px 24px;border-radius:50px;border:none;
+                                       background:#0b3b17;color:#fff;font-weight:700;
+                                       font-size:1rem;cursor:pointer;letter-spacing:.3px;
+                                       transition:opacity .2s;"
+                                onmouseover="this.style.opacity='.85'"
+                                onmouseout="this.style.opacity='1'">
+                            ✓ &nbsp;Yes, looks right — show my recommendations
+                        </button>
+                        <button onclick="secondOpinionNo()"
+                                style="padding:16px 24px;border-radius:50px;
+                                       border:2px solid #0b3b17;background:transparent;
+                                       color:#0b3b17;font-weight:600;font-size:1rem;
+                                       cursor:pointer;transition:background .2s,color .2s;"
+                                onmouseover="this.style.background='#f0f7f2'"
+                                onmouseout="this.style.background='transparent'">
+                            ✗ &nbsp;No, not quite right
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── "No" follow-up modal ── -->
+            <div id="no-opinion-modal"
+                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+                        z-index:10000;align-items:center;justify-content:center;padding:1rem;">
+                <div style="background:#fff;border-radius:28px;padding:3rem 2.5rem;
+                            max-width:460px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.2);
+                            text-align:center;animation:soSlideUp .35s cubic-bezier(.23,1,.32,1);">
+                    <div style="font-size:3rem;margin-bottom:1rem;"></div>
+                    <h2 style="margin:0 0 .6rem;color:#0b3b17;font-size:1.5rem;font-weight:700;">
+                        Not quite right?
+                    </h2>
+                    <p style="color:#7a8b81;font-size:.92rem;margin:0 0 2rem;line-height:1.6;">
+                        No worries — AI isn't perfect. Try again with better lighting and a
+                        centred face, or keep the current results and continue.
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:.9rem;">
+                        <a href="#uploader"
+                           onclick="closeNoModal()"
+                           style="display:block;padding:15px 24px;border-radius:50px;
+                                  background:#0b3b17;color:#fff;font-weight:700;
+                                  font-size:.95rem;text-decoration:none;">
+                            &nbsp;Re-upload image
+                        </a>
+                        <button onclick="dismissAndContinue()"
+                                style="padding:15px 24px;border-radius:50px;
+                                       border:2px solid #ddd;background:transparent;
+                                       color:#555;font-weight:500;font-size:.95rem;cursor:pointer;">
+                            Keep results &amp; continue without recommendations
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </section>
+
+        <style>
+            @keyframes soSlideUp {
+                from { opacity:0;transform:translateY(40px); }
+                to   { opacity:1;transform:translateY(0); }
+            }
+        </style>
+
+        <script>
+            // Auto-scroll to results card after analysis completes
+            window.addEventListener('DOMContentLoaded', function() {
+                {% if analysis_result %}
+                var resultsCard = document.querySelector('.results-card');
+                if (resultsCard) {
+                    setTimeout(function() {
+                        resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 300);
+                }
+                {% endif %}
+            });
+
+            // Show popup only after user has scrolled completely past the results card
+            window.addEventListener('DOMContentLoaded', function() {
+                {% if analysis_result %}
+                var popupShown = false;
+
+                window.addEventListener('scroll', function() {
+                    if (popupShown) return;
+                    var resultsCard = document.querySelector('.results-card');
+                    if (!resultsCard) return;
+                    // Fire only when the very bottom of the card is above the viewport
+                    if (resultsCard.getBoundingClientRect().bottom < 0) {
+                        popupShown = true;
+                        document.getElementById('second-opinion-modal').style.display = 'flex';
+                    }
+                }, { passive: true });
+                {% endif %}
+            });
+
+            function secondOpinionYes() {
+                // Close popup and reveal recommendations
+                document.getElementById('second-opinion-modal').style.display = 'none';
+                const rec = document.getElementById('recommendations-section');
+                if (rec) {
+                    rec.style.display = 'block';
+                    rec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            function secondOpinionNo() {
+                document.getElementById('second-opinion-modal').style.display = 'none';
+                document.getElementById('no-opinion-modal').style.display = 'flex';
+            }
+
+            function closeNoModal() {
+                document.getElementById('no-opinion-modal').style.display = 'none';
+            }
+
+            function dismissAndContinue() {
+                closeNoModal();
+                // Recommendations stay hidden — user chose to skip
+            }
+
+            // Backdrop clicks close each modal
+            document.getElementById('second-opinion-modal').addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
+            });
+            document.getElementById('no-opinion-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeNoModal();
+            });
+        </script>
+
         {% endif %}
 
         {% if recommended_products %}
+        <div id="recommendations-section" style="display:none;">
         <section class="panel result-panel" style="margin-top: 2rem;">
             <div class="panel-head">
                 <div>
@@ -962,6 +1109,7 @@
                 <a href="{% url 'recommendations:home' %}" class="btn ghost">See All Products</a>
             </div>
         </section>
+        </div>{# /recommendations-section #}
         {% endif %}
 
         <!-- HOW IT WORKS -->
