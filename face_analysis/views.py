@@ -128,7 +128,7 @@ def index(request):
                         query = {
                             "skin_type": skin_type,
                             "concerns": final_concerns,
-                            "allergies": []  # Can be extended to include user allergies
+                            "allergies": [a.strip() for a in request.POST.get("allergies", "").split(",") if a.strip()],
                         }
 
                         # Use TF-IDF based recommendations with active ingredients and allergy warnings

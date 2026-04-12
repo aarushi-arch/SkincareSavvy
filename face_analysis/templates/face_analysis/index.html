@@ -673,7 +673,9 @@
                 </div>
 
                 <div class="upload-actions">
-                    <button type="submit" class="btn primary" id="scan-button" disabled>Scan Photo</button>
+                    <button type="button" class="btn primary" id="scan-button" disabled
+                            onclick="openAllergyModal()">Scan Photo</button>
+                    <input type="hidden" name="allergies" id="allergies-input" value="">
                     <div id="loading-indicator"
                         style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600; align-items: center;">
                         <span
@@ -1270,7 +1272,8 @@
                     display: flex;
                     flex-direction: column;
                     background: white;"
-                    data-type="{{ product.type|default:'skincare'|lower }}">
+                    data-type="{{ product.type|default:'skincare'|lower }}"
+                    data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
 
                     <div class="card-header" style="margin-bottom: 1rem;">
                         {% if product.image_url %}
@@ -1310,6 +1313,14 @@
                         font-size: 0.8rem;">
                         {{ product.brand }}
                     </p>
+
+                    {% if product.price %}
+                    <div style="margin: 0 0 1rem 0;">
+                        <span style="font-size:1.1rem;font-weight:700;color:#166534;">
+                            {{ product.price }}
+                        </span>
+                    </div>
+                    {% endif %}
 
                     <!-- Key Benefits -->
                     {% if product.concern %}
@@ -1482,17 +1493,45 @@
                 border-color: transparent;
                 box-shadow: 0 3px 10px rgba(22,163,74,.3);
             }
+            .price-filter {
+                padding: 5px 14px;
+                border-radius: 50px;
+                border: 1.5px solid #e2e8f0;
+                background: #fff;
+                color: #475569;
+                font-size: .78rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
+                white-space: nowrap;
+            }
+            .price-filter:hover {
+                background: #f8fafc;
+                border-color: #94a3b8;
+            }
+            .price-filter.active {
+                background: linear-gradient(135deg, #0f172a, #1e293b);
+                color: #fff;
+                border-color: transparent;
+                box-shadow: 0 3px 10px rgba(15,23,42,.2);
+            }
         </style>
 
         <script>
             (function () {
-                var bar = document.getElementById('rec-filter-bar');
-                if (!bar) return;
+                var catBar   = document.getElementById('rec-filter-bar');
+                var priceBar = document.getElementById('price-filter-bar');
+                if (!catBar) return;
 
                 var cards = document.querySelectorAll('.product-card');
 
-                // Build per-category counts and show them on buttons
-                bar.querySelectorAll('.rec-filter[data-filter]').forEach(function (btn) {
+                // Active filter state
+                var activeCat   = 'all';
+                var activeMin   = 0;
+                var activeMax   = 99999;
+
+                // Build per-category counts
+                catBar.querySelectorAll('.rec-filter[data-filter]').forEach(function (btn) {
                     var filter = btn.dataset.filter;
                     if (filter === 'all') {
                         btn.textContent = 'All (' + cards.length + ')';
@@ -1503,32 +1542,48 @@
                         if ((card.dataset.type || '').toLowerCase() === filter) count++;
                     });
                     btn.textContent = btn.textContent.split('(')[0].trim() + ' (' + count + ')';
-                    // Hide button entirely if no products in that category
                     if (count === 0) btn.style.display = 'none';
                 });
 
-                bar.addEventListener('click', function (e) {
-                    var btn = e.target.closest('.rec-filter');
-                    if (!btn) return;
-
-                    bar.querySelectorAll('.rec-filter').forEach(function (b) {
-                        b.classList.remove('active');
-                    });
-                    btn.classList.add('active');
-
-                    var filter = btn.dataset.filter;
+                function applyFilters() {
                     var visible = 0;
-
                     cards.forEach(function (card) {
-                        var type = (card.dataset.type || '').toLowerCase();
-                        var show = filter === 'all' || type === filter;
+                        var type  = (card.dataset.type || '').toLowerCase();
+                        var price = parseInt((card.dataset.price || '0').replace(/[^\d]/g, ''), 10) || 0;
+
+                        var catMatch   = activeCat === 'all' || type === activeCat;
+                        var priceMatch = price >= activeMin && price <= activeMax;
+                        var show = catMatch && priceMatch;
+
                         card.style.display = show ? '' : 'none';
                         if (show) visible++;
                     });
-
                     document.getElementById('rec-no-results').style.display =
                         visible === 0 ? 'block' : 'none';
+                }
+
+                // Category filter clicks
+                catBar.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.rec-filter');
+                    if (!btn) return;
+                    catBar.querySelectorAll('.rec-filter').forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    activeCat = btn.dataset.filter;
+                    applyFilters();
                 });
+
+                // Price filter clicks
+                if (priceBar) {
+                    priceBar.addEventListener('click', function (e) {
+                        var btn = e.target.closest('.price-filter');
+                        if (!btn) return;
+                        priceBar.querySelectorAll('.price-filter').forEach(function (b) { b.classList.remove('active'); });
+                        btn.classList.add('active');
+                        activeMin = parseInt(btn.dataset.min, 10);
+                        activeMax = parseInt(btn.dataset.max, 10);
+                        applyFilters();
+                    });
+                }
             })();
         </script>
         {% endif %}
@@ -1563,6 +1618,180 @@
         </section>
 
     </main>
+
+    <!-- ── Allergy Modal ── -->
+    <div id="allergy-modal"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+                z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+        <div style="background:#fff;border-radius:24px;padding:2.5rem;max-width:560px;
+                    width:100%;box-shadow:0 30px 60px rgba(0,0,0,.18);
+                    max-height:90vh;overflow-y:auto;">
+
+            <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.3rem;font-weight:700;">
+                🌿 Any ingredient allergies?
+            </h3>
+            <p style="margin:0 0 1.5rem;color:#64748b;font-size:.88rem;line-height:1.55;">
+                Select any ingredients you're allergic or sensitive to.
+                We'll flag products that contain them. Skip if none apply.
+            </p>
+
+            <div id="allergy-groups" style="display:flex;flex-direction:column;gap:1.25rem;">
+
+                <div class="ag-group">
+                    <p class="ag-label">Acne / Exfoliants</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="salicylic acid"> Salicylic Acid</label>
+                        <label class="ag-chip"><input type="checkbox" value="benzoyl peroxide"> Benzoyl Peroxide</label>
+                        <label class="ag-chip"><input type="checkbox" value="glycolic acid"> Glycolic Acid</label>
+                        <label class="ag-chip"><input type="checkbox" value="lactic acid"> Lactic Acid</label>
+                        <label class="ag-chip"><input type="checkbox" value="azelaic acid"> Azelaic Acid</label>
+                    </div>
+                </div>
+
+                <div class="ag-group">
+                    <p class="ag-label">Retinoids</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="retinol"> Retinol</label>
+                        <label class="ag-chip"><input type="checkbox" value="retinyl palmitate"> Retinyl Palmitate</label>
+                        <label class="ag-chip"><input type="checkbox" value="tretinoin"> Tretinoin</label>
+                        <label class="ag-chip"><input type="checkbox" value="adapalene"> Adapalene</label>
+                    </div>
+                </div>
+
+                <div class="ag-group">
+                    <p class="ag-label">Vitamins &amp; Actives</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="vitamin c"> Vitamin C</label>
+                        <label class="ag-chip"><input type="checkbox" value="niacinamide"> Niacinamide</label>
+                        <label class="ag-chip"><input type="checkbox" value="vitamin e"> Vitamin E</label>
+                        <label class="ag-chip"><input type="checkbox" value="kojic acid"> Kojic Acid</label>
+                        <label class="ag-chip"><input type="checkbox" value="alpha arbutin"> Alpha Arbutin</label>
+                    </div>
+                </div>
+
+                <div class="ag-group">
+                    <p class="ag-label">Fragrances &amp; Preservatives</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="fragrance"> Fragrance / Parfum</label>
+                        <label class="ag-chip"><input type="checkbox" value="alcohol"> Alcohol</label>
+                        <label class="ag-chip"><input type="checkbox" value="phenoxyethanol"> Phenoxyethanol</label>
+                        <label class="ag-chip"><input type="checkbox" value="parabens"> Parabens</label>
+                        <label class="ag-chip"><input type="checkbox" value="formaldehyde"> Formaldehyde</label>
+                    </div>
+                </div>
+
+                <div class="ag-group">
+                    <p class="ag-label">Essential Oils</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="lavender oil"> Lavender Oil</label>
+                        <label class="ag-chip"><input type="checkbox" value="tea tree oil"> Tea Tree Oil</label>
+                        <label class="ag-chip"><input type="checkbox" value="peppermint oil"> Peppermint Oil</label>
+                        <label class="ag-chip"><input type="checkbox" value="eucalyptus oil"> Eucalyptus Oil</label>
+                    </div>
+                </div>
+
+                <div class="ag-group">
+                    <p class="ag-label">Sun Filters</p>
+                    <div class="ag-chips">
+                        <label class="ag-chip"><input type="checkbox" value="oxybenzone"> Oxybenzone</label>
+                        <label class="ag-chip"><input type="checkbox" value="avobenzone"> Avobenzone</label>
+                        <label class="ag-chip"><input type="checkbox" value="octinoxate"> Octinoxate</label>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Selected summary -->
+            <div id="ag-summary" style="margin-top:1.25rem;min-height:24px;font-size:.82rem;color:#166534;font-weight:600;"></div>
+
+            <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+                <button onclick="confirmAllergies()"
+                        style="flex:1;padding:13px;border-radius:50px;border:none;
+                               background:linear-gradient(135deg,#16a34a,#0b3b17);
+                               color:#fff;font-weight:700;font-size:.92rem;cursor:pointer;">
+                    Continue to Analysis →
+                </button>
+                <button onclick="skipAllergies()"
+                        style="padding:13px 20px;border-radius:50px;border:1.5px solid #e2e8f0;
+                               background:transparent;color:#64748b;font-weight:600;
+                               font-size:.88rem;cursor:pointer;">
+                    Skip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .ag-group { }
+        .ag-label {
+            font-size:.7rem;font-weight:700;letter-spacing:1.2px;
+            text-transform:uppercase;color:#94a3b8;margin:0 0 .6rem;
+        }
+        .ag-chips { display:flex;flex-wrap:wrap;gap:.4rem; }
+        .ag-chip {
+            display:flex;align-items:center;gap:.35rem;
+            padding:5px 12px;border-radius:20px;
+            border:1.5px solid #e2e8f0;background:#f8fafc;
+            font-size:.8rem;color:#334155;cursor:pointer;
+            transition:border-color .15s,background .15s;
+            user-select:none;
+        }
+        .ag-chip:hover { border-color:#16a34a;background:#f0fdf4; }
+        .ag-chip input[type="checkbox"] { display:none; }
+        .ag-chip.selected {
+            border-color:#16a34a;background:#dcfce7;color:#166534;font-weight:600;
+        }
+    </style>
+
+    <script>
+        // Toggle chip selection
+        document.querySelectorAll('.ag-chip').forEach(function(chip) {
+            chip.addEventListener('click', function() {
+                chip.classList.toggle('selected');
+                updateSummary();
+            });
+        });
+
+        function updateSummary() {
+            var selected = getSelected();
+            var el = document.getElementById('ag-summary');
+            if (selected.length === 0) {
+                el.textContent = '';
+            } else {
+                el.textContent = '⚠ Flagging: ' + selected.map(function(s) {
+                    return s.charAt(0).toUpperCase() + s.slice(1);
+                }).join(', ');
+            }
+        }
+
+        function getSelected() {
+            return Array.from(document.querySelectorAll('.ag-chip.selected'))
+                        .map(function(c) { return c.querySelector('input').value; });
+        }
+
+        function openAllergyModal() {
+            document.getElementById('allergy-modal').style.display = 'flex';
+        }
+
+        function confirmAllergies() {
+            var selected = getSelected();
+            document.getElementById('allergies-input').value = selected.join(',');
+            document.getElementById('allergy-modal').style.display = 'none';
+            // Now actually submit the form
+            document.getElementById('allergies-input').closest('form').submit();
+        }
+
+        function skipAllergies() {
+            document.getElementById('allergies-input').value = '';
+            document.getElementById('allergy-modal').style.display = 'none';
+            document.getElementById('allergies-input').closest('form').submit();
+        }
+
+        // Close on backdrop click
+        document.getElementById('allergy-modal').addEventListener('click', function(e) {
+            if (e.target === this) skipAllergies();
+        });
+    </script>
 
     {# ---------------------- #}
     {# MODERN FOOTER #}
