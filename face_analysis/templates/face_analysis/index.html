@@ -709,156 +709,492 @@
         <!-- RESULTS CARD -->
         {% if analysis_result %}
         <section class="dashboard-container">
-            <div class="panel-head" style="margin-bottom: 2.5rem; text-align: center; display: block;">
-                <p class="eyebrow" style="justify-content: center;">Your Personal Dashboard</p>
-                <h2 style="font-size: 2.2rem; margin-top: 0.5rem;">Skin Analysis Insights</h2>
-                <p class="muted">AI-powered detection of your unique skin characteristics.</p>
+
+            <div class="sa-page-header">
+                <span class="sa-eyebrow">✦ AI Analysis Complete</span>
+                <h2 class="sa-page-title">Your Skin Analysis Report</h2>
+                <p class="sa-page-sub">Powered by CNN + YOLO detection. Results are for informational use only.</p>
             </div>
 
-            <div class="results-card" style="background: white; border-radius: 30px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05); padding: 3rem; max-width: 800px; margin: 0 auto;">
-                <!-- Detected Image -->
-                <div class="result-image-section" style="text-align: center; margin-bottom: 2rem;">
-                    {% if analysis_result.image_base64 %}
-                    <div class="main-face-image-wrapper" style="position: relative; display: inline-block; width: 100%; max-width: 450px; margin: 0 auto;">
-                        <img id="result-face-image" src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}" alt="Your Face Analysis"
-                            class="main-face-image" style="display: block; width: 100%; height: auto;">
-                        {% if analysis_result.face_bbox %}
-                        <div id="face-box" class="face-box"></div>
+            <div class="results-card">
+                <div class="sa-grid">
+
+                    <!-- ── LEFT: image ── -->
+                    <div class="sa-left">
+                        <p class="sa-section-label">📷 Analysed Image</p>
+                        {% if analysis_result.image_base64 %}
+                        <div class="sa-img-wrap">
+                            <img id="result-face-image"
+                                 src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
+                                 alt="Your Face Analysis"
+                                 class="sa-face-img">
+                            <canvas id="sa-bbox-canvas" class="sa-bbox-canvas"></canvas>
+                            {% if analysis_result.face_bbox %}
+                            <div id="face-box" class="face-box"></div>
+                            {% endif %}
+                        </div>
+
+                        {% if analysis_result.all_detected_concerns %}
+                        <div class="sa-legend">
+                            {% for c in analysis_result.all_detected_concerns %}
+                            <span class="sa-legend-pill sa-color-{{ c.name|lower|cut:' ' }}">
+                                {{ c.name|title }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% else %}
+                        <div class="sa-img-placeholder">No image available</div>
                         {% endif %}
                     </div>
-                    {% else %}
-                    <div class="main-face-image"
-                        style="background: #eee; height: 300px; display: flex; align-items: center; justify-content: center; border-radius: 20px;">
-                        <p class="muted">Analysis Image</p>
-                    </div>
-                    {% endif %}
-                </div>
 
-                <!-- Skin Type -->
-                {% if analysis_result.skin_type_label %}
-                <div class="skin-type-section" style="text-align: center; margin-bottom: 2rem;">
-                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 0.5rem;">Skin Type</h3>
-                    <span style="font-size: 1.5rem; font-weight: 700; color: #0b3b17;">{{ analysis_result.skin_type_label }}</span>
-                </div>
-                {% endif %}
+                    <!-- ── RIGHT: results ── -->
+                    <div class="sa-right">
 
-                <!-- Detected Concerns -->
-                {% if analysis_result.all_detected_concerns %}
-                <div class="concerns-section">
-                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 1rem; text-align: center;">Detected Concerns</h3>
-                    <div class="concerns-list" style="display: flex; flex-direction: column; gap: 1rem;">
-                        {% for c in analysis_result.all_detected_concerns %}
-                        <div class="concern-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(11, 59, 23, 0.05); border-radius: 10px; border-left: 4px solid #0b3b17;">
-                            <span class="concern-name" style="font-weight: 600; color: var(--text);">{{ c.name|title }}</span>
-                            <span class="concern-confidence" style="font-weight: 700; color: #0b3b17;">{{ c.confidence }}%</span>
+                        <div class="sa-right-header">
+                            <h3 class="sa-right-title">Skin Analysis Result</h3>
+                            {% if analysis_result.skin_type_label %}
+                            <span class="sa-skin-badge">{{ analysis_result.skin_type_label }}</span>
+                            {% endif %}
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% elif analysis_result.detected_concerns %}
-                <div class="concerns-section">
-                    <h3 style="color: var(--text); font-weight: 600; margin-bottom: 1rem; text-align: center;">Detected Concerns</h3>
-                    <ul style="margin:0; padding-left:1.2rem; text-align: center;">
-                        {% for c in analysis_result.detected_concerns %}
-                        <li style="font-weight: 600; color: var(--text);">{{ c|title }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-            </div>
 
-            <div class="medical-disclaimer"
-                style="margin-top: 2rem; padding: 1.25rem; border-radius: var(--radius-sm); background: white; border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow);">
-                <p
-                    style="color: var(--muted); font-size: 0.9rem; margin: 0; line-height: 1.5; max-width: 800px; margin: 0 auto;">
-                    <strong>Medical Disclaimer:</strong> The analysis provided by SkincareSavvy is powered by artificial
-                    intelligence and is intended for informational and educational purposes only. It is not a clinical
-                    diagnosis or a replacement for professional medical consultation. Always seek the advice of a
-                    qualified skin health professional with any questions regarding a medical condition.
-                </p>
-            </div>
+                        {% if analysis_result.all_detected_concerns %}
+                        <p class="sa-meta-label">Detected Concerns</p>
+                        <div class="sa-concerns-list">
+                            {% for c in analysis_result.all_detected_concerns %}
+                            <div class="sa-concern-card sa-border-{{ c.name|lower|cut:' ' }}">
+                                <div class="sa-concern-top">
+                                    <div class="sa-concern-title-row">
+                                        <span class="sa-concern-dot sa-dot-{{ c.name|lower|cut:' ' }}"></span>
+                                        <span class="sa-concern-name">
+                                            {% if c.explanation %}{{ c.explanation.title }}{% else %}{{ c.name|title }}{% endif %}
+                                        </span>
+                                        <span class="sa-conf-pct">{{ c.confidence|floatformat:0 }}%</span>
+                                    </div>
+                                    <div class="sa-conf-track">
+                                        <div class="sa-conf-fill sa-fill-{{ c.name|lower|cut:' ' }}"
+                                             style="width:{{ c.confidence }}%"></div>
+                                    </div>
+                                </div>
+                                {% if c.explanation %}
+                                <p class="sa-ai-msg">{{ c.explanation.message }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
 
-            <!-- ── Second Opinion popup (auto-shows after results) ── -->
-            <div id="second-opinion-modal"
-                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-                        z-index:9999;align-items:center;justify-content:center;padding:1rem;">
-                <div style="background:#fff;border-radius:28px;padding:3rem 2.5rem;
-                            max-width:520px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.2);
-                            text-align:center;animation:soSlideUp .35s cubic-bezier(.23,1,.32,1);">
+                        {% elif analysis_result.detected_concerns %}
+                        <p class="sa-meta-label">Detected Concerns</p>
+                        <div class="sa-concerns-list">
+                            {% for c in analysis_result.detected_concerns %}
+                            <div class="sa-concern-card">
+                                <div class="sa-concern-title-row">
+                                    <span class="sa-concern-dot"></span>
+                                    <span class="sa-concern-name">{{ c|title }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
 
-                    <div style="font-size:3rem;margin-bottom:1rem;"></div>
-                    <h2 style="margin:0 0 .6rem;color:#0b3b17;font-size:1.6rem;font-weight:700;">
-                        Does this look correct?
-                    </h2>
-                    <p style="color:#7a8b81;font-size:.95rem;margin:0 0 2rem;line-height:1.6;">
-                        Our AI has analysed your skin. Let us know if the results look right —
-                        we'll only show product recommendations if you're happy with the analysis.
-                    </p>
+                        {% else %}
+                        <div class="sa-no-concerns">
+                            <span class="sa-no-icon">✅</span>
+                            <p>No significant concerns detected</p>
+                        </div>
+                        {% endif %}
 
-                    <div style="display:flex;flex-direction:column;gap:.9rem;">
-                        <button onclick="secondOpinionYes()"
-                                style="padding:16px 24px;border-radius:50px;border:none;
-                                       background:#0b3b17;color:#fff;font-weight:700;
-                                       font-size:1rem;cursor:pointer;letter-spacing:.3px;
-                                       transition:opacity .2s;"
-                                onmouseover="this.style.opacity='.85'"
-                                onmouseout="this.style.opacity='1'">
-                            ✓ &nbsp;Yes, looks right — show my recommendations
-                        </button>
-                        <button onclick="secondOpinionNo()"
-                                style="padding:16px 24px;border-radius:50px;
-                                       border:2px solid #0b3b17;background:transparent;
-                                       color:#0b3b17;font-weight:600;font-size:1rem;
-                                       cursor:pointer;transition:background .2s,color .2s;"
-                                onmouseover="this.style.background='#f0f7f2'"
-                                onmouseout="this.style.background='transparent'">
-                            ✗ &nbsp;No, not quite right
-                        </button>
-                    </div>
-                </div>
-            </div>
+                        <div class="sa-disclaimer">
+                            <span class="sa-disclaimer-icon">ℹ</span>
+                            <p>Our model detected the above skin concerns based on your image.
+                               Predictions may not be 100% accurate. Consult a dermatologist
+                               for a professional assessment.</p>
+                        </div>
 
-            <!-- ── "No" follow-up modal ── -->
-            <div id="no-opinion-modal"
-                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-                        z-index:10000;align-items:center;justify-content:center;padding:1rem;">
-                <div style="background:#fff;border-radius:28px;padding:3rem 2.5rem;
-                            max-width:460px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.2);
-                            text-align:center;animation:soSlideUp .35s cubic-bezier(.23,1,.32,1);">
-                    <div style="font-size:3rem;margin-bottom:1rem;"></div>
-                    <h2 style="margin:0 0 .6rem;color:#0b3b17;font-size:1.5rem;font-weight:700;">
-                        Not quite right?
-                    </h2>
-                    <p style="color:#7a8b81;font-size:.92rem;margin:0 0 2rem;line-height:1.6;">
-                        No worries — AI isn't perfect. Try again with better lighting and a
-                        centred face, or keep the current results and continue.
-                    </p>
-                    <div style="display:flex;flex-direction:column;gap:.9rem;">
-                        <a href="#uploader"
-                           onclick="closeNoModal()"
-                           style="display:block;padding:15px 24px;border-radius:50px;
-                                  background:#0b3b17;color:#fff;font-weight:700;
-                                  font-size:.95rem;text-decoration:none;">
-                            &nbsp;Re-upload image
+                        <a href="#recommendations-section" class="sa-cta">
+                            View Personalised Recommendations →
                         </a>
-                        <button onclick="dismissAndContinue()"
-                                style="padding:15px 24px;border-radius:50px;
-                                       border:2px solid #ddd;background:transparent;
-                                       color:#555;font-weight:500;font-size:.95rem;cursor:pointer;">
-                            Keep results &amp; continue without recommendations
-                        </button>
+
                     </div>
                 </div>
+            </div>
+
+            <div class="sa-medical-bar">
+                <strong>Medical Disclaimer:</strong> This analysis is AI-generated and intended
+                for informational purposes only. It is not a clinical diagnosis. Always seek
+                advice from a qualified dermatologist.
             </div>
 
         </section>
 
         <style>
-            @keyframes soSlideUp {
-                from { opacity:0;transform:translateY(40px); }
-                to   { opacity:1;transform:translateY(0); }
+            /* ── Page header ── */
+            .sa-page-header {
+                text-align: center;
+                margin-bottom: 2.5rem;
+            }
+            .sa-eyebrow {
+                display: inline-block;
+                font-size: .72rem;
+                font-weight: 700;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: #166534;
+                margin-bottom: .5rem;
+            }
+            .sa-page-title {
+                font-size: 2rem;
+                font-weight: 800;
+                color: #0f172a;
+                margin: .25rem 0 .5rem;
+            }
+            .sa-page-sub {
+                color: #64748b;
+                font-size: .9rem;
+                margin: 0;
+            }
+
+            /* ── Card shell ── */
+            .results-card {
+                background: #fff;
+                border-radius: 24px;
+                box-shadow: 0 4px 6px rgba(0,0,0,.04), 0 20px 50px rgba(0,0,0,.07);
+                overflow: hidden;
+                max-width: 1040px;
+                margin: 0 auto;
+            }
+
+            /* ── Two-column grid ── */
+            .sa-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+            @media (max-width: 720px) {
+                .sa-grid { grid-template-columns: 1fr; }
+            }
+
+            /* ── Left panel ── */
+            .sa-left {
+                padding: 2rem;
+                background: #f8fafc;
+                border-right: 1px solid #e8edf2;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .sa-img-wrap {
+                position: relative;
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 4px 20px rgba(0,0,0,.1);
+                line-height: 0;
+            }
+            .sa-face-img {
+                width: 100%;
+                display: block;
+                border-radius: 16px;
+            }
+            .sa-bbox-canvas {
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                border-radius: 16px;
+                pointer-events: none;
+            }
+            .sa-img-placeholder {
+                background: #f0f4f8;
+                border-radius: 16px;
+                height: 280px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #aaa;
+                font-size: .9rem;
+            }
+            .sa-legend {
+                display: flex;
+                flex-wrap: wrap;
+                gap: .4rem;
+            }
+            .sa-legend-pill {
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: .75rem;
+                font-weight: 600;
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            /* ── Right panel ── */
+            .sa-right {
+                padding: 2rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                overflow-y: auto;
+                max-height: 600px;
+                background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+            }
+            .sa-right-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: .5rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .sa-right-title {
+                font-size: 1.15rem;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0;
+            }
+            .sa-skin-badge {
+                padding: 5px 16px;
+                border-radius: 20px;
+                background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+                color: #065f46;
+                font-weight: 700;
+                font-size: .85rem;
+                letter-spacing: .3px;
+            }
+
+            /* ── Labels ── */
+            .sa-section-label,
+            .sa-meta-label {
+                font-size: .68rem;
+                font-weight: 700;
+                letter-spacing: 1.4px;
+                text-transform: uppercase;
+                color: #94a3b8;
+                margin: 0;
+            }
+
+            /* ── Concern cards ── */
+            .sa-concerns-list {
+                display: flex;
+                flex-direction: column;
+                gap: .65rem;
+            }
+            .sa-concern-card {
+                background: rgba(255, 255, 255, 0.45);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-radius: 14px;
+                border: 1px solid rgba(255, 255, 255, 0.6);
+                border-left: 4px solid rgba(203, 213, 225, 0.8);
+                padding: .9rem 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: .55rem;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, .06), inset 0 1px 0 rgba(255,255,255,.8);
+                transition: box-shadow .2s, transform .15s;
+            }
+            .sa-concern-card:hover {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .1), inset 0 1px 0 rgba(255,255,255,.9);
+                transform: translateY(-1px);
+            }
+            .sa-concern-top { display: flex; flex-direction: column; gap: .4rem; }
+            .sa-concern-title-row {
+                display: flex;
+                align-items: center;
+                gap: .55rem;
+            }
+            .sa-concern-dot {
+                width: 9px; height: 9px;
+                border-radius: 50%;
+                background: #94a3b8;
+                flex-shrink: 0;
+            }
+            .sa-concern-name {
+                font-weight: 700;
+                font-size: .9rem;
+                color: #1e293b;
+                flex: 1;
+            }
+            .sa-conf-pct {
+                font-size: .82rem;
+                font-weight: 700;
+                color: #475569;
+                flex-shrink: 0;
+            }
+            .sa-conf-track {
+                height: 6px;
+                background: #e2e8f0;
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .sa-conf-fill {
+                height: 100%;
+                border-radius: 3px;
+                background: linear-gradient(90deg, #16a34a, #4ade80);
+                transition: width .6s ease;
+            }
+            .sa-ai-msg {
+                margin: 0;
+                font-size: .78rem;
+                color: #64748b;
+                line-height: 1.6;
+                padding-top: .45rem;
+                border-top: 1px solid #e8edf2;
+            }
+
+            /* ── Colour coding per concern ── */
+            /* Accent borders */
+            .sa-border-acne          { border-left-color: #ef4444; }
+            .sa-border-blackheads,
+            .sa-border-blackheades   { border-left-color: #f59e0b; }
+            .sa-border-darkspots,
+            .sa-border-dark_spots    { border-left-color: #8b5cf6; }
+            .sa-border-wrinkles      { border-left-color: #22c55e; }
+            .sa-border-pores         { border-left-color: #10b981; }
+            /* Dots */
+            .sa-dot-acne             { background: #ef4444; }
+            .sa-dot-blackheads,
+            .sa-dot-blackheades      { background: #f59e0b; }
+            .sa-dot-darkspots,
+            .sa-dot-dark_spots       { background: #8b5cf6; }
+            .sa-dot-wrinkles         { background: #22c55e; }
+            .sa-dot-pores            { background: #10b981; }
+            /* Progress fills */
+            .sa-fill-acne            { background: linear-gradient(90deg,#ef4444,#f87171); }
+            .sa-fill-blackheads,
+            .sa-fill-blackheades     { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+            .sa-fill-darkspots,
+            .sa-fill-dark_spots      { background: linear-gradient(90deg,#8b5cf6,#a78bfa); }
+            .sa-fill-wrinkles        { background: linear-gradient(90deg,#22c55e,#86efac); }
+            .sa-fill-pores           { background: linear-gradient(90deg,#10b981,#34d399); }
+
+            /* ── No concerns ── */
+            .sa-no-concerns {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 1.5rem;
+                background: #f0fdf4;
+                border-radius: 12px;
+                border: 1px solid #bbf7d0;
+                text-align: center;
+                gap: .4rem;
+            }
+            .sa-no-icon { font-size: 1.8rem; }
+            .sa-no-concerns p {
+                margin: 0;
+                font-weight: 600;
+                color: #065f46;
+                font-size: .9rem;
+            }
+
+            /* ── Disclaimer ── */
+            .sa-disclaimer {
+                display: flex;
+                gap: .75rem;
+                align-items: flex-start;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 12px;
+                padding: .9rem 1rem;
+                margin-top: auto;
+            }
+            .sa-disclaimer-icon {
+                font-size: 1rem;
+                color: #166534;
+                flex-shrink: 0;
+                font-weight: 700;
+                line-height: 1.5;
+            }
+            .sa-disclaimer p {
+                margin: 0;
+                font-size: .78rem;
+                color: #14532d;
+                line-height: 1.6;
+            }
+
+            /* ── CTA ── */
+            .sa-cta {
+                display: block;
+                text-align: center;
+                padding: 13px 24px;
+                border-radius: 50px;
+                background: linear-gradient(135deg, #16a34a 0%, #0b3b17 100%);
+                color: #fff;
+                font-weight: 700;
+                font-size: .92rem;
+                text-decoration: none;
+                letter-spacing: .3px;
+                transition: opacity .2s, transform .15s, box-shadow .2s;
+                box-shadow: 0 4px 14px rgba(22,163,74,.3);
+            }
+            .sa-cta:hover {
+                opacity: .92;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(22,163,74,.4);
+                color: #fff;
+            }
+
+            /* ── Medical bar ── */
+            .sa-medical-bar {
+                max-width: 1040px;
+                margin: 1.5rem auto 0;
+                padding: 1rem 1.5rem;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                font-size: .82rem;
+                color: #64748b;
+                line-height: 1.6;
+                text-align: center;
+                box-shadow: 0 2px 8px rgba(0,0,0,.04);
             }
         </style>
+
+        <script>
+            /* Draw face bounding box on the canvas overlay */
+            (function() {
+                {% if analysis_result.face_bbox %}
+                var bbox   = {{ analysis_result.face_bbox|safe }};
+                var img    = document.getElementById('result-face-image');
+                var canvas = document.getElementById('sa-bbox-canvas');
+                if (!img || !canvas) return;
+
+                function drawBox() {
+                    canvas.width  = img.naturalWidth  || img.offsetWidth;
+                    canvas.height = img.naturalHeight || img.offsetHeight;
+                    var scaleX = img.offsetWidth  / (img.naturalWidth  || img.offsetWidth);
+                    var scaleY = img.offsetHeight / (img.naturalHeight || img.offsetHeight);
+                    var ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    /* Face bounding box — teal glow */
+                    var x = bbox.x * scaleX, y = bbox.y * scaleY;
+                    var w = bbox.width * scaleX, h = bbox.height * scaleY;
+                    ctx.shadowColor   = 'rgba(34,197,94,.6)';
+                    ctx.shadowBlur    = 8;
+                    ctx.strokeStyle   = '#16a34a';
+                    ctx.lineWidth     = 2;
+                    ctx.strokeRect(x, y, w, h);
+                    ctx.shadowBlur    = 0;
+
+                    /* Label badge */
+                    ctx.font      = 'bold 11px system-ui,sans-serif';
+                    var label     = 'Face';
+                    var tw        = ctx.measureText(label).width;
+                    var lx = x, ly = y > 20 ? y - 20 : y + h + 2;
+                    ctx.fillStyle = 'rgba(6,182,212,.85)';
+                    ctx.beginPath();
+                    ctx.roundRect(lx, ly, tw + 12, 18, 4);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(label, lx + 6, ly + 13);
+                }
+
+                if (img.complete) { drawBox(); }
+                else { img.addEventListener('load', drawBox); }
+                window.addEventListener('resize', drawBox);
+                {% endif %}
+            })();
+        </script>
 
         <script>
             // Auto-scroll to results card after analysis completes
@@ -876,58 +1212,15 @@
             // Show popup only after user has scrolled completely past the results card
             window.addEventListener('DOMContentLoaded', function() {
                 {% if analysis_result %}
-                var popupShown = false;
-
-                window.addEventListener('scroll', function() {
-                    if (popupShown) return;
-                    var resultsCard = document.querySelector('.results-card');
-                    if (!resultsCard) return;
-                    // Fire only when the very bottom of the card is above the viewport
-                    if (resultsCard.getBoundingClientRect().bottom < 0) {
-                        popupShown = true;
-                        document.getElementById('second-opinion-modal').style.display = 'flex';
-                    }
-                }, { passive: true });
+                // Recommendations are always visible — no popup needed
                 {% endif %}
-            });
-
-            function secondOpinionYes() {
-                // Close popup and reveal recommendations
-                document.getElementById('second-opinion-modal').style.display = 'none';
-                const rec = document.getElementById('recommendations-section');
-                if (rec) {
-                    rec.style.display = 'block';
-                    rec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }
-
-            function secondOpinionNo() {
-                document.getElementById('second-opinion-modal').style.display = 'none';
-                document.getElementById('no-opinion-modal').style.display = 'flex';
-            }
-
-            function closeNoModal() {
-                document.getElementById('no-opinion-modal').style.display = 'none';
-            }
-
-            function dismissAndContinue() {
-                closeNoModal();
-                // Recommendations stay hidden — user chose to skip
-            }
-
-            // Backdrop clicks close each modal
-            document.getElementById('second-opinion-modal').addEventListener('click', function(e) {
-                if (e.target === this) this.style.display = 'none';
-            });
-            document.getElementById('no-opinion-modal').addEventListener('click', function(e) {
-                if (e.target === this) closeNoModal();
             });
         </script>
 
         {% endif %}
 
         {% if recommended_products %}
-        <div id="recommendations-section" style="display:none;">
+        <div id="recommendations-section">
         <section class="panel result-panel" style="margin-top: 2rem;">
             <div class="panel-head">
                 <div>
@@ -937,6 +1230,20 @@
                         detected concerns.</p>
                 </div>
             </div>
+
+            <!-- ── Category filter bar ── -->
+            <div id="rec-filter-bar" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem;">
+                <button class="rec-filter active" data-filter="all">All</button>
+                <button class="rec-filter" data-filter="moisturiser">Moisturiser</button>
+                <button class="rec-filter" data-filter="serum">Serum</button>
+                <button class="rec-filter" data-filter="sunscreen">Sunscreen</button>
+                <button class="rec-filter" data-filter="cleanser">Cleanser</button>
+                <button class="rec-filter" data-filter="eye care">Eye Care</button>
+            </div>
+
+            <p id="rec-no-results" style="display:none;color:#94a3b8;font-size:.9rem;margin-top:1rem;">
+                No products found in this category.
+            </p>
 
             <div class="product-grid" style="
                 display: grid; 
@@ -952,7 +1259,8 @@
                     transition: transform 0.2s, box-shadow 0.2s;
                     display: flex;
                     flex-direction: column;
-                    background: white;">
+                    background: white;"
+                    data-type="{{ product.type|default:'skincare'|lower }}">
 
                     <div class="card-header" style="margin-bottom: 1rem;">
                         {% if product.image_url %}
@@ -1140,6 +1448,79 @@
             </div>
         </section>
         </div>{# /recommendations-section #}
+
+        <style>
+            .rec-filter {
+                padding: 7px 18px;
+                border-radius: 50px;
+                border: 1.5px solid #d1fae5;
+                background: #fff;
+                color: #166534;
+                font-size: .82rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
+                white-space: nowrap;
+            }
+            .rec-filter:hover {
+                background: #f0fdf4;
+                border-color: #16a34a;
+            }
+            .rec-filter.active {
+                background: linear-gradient(135deg, #16a34a, #0b3b17);
+                color: #fff;
+                border-color: transparent;
+                box-shadow: 0 3px 10px rgba(22,163,74,.3);
+            }
+        </style>
+
+        <script>
+            (function () {
+                var bar = document.getElementById('rec-filter-bar');
+                if (!bar) return;
+
+                var cards = document.querySelectorAll('.product-card');
+
+                // Build per-category counts and show them on buttons
+                bar.querySelectorAll('.rec-filter[data-filter]').forEach(function (btn) {
+                    var filter = btn.dataset.filter;
+                    if (filter === 'all') {
+                        btn.textContent = 'All (' + cards.length + ')';
+                        return;
+                    }
+                    var count = 0;
+                    cards.forEach(function (card) {
+                        if ((card.dataset.type || '').toLowerCase() === filter) count++;
+                    });
+                    btn.textContent = btn.textContent.split('(')[0].trim() + ' (' + count + ')';
+                    // Hide button entirely if no products in that category
+                    if (count === 0) btn.style.display = 'none';
+                });
+
+                bar.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.rec-filter');
+                    if (!btn) return;
+
+                    bar.querySelectorAll('.rec-filter').forEach(function (b) {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+
+                    var filter = btn.dataset.filter;
+                    var visible = 0;
+
+                    cards.forEach(function (card) {
+                        var type = (card.dataset.type || '').toLowerCase();
+                        var show = filter === 'all' || type === filter;
+                        card.style.display = show ? '' : 'none';
+                        if (show) visible++;
+                    });
+
+                    document.getElementById('rec-no-results').style.display =
+                        visible === 0 ? 'block' : 'none';
+                });
+            })();
+        </script>
         {% endif %}
 
         <!-- HOW IT WORKS -->

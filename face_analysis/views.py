@@ -15,6 +15,7 @@ from .models import CNNModel
 from .routine_builder import build_routine
 from .services.cnn import FaceAnalysisPipeline
 from .services.yolo_pipeline import YOLOAnalysisPipeline
+from .utils.skin_explanation import generate_skin_explanation
 from recommendations.recommender_engine import get_recommendations
 from recommendations.models import Product
 
@@ -99,6 +100,11 @@ def index(request):
                             if detected_concerns_with_confidence:
                                 sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
                                 main_concern = sorted_concerns[0]["name"]
+                                # Attach AI explanation to each concern
+                                for c in sorted_concerns:
+                                    c["explanation"] = generate_skin_explanation(
+                                        c["name"], c["confidence"]
+                                    )
                                 analysis_result["all_detected_concerns"] = sorted_concerns
                             else:
                                 main_concern = None
