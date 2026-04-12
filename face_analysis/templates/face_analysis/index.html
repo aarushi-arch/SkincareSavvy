@@ -1241,6 +1241,16 @@
                 <button class="rec-filter" data-filter="eye care">Eye Care</button>
             </div>
 
+            <!-- ── Price range filter ── -->
+            <div id="price-filter-bar" style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.75rem;">
+                <span style="font-size:.78rem;font-weight:600;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase;">Price:</span>
+                <button class="price-filter active" data-min="0" data-max="99999">All</button>
+                <button class="price-filter" data-min="0"    data-max="500">Under NPR 500</button>
+                <button class="price-filter" data-min="500"  data-max="1000">NPR 500–1,000</button>
+                <button class="price-filter" data-min="1000" data-max="2000">NPR 1,000–2,000</button>
+                <button class="price-filter" data-min="2000" data-max="99999">NPR 2,000+</button>
+            </div>
+
             <p id="rec-no-results" style="display:none;color:#94a3b8;font-size:.9rem;margin-top:1rem;">
                 No products found in this category.
             </p>
