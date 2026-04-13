@@ -640,7 +640,8 @@
                         </div>
                         <div id="image-preview" style="display:none;text-align:center;">
                             <img id="preview-img" src="" alt="Preview"
-                                 style="max-width:100%;max-height:200px;border-radius:8px;margin-bottom:.75rem;">
+                                 style="max-width:100%;max-height:320px;border-radius:12px;
+                                        margin-bottom:.75rem;box-shadow:0 4px 16px rgba(0,0,0,.1);">
                             <p class="muted" id="file-name" style="font-size:.8rem;"></p>
                             <button type="button" id="remove-image" class="btn ghost"
                                     style="margin-top:.4rem;font-size:.8rem;">Remove</button>
@@ -691,13 +692,6 @@
             </div>
             {% endif %}
 
-            {% if analysis_result %}
-            <div class="alert success"
-                style="margin-top: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
-                <strong>Analysis Complete!</strong> Scroll down to see results.
-            </div>
-            {% endif %}
-
             <div class="medical-disclaimer"
                 style="margin-top: 1.5rem; padding: 1rem; border-radius: var(--radius-sm); background: var(--primary-soft); border: 1px solid var(--border); text-align: center;">
                 <p style="color: var(--muted); font-size: 0.85rem; margin: 0; line-height: 1.4;">
@@ -723,14 +717,13 @@
 
                     <!-- ── LEFT: image ── -->
                     <div class="sa-left">
-                        <p class="sa-section-label">📷 Analysed Image</p>
+                        <p class="sa-section-label">Analysed Image</p>
                         {% if analysis_result.image_base64 %}
                         <div class="sa-img-wrap">
                             <img id="result-face-image"
                                  src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
                                  alt="Your Face Analysis"
                                  class="sa-face-img">
-                            <canvas id="sa-bbox-canvas" class="sa-bbox-canvas"></canvas>
                             {% if analysis_result.face_bbox %}
                             <div id="face-box" class="face-box"></div>
                             {% endif %}
@@ -1150,53 +1143,6 @@
                 box-shadow: 0 2px 8px rgba(0,0,0,.04);
             }
         </style>
-
-        <script>
-            /* Draw face bounding box on the canvas overlay */
-            (function() {
-                {% if analysis_result.face_bbox %}
-                var bbox   = {{ analysis_result.face_bbox|safe }};
-                var img    = document.getElementById('result-face-image');
-                var canvas = document.getElementById('sa-bbox-canvas');
-                if (!img || !canvas) return;
-
-                function drawBox() {
-                    canvas.width  = img.naturalWidth  || img.offsetWidth;
-                    canvas.height = img.naturalHeight || img.offsetHeight;
-                    var scaleX = img.offsetWidth  / (img.naturalWidth  || img.offsetWidth);
-                    var scaleY = img.offsetHeight / (img.naturalHeight || img.offsetHeight);
-                    var ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                    /* Face bounding box — teal glow */
-                    var x = bbox.x * scaleX, y = bbox.y * scaleY;
-                    var w = bbox.width * scaleX, h = bbox.height * scaleY;
-                    ctx.shadowColor   = 'rgba(34,197,94,.6)';
-                    ctx.shadowBlur    = 8;
-                    ctx.strokeStyle   = '#16a34a';
-                    ctx.lineWidth     = 2;
-                    ctx.strokeRect(x, y, w, h);
-                    ctx.shadowBlur    = 0;
-
-                    /* Label badge */
-                    ctx.font      = 'bold 11px system-ui,sans-serif';
-                    var label     = 'Face';
-                    var tw        = ctx.measureText(label).width;
-                    var lx = x, ly = y > 20 ? y - 20 : y + h + 2;
-                    ctx.fillStyle = 'rgba(6,182,212,.85)';
-                    ctx.beginPath();
-                    ctx.roundRect(lx, ly, tw + 12, 18, 4);
-                    ctx.fill();
-                    ctx.fillStyle = '#fff';
-                    ctx.fillText(label, lx + 6, ly + 13);
-                }
-
-                if (img.complete) { drawBox(); }
-                else { img.addEventListener('load', drawBox); }
-                window.addEventListener('resize', drawBox);
-                {% endif %}
-            })();
-        </script>
 
         <script>
             // Auto-scroll to results card after analysis completes
@@ -1628,11 +1574,12 @@
                     max-height:90vh;overflow-y:auto;">
 
             <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.3rem;font-weight:700;">
-                🌿 Any ingredient allergies?
+                🚫 Any ingredient allergies?
             </h3>
             <p style="margin:0 0 1.5rem;color:#64748b;font-size:.88rem;line-height:1.55;">
-                Select any ingredients you're allergic or sensitive to.
-                We'll flag products that contain them. Skip if none apply.
+                Tap any ingredients you're allergic or sensitive to.
+                Products containing them will be <strong style="color:#dc2626;">excluded</strong>
+                from your recommendations. Skip if none apply.
             </p>
 
             <div id="allergy-groups" style="display:flex;flex-direction:column;gap:1.25rem;">
@@ -1640,62 +1587,62 @@
                 <div class="ag-group">
                     <p class="ag-label">Acne / Exfoliants</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="salicylic acid"> Salicylic Acid</label>
-                        <label class="ag-chip"><input type="checkbox" value="benzoyl peroxide"> Benzoyl Peroxide</label>
-                        <label class="ag-chip"><input type="checkbox" value="glycolic acid"> Glycolic Acid</label>
-                        <label class="ag-chip"><input type="checkbox" value="lactic acid"> Lactic Acid</label>
-                        <label class="ag-chip"><input type="checkbox" value="azelaic acid"> Azelaic Acid</label>
+                        <button type="button" class="ag-chip" data-value="salicylic acid">Salicylic Acid</button>
+                        <button type="button" class="ag-chip" data-value="benzoyl peroxide">Benzoyl Peroxide</button>
+                        <button type="button" class="ag-chip" data-value="glycolic acid">Glycolic Acid</button>
+                        <button type="button" class="ag-chip" data-value="lactic acid">Lactic Acid</button>
+                        <button type="button" class="ag-chip" data-value="azelaic acid">Azelaic Acid</button>
                     </div>
                 </div>
 
                 <div class="ag-group">
                     <p class="ag-label">Retinoids</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="retinol"> Retinol</label>
-                        <label class="ag-chip"><input type="checkbox" value="retinyl palmitate"> Retinyl Palmitate</label>
-                        <label class="ag-chip"><input type="checkbox" value="tretinoin"> Tretinoin</label>
-                        <label class="ag-chip"><input type="checkbox" value="adapalene"> Adapalene</label>
+                        <button type="button" class="ag-chip" data-value="retinol">Retinol</button>
+                        <button type="button" class="ag-chip" data-value="retinyl palmitate">Retinyl Palmitate</button>
+                        <button type="button" class="ag-chip" data-value="tretinoin">Tretinoin</button>
+                        <button type="button" class="ag-chip" data-value="adapalene">Adapalene</button>
                     </div>
                 </div>
 
                 <div class="ag-group">
                     <p class="ag-label">Vitamins &amp; Actives</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="vitamin c"> Vitamin C</label>
-                        <label class="ag-chip"><input type="checkbox" value="niacinamide"> Niacinamide</label>
-                        <label class="ag-chip"><input type="checkbox" value="vitamin e"> Vitamin E</label>
-                        <label class="ag-chip"><input type="checkbox" value="kojic acid"> Kojic Acid</label>
-                        <label class="ag-chip"><input type="checkbox" value="alpha arbutin"> Alpha Arbutin</label>
+                        <button type="button" class="ag-chip" data-value="vitamin c">Vitamin C</button>
+                        <button type="button" class="ag-chip" data-value="niacinamide">Niacinamide</button>
+                        <button type="button" class="ag-chip" data-value="vitamin e">Vitamin E</button>
+                        <button type="button" class="ag-chip" data-value="kojic acid">Kojic Acid</button>
+                        <button type="button" class="ag-chip" data-value="alpha arbutin">Alpha Arbutin</button>
                     </div>
                 </div>
 
                 <div class="ag-group">
                     <p class="ag-label">Fragrances &amp; Preservatives</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="fragrance"> Fragrance / Parfum</label>
-                        <label class="ag-chip"><input type="checkbox" value="alcohol"> Alcohol</label>
-                        <label class="ag-chip"><input type="checkbox" value="phenoxyethanol"> Phenoxyethanol</label>
-                        <label class="ag-chip"><input type="checkbox" value="parabens"> Parabens</label>
-                        <label class="ag-chip"><input type="checkbox" value="formaldehyde"> Formaldehyde</label>
+                        <button type="button" class="ag-chip" data-value="fragrance">Fragrance / Parfum</button>
+                        <button type="button" class="ag-chip" data-value="alcohol">Alcohol</button>
+                        <button type="button" class="ag-chip" data-value="phenoxyethanol">Phenoxyethanol</button>
+                        <button type="button" class="ag-chip" data-value="parabens">Parabens</button>
+                        <button type="button" class="ag-chip" data-value="formaldehyde">Formaldehyde</button>
                     </div>
                 </div>
 
                 <div class="ag-group">
                     <p class="ag-label">Essential Oils</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="lavender oil"> Lavender Oil</label>
-                        <label class="ag-chip"><input type="checkbox" value="tea tree oil"> Tea Tree Oil</label>
-                        <label class="ag-chip"><input type="checkbox" value="peppermint oil"> Peppermint Oil</label>
-                        <label class="ag-chip"><input type="checkbox" value="eucalyptus oil"> Eucalyptus Oil</label>
+                        <button type="button" class="ag-chip" data-value="lavender oil">Lavender Oil</button>
+                        <button type="button" class="ag-chip" data-value="tea tree oil">Tea Tree Oil</button>
+                        <button type="button" class="ag-chip" data-value="peppermint oil">Peppermint Oil</button>
+                        <button type="button" class="ag-chip" data-value="eucalyptus oil">Eucalyptus Oil</button>
                     </div>
                 </div>
 
                 <div class="ag-group">
                     <p class="ag-label">Sun Filters</p>
                     <div class="ag-chips">
-                        <label class="ag-chip"><input type="checkbox" value="oxybenzone"> Oxybenzone</label>
-                        <label class="ag-chip"><input type="checkbox" value="avobenzone"> Avobenzone</label>
-                        <label class="ag-chip"><input type="checkbox" value="octinoxate"> Octinoxate</label>
+                        <button type="button" class="ag-chip" data-value="oxybenzone">Oxybenzone</button>
+                        <button type="button" class="ag-chip" data-value="avobenzone">Avobenzone</button>
+                        <button type="button" class="ag-chip" data-value="octinoxate">Octinoxate</button>
                     </div>
                 </div>
 
@@ -1729,18 +1676,18 @@
         }
         .ag-chips { display:flex;flex-wrap:wrap;gap:.4rem; }
         .ag-chip {
-            display:flex;align-items:center;gap:.35rem;
-            padding:5px 12px;border-radius:20px;
+            display:inline-flex;align-items:center;gap:.35rem;
+            padding:6px 14px;border-radius:20px;
             border:1.5px solid #e2e8f0;background:#f8fafc;
             font-size:.8rem;color:#334155;cursor:pointer;
-            transition:border-color .15s,background .15s;
-            user-select:none;
+            transition:border-color .15s,background .15s,transform .1s;
+            user-select:none;font-family:inherit;
         }
-        .ag-chip:hover { border-color:#16a34a;background:#f0fdf4; }
-        .ag-chip input[type="checkbox"] { display:none; }
+        .ag-chip:hover { border-color:#dc2626;background:#fff5f5;transform:translateY(-1px); }
         .ag-chip.selected {
-            border-color:#16a34a;background:#dcfce7;color:#166534;font-weight:600;
+            border-color:#dc2626;background:#fef2f2;color:#991b1b;font-weight:600;
         }
+        .ag-chip.selected::after { content:" ✕";font-size:.72rem; }
     </style>
 
     <script>
@@ -1755,18 +1702,23 @@
         function updateSummary() {
             var selected = getSelected();
             var el = document.getElementById('ag-summary');
+            var btn = document.querySelector('[onclick="confirmAllergies()"]');
             if (selected.length === 0) {
-                el.textContent = '';
+                el.innerHTML = '';
+                btn.textContent = 'Continue to Analysis →';
             } else {
-                el.textContent = '⚠ Flagging: ' + selected.map(function(s) {
-                    return s.charAt(0).toUpperCase() + s.slice(1);
-                }).join(', ');
+                el.innerHTML = '<span style="background:#fef2f2;color:#991b1b;padding:4px 12px;border-radius:20px;font-weight:700;">'
+                    + '🚫 ' + selected.length + ' ingredient' + (selected.length > 1 ? 's' : '') + ' excluded</span>'
+                    + ' &nbsp;<span style="color:#64748b;font-size:.78rem;">'
+                    + selected.map(function(s){ return s.charAt(0).toUpperCase()+s.slice(1); }).join(', ')
+                    + '</span>';
+                btn.textContent = 'Exclude & Continue →';
             }
         }
 
         function getSelected() {
             return Array.from(document.querySelectorAll('.ag-chip.selected'))
-                        .map(function(c) { return c.querySelector('input').value; });
+                        .map(function(c) { return c.dataset.value; });
         }
 
         function openAllergyModal() {
@@ -1777,13 +1729,14 @@
             var selected = getSelected();
             document.getElementById('allergies-input').value = selected.join(',');
             document.getElementById('allergy-modal').style.display = 'none';
-            // Now actually submit the form
+            showAnalysisLoader();
             document.getElementById('allergies-input').closest('form').submit();
         }
 
         function skipAllergies() {
             document.getElementById('allergies-input').value = '';
             document.getElementById('allergy-modal').style.display = 'none';
+            showAnalysisLoader();
             document.getElementById('allergies-input').closest('form').submit();
         }
 
@@ -1791,6 +1744,89 @@
         document.getElementById('allergy-modal').addEventListener('click', function(e) {
             if (e.target === this) skipAllergies();
         });
+    </script>
+
+    <!-- ── Analysis Loading Modal ── -->
+    <div id="analysis-loader"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+                z-index:10000;align-items:center;justify-content:center;padding:1rem;">
+        <div style="background:#fff;border-radius:24px;padding:2.5rem 2rem;
+                    max-width:380px;width:100%;text-align:center;
+                    box-shadow:0 30px 60px rgba(0,0,0,.2);">
+
+            <!-- Animated ring -->
+            <div style="position:relative;width:72px;height:72px;margin:0 auto 1.5rem;">
+                <svg viewBox="0 0 72 72" style="width:72px;height:72px;animation:loaderSpin 1.2s linear infinite;">
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="#16a34a" stroke-width="5"
+                            stroke-dasharray="60 130" stroke-linecap="round"/>
+                </svg>
+                <span style="position:absolute;inset:0;display:flex;align-items:center;
+                             justify-content:center;font-size:1.5rem;" id="loader-icon">🔍</span>
+            </div>
+
+            <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.15rem;font-weight:700;"
+                id="loader-title">Analysing your photo…</h3>
+            <p style="margin:0 0 1.5rem;color:#64748b;font-size:.85rem;line-height:1.5;"
+               id="loader-msg">Detecting face in image</p>
+
+            <!-- Step progress dots -->
+            <div style="display:flex;justify-content:center;gap:.5rem;" id="loader-dots">
+                <span class="ldot active"></span>
+                <span class="ldot"></span>
+                <span class="ldot"></span>
+                <span class="ldot"></span>
+                <span class="ldot"></span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes loaderSpin { to { transform: rotate(360deg); } }
+        .ldot {
+            width:8px;height:8px;border-radius:50%;
+            background:#e2e8f0;transition:background .3s;
+        }
+        .ldot.active { background:#16a34a; }
+    </style>
+
+    <script>
+        var LOADER_STEPS = [
+            { icon:"🔍", title:"Detecting face…",          msg:"Locating your face in the image" },
+            { icon:"✂️",  title:"Cropping face region…",   msg:"Isolating skin area for analysis" },
+            { icon:"🧠", title:"Running CNN model…",       msg:"Classifying skin type" },
+            { icon:"🔬", title:"Extracting concerns…",     msg:"Identifying skin concerns" },
+            { icon:"💊", title:"Matching products…",       msg:"Finding the best recommendations for you" },
+        ];
+
+        function showAnalysisLoader() {
+            var modal = document.getElementById('analysis-loader');
+            modal.style.display = 'flex';
+
+            var titleEl = document.getElementById('loader-title');
+            var msgEl   = document.getElementById('loader-msg');
+            var iconEl  = document.getElementById('loader-icon');
+            var dots    = document.querySelectorAll('.ldot');
+
+            var step = 0;
+
+            function advance() {
+                if (step >= LOADER_STEPS.length) return;
+                var s = LOADER_STEPS[step];
+                titleEl.textContent = s.title;
+                msgEl.textContent   = s.msg;
+                iconEl.textContent  = s.icon;
+                dots.forEach(function(d, i) {
+                    d.classList.toggle('active', i <= step);
+                });
+                step++;
+                if (step < LOADER_STEPS.length) {
+                    setTimeout(advance, 900);
+                }
+            }
+
+            advance();
+        }
     </script>
 
     {# ---------------------- #}
@@ -1903,18 +1939,38 @@
                         imagePreview.style.display = 'block';
                         scanButton.disabled = false;
                         uploadDrop.classList.add('has-image');
+
+                        // Hide camera pane, expand upload pane to full width
+                        const grid = uploadDrop.closest('[style*="grid-template-columns"]')
+                                  || uploadDrop.parentElement;
+                        const cameraPaneWrapper = document.getElementById('start-camera')
+                                                           .closest('[onclick]');
+                        if (cameraPaneWrapper) cameraPaneWrapper.style.display = 'none';
+                        if (grid && grid.style.gridTemplateColumns) {
+                            grid.style.gridTemplateColumns = '1fr';
+                        }
                     };
                     reader.readAsDataURL(file);
                 }
             });
 
-            // Remove image
+            // Remove image — restore two-column layout
             removeImageBtn.addEventListener('click', function () {
                 fileInput.value = '';
                 uploadPlaceholder.style.display = 'block';
                 imagePreview.style.display = 'none';
                 scanButton.disabled = true;
                 uploadDrop.classList.remove('has-image');
+
+                // Restore camera pane and grid
+                const cameraPaneWrapper = document.getElementById('start-camera')
+                                                   .closest('[onclick]');
+                if (cameraPaneWrapper) cameraPaneWrapper.style.display = '';
+                const grid = uploadDrop.closest('[style*="grid-template-columns"]')
+                          || uploadDrop.parentElement;
+                if (grid && grid.style.gridTemplateColumns !== undefined) {
+                    grid.style.gridTemplateColumns = '1fr 1fr';
+                }
             });
 
             // Drag and drop handlers

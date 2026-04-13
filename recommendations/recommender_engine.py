@@ -632,7 +632,32 @@ def get_recommendations(user_inputs: Dict, top_k: int = 5, ingredient_weight: fl
         # Only keep products that have at least one relevant effect
         mask = data['notable_effects'].apply(has_relevant_effect)
         data = data[mask]
-    
+
+    # Exclude products containing user's allergens
+    user_allergies = user_inputs.get("allergies", [])
+    if user_allergies:
+        def contains_allergen(ingreds_raw):
+            if pd.isna(ingreds_raw) or not ingreds_raw:
+                return False
+            try:
+                if isinstance(ingreds_raw, str) and ingreds_raw.startswith('['):
+                    ingreds = ast.literal_eval(ingreds_raw)
+                else:
+                    ingreds = [i.strip() for i in str(ingreds_raw).split(',')]
+                ingreds_lower = [str(i).lower().strip() for i in ingreds if i]
+            except Exception:
+                ingreds_lower = [str(ingreds_raw).lower()]
+
+            for allergen in user_allergies:
+                allergen_l = allergen.lower().strip()
+                for ing in ingreds_lower:
+                    if allergen_l in ing or ing in allergen_l:
+                        return True
+            return False
+
+        allergen_mask = ~data['clean_ingreds'].apply(contains_allergen)
+        data = data[allergen_mask]
+
     filtered = data.sort_values("score", ascending=False).head(top_k)
     
     recommendations: List[Dict] = []
