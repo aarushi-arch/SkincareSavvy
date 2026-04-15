@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import JournalEntry
 from .forms import JournalEntryForm
+from users.models import Notification
 
 
 @login_required
@@ -19,6 +20,10 @@ def journal_create(request):
             entry = form.save(commit=False)
             entry.user = request.user
             entry.save()
+            Notification.objects.create(
+                user=request.user,
+                message=f"Your journal entry for {entry.date} has been saved successfully."
+            )
             messages.success(request, "Journal entry saved.")
             return redirect("skin_journal:list")
     else:

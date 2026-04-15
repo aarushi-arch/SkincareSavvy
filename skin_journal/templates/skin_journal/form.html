@@ -1,129 +1,320 @@
 {% extends "base.html" %}
 {% block title %}{{ action }} — Skin Journal{% endblock %}
 
+{% block extra_css %}
+<style>
+  .sj-page { background:#f6f8f6; min-height:100vh; padding:2.5rem 0 5rem; }
+  .sj-back { font-size:.8rem; color:#94a3b8; text-decoration:none; letter-spacing:.3px;
+             display:inline-flex; align-items:center; gap:.4rem; margin-bottom:2rem; }
+  .sj-back:hover { color:#0b3b17; }
+  .sj-page-title { font-size:1.5rem; font-weight:700; color:#0b3b17; margin:0 0 .2rem;
+                   letter-spacing:-.3px; }
+  .sj-page-sub   { font-size:.82rem; color:#94a3b8; margin:0 0 2rem; letter-spacing:.2px; }
+
+  .sj-grid { display:grid; grid-template-columns:1fr 360px; gap:1.5rem; align-items:start; }
+  @media(max-width:860px){ .sj-grid { grid-template-columns:1fr; } }
+
+  .sj-card {
+    background:#fff; border-radius:14px; padding:1.5rem;
+    box-shadow:0 1px 4px rgba(0,0,0,.05), 0 4px 16px rgba(11,59,23,.05);
+    border:1px solid #eaf0ea; margin-bottom:1.25rem;
+  }
+  .sj-section-label {
+    font-size:.65rem; font-weight:700; letter-spacing:1.6px;
+    text-transform:uppercase; color:#b0bec5; margin:0 0 1rem;
+  }
+  .sj-field-label {
+    font-size:.78rem; font-weight:600; color:#546e7a;
+    margin-bottom:.4rem; display:block; letter-spacing:.2px;
+  }
+
+  /* Date */
+  .sj-date-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .sj-date-row input[type="date"] {
+    border:1px solid #dce8dc; border-radius:8px; padding:8px 12px;
+    font-size:.85rem; color:#0b3b17; background:#f6fbf6; outline:none;
+  }
+  .sj-date-row input[type="date"]:focus { border-color:#16a34a; }
+
+  /* Select */
+  .sj-select {
+    width:100%; border:1px solid #e0e8e0; border-radius:8px;
+    padding:10px 36px 10px 12px; font-size:.88rem; color:#263238;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b0bec5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    appearance:none; outline:none; cursor:pointer;
+  }
+  .sj-select:focus { border-color:#16a34a; }
+
+  /* Sliders */
+  .sj-concern-row { padding:1rem 0; border-bottom:1px solid #f1f5f1; }
+  .sj-concern-row:last-child { border-bottom:none; padding-bottom:0; }
+  .sj-concern-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; }
+  .sj-concern-name { font-size:.85rem; font-weight:600; color:#37474f; letter-spacing:.1px; }
+  .sj-concern-badge {
+    font-size:.75rem; font-weight:700; min-width:28px; text-align:center;
+    padding:2px 8px; border-radius:20px; background:#f1f5f1; color:#94a3b8;
+    transition:background .2s, color .2s;
+  }
+  .sj-concern-badge.active { background:#e8f5e9; color:#2e7d32; }
+  .sj-slider {
+    -webkit-appearance:none; appearance:none; width:100%; height:4px;
+    border-radius:2px; outline:none; cursor:pointer;
+    background:linear-gradient(to right,#16a34a 0%,#16a34a var(--pct,0%),#e8ede8 var(--pct,0%),#e8ede8 100%);
+  }
+  .sj-slider::-webkit-slider-thumb {
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:#fff; border:2px solid #16a34a; box-shadow:0 1px 4px rgba(22,163,74,.25);
+  }
+  .sj-slider::-moz-range-thumb {
+    width:16px; height:16px; border-radius:50%;
+    background:#fff; border:2px solid #16a34a; box-shadow:0 1px 4px rgba(22,163,74,.25);
+  }
+  .sj-scale { display:flex; justify-content:space-between;
+              font-size:.65rem; color:#b0bec5; margin-top:.3rem; letter-spacing:.2px; }
+
+  /* Textarea */
+  .sj-textarea {
+    width:100%; border:1px solid #e0e8e0; border-radius:8px;
+    padding:10px 12px; font-size:.87rem; color:#263238; resize:vertical;
+    outline:none; font-family:inherit; line-height:1.6;
+  }
+  .sj-textarea:focus { border-color:#16a34a; }
+
+  /* Regimen buttons */
+  .sj-quick-btns { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem; }
+  .sj-quick-btn {
+    padding:5px 14px; border-radius:6px; border:1px solid #dce8dc;
+    background:#f6fbf6; color:#2e7d32; font-size:.75rem; font-weight:600;
+    cursor:pointer; letter-spacing:.3px; transition:background .15s;
+  }
+  .sj-quick-btn:hover { background:#e8f5e9; }
+
+  /* Upload */
+  .sj-upload {
+    border:1.5px dashed #c8dcc8; border-radius:12px; padding:2.5rem 1rem;
+    text-align:center; cursor:pointer; background:#f9fcf9; position:relative;
+    transition:border-color .2s, background .2s;
+  }
+  .sj-upload:hover { border-color:#16a34a; background:#f0fdf0; }
+  .sj-upload input[type="file"] {
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  }
+  .sj-upload-icon {
+    width:48px; height:48px; border-radius:50%; background:#e8f5e9;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto .75rem;
+  }
+  .sj-upload-icon svg { width:22px; height:22px; stroke:#16a34a; fill:none; stroke-width:1.5; }
+  .sj-upload-title { font-size:.85rem; font-weight:600; color:#37474f; margin:0 0 .2rem; }
+  .sj-upload-hint  { font-size:.72rem; color:#b0bec5; margin:0; }
+
+  /* Insight card */
+  .sj-insight {
+    background:#fff; border:1px solid #eaf0ea; border-radius:14px;
+    padding:1.25rem; margin-bottom:1.25rem;
+    border-left:3px solid #16a34a;
+  }
+  .sj-insight-label { font-size:.62rem; font-weight:700; letter-spacing:1.6px;
+                      text-transform:uppercase; color:#16a34a; margin:0 0 .4rem; }
+  .sj-insight-text  { font-size:.82rem; color:#546e7a; line-height:1.6; margin:0; }
+
+  /* Submit */
+  .sj-submit {
+    width:100%; padding:13px; border-radius:8px; border:none;
+    background:linear-gradient(135deg,#16a34a,#0b3b17);
+    color:#fff; font-weight:600; font-size:.9rem; cursor:pointer;
+    letter-spacing:.3px; transition:opacity .2s, transform .15s;
+    box-shadow:0 2px 8px rgba(22,163,74,.25);
+  }
+  .sj-submit:hover { opacity:.92; transform:translateY(-1px); }
+  .sj-cancel {
+    display:block; text-align:center; margin-top:.75rem;
+    font-size:.8rem; color:#b0bec5; text-decoration:none; letter-spacing:.2px;
+  }
+  .sj-cancel:hover { color:#546e7a; }
+
+  #id_acne_severity, #id_dark_spots_severity, #id_wrinkles_severity { display:none; }
+  #id_image { display:none; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-  <div style="max-width:600px;margin:0 auto;">
+<div class="sj-page">
+<div class="container">
 
-    <a href="{% url 'skin_journal:list' %}"
-       style="font-size:.85rem;color:#64748b;text-decoration:none;display:inline-flex;
-              align-items:center;gap:.3rem;margin-bottom:1.5rem;">
-      ← Back to Journal
-    </a>
+  <a href="{% url 'skin_journal:list' %}" class="sj-back">&#8592; Journal</a>
 
-    <div style="background:#fff;border-radius:20px;padding:2.5rem;
-                box-shadow:0 4px 24px rgba(0,0,0,.08);">
-      <h3 style="font-weight:700;color:#0b3b17;margin:0 0 1.75rem;">{{ action }}</h3>
+  <p class="sj-page-title">{{ action }}</p>
+  <p class="sj-page-sub">Record your skin's condition and track changes over time.</p>
 
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="sj-grid">
 
-        {% for field in form %}
-        {% if field.name in "acne_severity,dark_spots_severity,wrinkles_severity" %}
-        {# rendered separately below #}
-        {% else %}
-        <div class="form-group mb-3">
-          <label style="font-weight:600;font-size:.85rem;color:#374151;margin-bottom:.4rem;display:block;">
-            {{ field.label }}
-          </label>
-          {{ field }}
-          {% if field.errors %}
-          <small class="text-danger">{{ field.errors|join:", " }}</small>
-          {% endif %}
+      <!-- LEFT -->
+      <div>
+
+        <!-- Date -->
+        <div class="sj-card">
+          <p class="sj-section-label">Entry Date</p>
+          <div class="sj-date-row">
+            <span style="font-size:.85rem;color:#546e7a;">Log date</span>
+            {{ form.date }}
+          </div>
+          {% if form.date.errors %}<small class="text-danger">{{ form.date.errors|join:", " }}</small>{% endif %}
         </div>
-        {% endif %}
-        {% endfor %}
 
-        <!-- Skin Concern Severity -->
-        <div class="form-group mb-3">
-          <label style="font-weight:600;font-size:.85rem;color:#374151;margin-bottom:.75rem;display:block;">
-            Skin Concern Severity <span style="font-weight:400;color:#94a3b8;">(0 = none, 5 = severe)</span>
-          </label>
-          <div style="display:flex;flex-direction:column;gap:.75rem;">
+        <!-- Skin condition -->
+        <div class="sj-card">
+          <p class="sj-section-label">Skin Condition</p>
+          <label class="sj-field-label">How does your skin feel today?</label>
+          {{ form.skin_condition }}
+          {% if form.skin_condition.errors %}<small class="text-danger">{{ form.skin_condition.errors|join:", " }}</small>{% endif %}
+        </div>
 
-            <!-- Acne -->
-            <div style="display:flex;align-items:center;gap:1rem;">
-              <span style="width:90px;font-size:.85rem;font-weight:600;color:#374151;">🔴 Acne</span>
-              <div class="severity-picker" data-field="id_acne_severity" data-color="#ef4444">
-                {% for i in "12345" %}<button type="button" class="sev-dot" data-val="{{ forloop.counter }}" style="width:32px;height:32px;border-radius:50%;border:2px solid #ef4444;background:transparent;cursor:pointer;font-size:.8rem;font-weight:700;color:#ef4444;transition:all .15s;">{{ forloop.counter }}</button>{% endfor %}
-              </div>
-              {{ form.acne_severity }}
+        <!-- Concerns -->
+        <div class="sj-card">
+          <p class="sj-section-label">Concern Severity</p>
+          <p style="font-size:.78rem;color:#b0bec5;margin:0 0 .5rem;">Rate from 0 (none) to 5 (severe).</p>
+
+          <div class="sj-concern-row">
+            <div class="sj-concern-header">
+              <span class="sj-concern-name">Acne Breakouts</span>
+              <span class="sj-concern-badge" id="acne-val">0</span>
             </div>
+            <input type="range" min="0" max="5" step="1" value="0" class="sj-slider" id="acne-slider">
+            <div class="sj-scale"><span>None</span><span>Mild</span><span>Moderate</span><span>Severe</span></div>
+            {{ form.acne_severity }}
+          </div>
 
-            <!-- Dark Spots -->
-            <div style="display:flex;align-items:center;gap:1rem;">
-              <span style="width:90px;font-size:.85rem;font-weight:600;color:#374151;">🟣 Dark Spots</span>
-              <div class="severity-picker" data-field="id_dark_spots_severity" data-color="#8b5cf6">
-                {% for i in "12345" %}<button type="button" class="sev-dot" data-val="{{ forloop.counter }}" style="width:32px;height:32px;border-radius:50%;border:2px solid #8b5cf6;background:transparent;cursor:pointer;font-size:.8rem;font-weight:700;color:#8b5cf6;transition:all .15s;">{{ forloop.counter }}</button>{% endfor %}
-              </div>
-              {{ form.dark_spots_severity }}
+          <div class="sj-concern-row">
+            <div class="sj-concern-header">
+              <span class="sj-concern-name">Dark Spots</span>
+              <span class="sj-concern-badge" id="dark-val">0</span>
             </div>
+            <input type="range" min="0" max="5" step="1" value="0" class="sj-slider" id="dark-slider">
+            <div class="sj-scale"><span>None</span><span>Mild</span><span>Moderate</span><span>Severe</span></div>
+            {{ form.dark_spots_severity }}
+          </div>
 
-            <!-- Wrinkles -->
-            <div style="display:flex;align-items:center;gap:1rem;">
-              <span style="width:90px;font-size:.85rem;font-weight:600;color:#374151;">🔵 Wrinkles</span>
-              <div class="severity-picker" data-field="id_wrinkles_severity" data-color="#3b82f6">
-                {% for i in "12345" %}<button type="button" class="sev-dot" data-val="{{ forloop.counter }}" style="width:32px;height:32px;border-radius:50%;border:2px solid #3b82f6;background:transparent;cursor:pointer;font-size:.8rem;font-weight:700;color:#3b82f6;transition:all .15s;">{{ forloop.counter }}</button>{% endfor %}
-              </div>
-              {{ form.wrinkles_severity }}
+          <div class="sj-concern-row">
+            <div class="sj-concern-header">
+              <span class="sj-concern-name">Wrinkles &amp; Fine Lines</span>
+              <span class="sj-concern-badge" id="wrinkle-val">0</span>
             </div>
-
+            <input type="range" min="0" max="5" step="1" value="0" class="sj-slider" id="wrinkle-slider">
+            <div class="sj-scale"><span>None</span><span>Mild</span><span>Moderate</span><span>Severe</span></div>
+            {{ form.wrinkles_severity }}
           </div>
         </div>
 
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit"
-                  style="flex:1;padding:12px;border-radius:50px;border:none;
-                         background:linear-gradient(135deg,#16a34a,#0b3b17);
-                         color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;">
-            Save Entry
-          </button>
-          <a href="{% url 'skin_journal:list' %}"
-             style="padding:12px 20px;border-radius:50px;border:1.5px solid #e2e8f0;
-                    background:transparent;color:#64748b;font-weight:600;
-                    font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;">
-            Cancel
-          </a>
+        <!-- Regimen & notes -->
+        <div class="sj-card">
+          <p class="sj-section-label">Regimen &amp; Notes</p>
+          <div class="sj-quick-btns">
+            <button type="button" class="sj-quick-btn" onclick="appendRegimen('Morning routine: ')">Morning</button>
+            <button type="button" class="sj-quick-btn" onclick="appendRegimen('Night routine: ')">Night</button>
+            <button type="button" class="sj-quick-btn" onclick="appendRegimen('Spot treatment: ')">Spot Treatment</button>
+          </div>
+          <label class="sj-field-label">Products used</label>
+          {{ form.products_used }}
+          {% if form.products_used.errors %}<small class="text-danger">{{ form.products_used.errors|join:", " }}</small>{% endif %}
+          <label class="sj-field-label" style="margin-top:.9rem;">Notes</label>
+          {{ form.notes }}
+          {% if form.notes.errors %}<small class="text-danger">{{ form.notes.errors|join:", " }}</small>{% endif %}
         </div>
-      </form>
 
-      <style>
-        /* hide the actual select — value driven by JS */
-        #id_acne_severity, #id_dark_spots_severity, #id_wrinkles_severity { display:none; }
-      </style>
+      </div>
 
-      <script>
-        document.querySelectorAll('.severity-picker').forEach(function(picker) {
-          var fieldId = picker.dataset.field;
-          var accent  = picker.dataset.color;
-          var select  = document.getElementById(fieldId);
-          var dots    = picker.querySelectorAll('.sev-dot');
+      <!-- RIGHT -->
+      <div>
 
-          function syncDots(val) {
-            dots.forEach(function(d) {
-              var active = parseInt(d.dataset.val) <= parseInt(val);
-              d.style.background = active ? accent : 'transparent';
-              d.style.color      = active ? '#fff'  : accent;
-            });
-          }
-          syncDots(select.value || 0);
+        <!-- Photo upload -->
+        <div class="sj-card">
+          <p class="sj-section-label">Progress Photo</p>
+          <div class="sj-upload" onclick="document.getElementById('id_image').click()">
+            <input type="file" name="{{ form.image.html_name }}" accept="image/*"
+                   id="id_image" onchange="previewImage(this)">
+            <div id="upload-placeholder">
+              <div class="sj-upload-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <p class="sj-upload-title">Upload or capture a photo</p>
+              <p class="sj-upload-hint">JPG, PNG &middot; Max 10 MB</p>
+            </div>
+            <img id="upload-preview" src="" alt="preview"
+                 style="display:none;width:100%;border-radius:8px;max-height:220px;object-fit:cover;">
+          </div>
+          {% if form.image.errors %}<small class="text-danger d-block mt-1">{{ form.image.errors|join:", " }}</small>{% endif %}
+        </div>
 
-          dots.forEach(function(dot) {
-            dot.addEventListener('click', function() {
-              var val = dot.dataset.val;
-              if (select.value === val) {
-                select.value = '0';
-                syncDots(0);
-              } else {
-                select.value = val;
-                syncDots(val);
-              }
-            });
-          });
-        });
-      </script>
+        <!-- Insight -->
+        <div class="sj-insight">
+          <p class="sj-insight-label">Daily Insight</p>
+          <p class="sj-insight-text">
+            Consistent logging reveals patterns invisible day-to-day — such as
+            correlations between product use, diet, and breakout cycles.
+          </p>
+        </div>
+
+        <button type="submit" class="sj-submit">Save Entry</button>
+        <a href="{% url 'skin_journal:list' %}" class="sj-cancel">Discard</a>
+
+      </div>
+
     </div>
+  </form>
 
-  </div>
 </div>
+</div>
+
+<script>
+  function setupSlider(sliderId, valId, hiddenId) {
+    var s = document.getElementById(sliderId);
+    var v = document.getElementById(valId);
+    var h = document.getElementById(hiddenId);
+    if (h && h.value) s.value = h.value;
+    function upd() {
+      var n = s.value;
+      v.textContent = n;
+      h.value = n;
+      s.style.setProperty('--pct', (n/5*100)+'%');
+      v.classList.toggle('active', n > 0);
+    }
+    upd();
+    s.addEventListener('input', upd);
+  }
+  setupSlider('acne-slider','acne-val','id_acne_severity');
+  setupSlider('dark-slider','dark-val','id_dark_spots_severity');
+  setupSlider('wrinkle-slider','wrinkle-val','id_wrinkles_severity');
+
+  function appendRegimen(prefix) {
+    var el = document.getElementById('id_products_used');
+    if (!el) return;
+    el.value = el.value.trim() ? el.value.trim()+'\n'+prefix : prefix;
+    el.focus();
+  }
+
+  function previewImage(input) {
+    if (!input.files || !input.files[0]) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+      document.getElementById('upload-placeholder').style.display = 'none';
+      var img = document.getElementById('upload-preview');
+      img.src = e.target.result; img.style.display = 'block';
+    };
+    r.readAsDataURL(input.files[0]);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var sc = document.getElementById('id_skin_condition');
+    if (sc) sc.className = 'sj-select';
+    var pu = document.getElementById('id_products_used');
+    if (pu) { pu.className = 'sj-textarea'; pu.rows = 2; }
+    var no = document.getElementById('id_notes');
+    if (no) { no.className = 'sj-textarea'; no.rows = 4; }
+    var dt = document.getElementById('id_date');
+    if (dt) dt.style.cssText += 'border:1px solid #dce8dc;border-radius:8px;padding:8px 12px;font-size:.85rem;color:#0b3b17;background:#f6fbf6;outline:none;';
+  });
+</script>
 {% endblock %}

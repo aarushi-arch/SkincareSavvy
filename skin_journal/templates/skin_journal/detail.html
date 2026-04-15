@@ -1,149 +1,161 @@
 {% extends "base.html" %}
 {% block title %}{{ entry.date }} — Skin Journal{% endblock %}
 
+{% block extra_css %}
+<style>
+  .sj-detail-page { background:#f6f8f6; min-height:100vh; padding:2.5rem 0 5rem; }
+  .sj-back { font-size:.8rem; color:#94a3b8; text-decoration:none; letter-spacing:.3px;
+             display:inline-flex; align-items:center; gap:.4rem; margin-bottom:2rem; }
+  .sj-back:hover { color:#0b3b17; }
+
+  .sj-detail-wrap { max-width:700px; margin:0 auto; }
+
+  .sj-detail-header { display:flex; justify-content:space-between; align-items:flex-start;
+                      margin-bottom:1.75rem; flex-wrap:wrap; gap:1rem; }
+  .sj-detail-date { font-size:1.4rem; font-weight:700; color:#0b3b17; margin:0 0 .2rem;
+                    letter-spacing:-.3px; }
+  .sj-detail-meta { font-size:.78rem; color:#94a3b8; margin:0; letter-spacing:.2px; }
+
+  .sj-action-btn {
+    padding:7px 16px; border-radius:6px; font-size:.78rem; font-weight:600;
+    text-decoration:none; letter-spacing:.3px; cursor:pointer;
+    transition:background .15s;
+  }
+  .sj-edit-btn { border:1px solid #c8dcc8; color:#2e7d32; background:#f6fbf6; }
+  .sj-edit-btn:hover { background:#e8f5e9; color:#2e7d32; }
+  .sj-del-btn  { border:1px solid #ffcdd2; color:#c62828; background:#fff; }
+  .sj-del-btn:hover { background:#ffebee; }
+
+  .sj-card {
+    background:#fff; border-radius:14px; padding:1.5rem;
+    box-shadow:0 1px 4px rgba(0,0,0,.04), 0 4px 16px rgba(11,59,23,.04);
+    border:1px solid #eaf0ea; margin-bottom:1.25rem;
+  }
+  .sj-section-label {
+    font-size:.62rem; font-weight:700; letter-spacing:1.6px;
+    text-transform:uppercase; color:#b0bec5; margin:0 0 .9rem;
+  }
+
+  .sj-condition-badge {
+    display:inline-block; padding:4px 12px; border-radius:4px;
+    background:#f0fdf4; color:#2e7d32; font-size:.78rem; font-weight:600;
+    letter-spacing:.4px; text-transform:uppercase;
+  }
+
+  /* Severity bars */
+  .sj-sev-row { display:flex; align-items:center; gap:1rem; margin-bottom:.75rem; }
+  .sj-sev-row:last-child { margin-bottom:0; }
+  .sj-sev-label { width:100px; font-size:.82rem; font-weight:600; color:#546e7a;
+                  flex-shrink:0; letter-spacing:.1px; }
+  .sj-sev-track { flex:1; height:5px; background:#eaf0ea; border-radius:3px; overflow:hidden; }
+  .sj-sev-fill  { height:100%; border-radius:3px; }
+  .sj-sev-num   { font-size:.78rem; font-weight:700; width:28px; text-align:right;
+                  flex-shrink:0; }
+
+  .sj-notes-text { font-size:.9rem; color:#37474f; line-height:1.7; margin:0; }
+
+  .sj-product-pill {
+    display:inline-block; padding:4px 12px; border-radius:4px;
+    background:#f6f8f6; color:#546e7a; font-size:.78rem; font-weight:500;
+    border:1px solid #eaf0ea; margin:.2rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-  <div style="max-width:680px;margin:0 auto;">
+<div class="sj-detail-page">
+<div class="container">
+<div class="sj-detail-wrap">
 
-    <a href="{% url 'skin_journal:list' %}"
-       style="font-size:.85rem;color:#64748b;text-decoration:none;margin-bottom:1.5rem;display:inline-block;">
-      ← Back to Journal
-    </a>
+  <a href="{% url 'skin_journal:list' %}" class="sj-back">&#8592; Journal</a>
 
-    <div style="background:#fff;border-radius:20px;padding:2.5rem;
-                box-shadow:0 4px 24px rgba(0,0,0,.08);">
-
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <h3 style="font-weight:700;color:#0b3b17;margin:0;">
-            {{ entry.date|date:"l, d F Y" }}
-          </h3>
-          <p class="text-muted mb-0" style="font-size:.85rem;">
-            Added {{ entry.created_at|timesince }} ago
-          </p>
-        </div>
-        <div class="d-flex gap-2">
-          <a href="{% url 'skin_journal:edit' entry.pk %}"
-             style="padding:7px 16px;border-radius:20px;border:1.5px solid #0b3b17;
-                    color:#0b3b17;font-size:.82rem;font-weight:600;text-decoration:none;">
-            Edit
-          </a>
-          <form method="post" action="{% url 'skin_journal:delete' entry.pk %}"
-                onsubmit="return confirm('Delete this entry?')">
-            {% csrf_token %}
-            <button type="submit"
-                    style="padding:7px 16px;border-radius:20px;border:1.5px solid #dc2626;
-                           background:transparent;color:#dc2626;font-size:.82rem;
-                           font-weight:600;cursor:pointer;">
-              Delete
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Skin condition badge -->
-      <div class="d-flex gap-2 flex-wrap mb-3">
-        {% if entry.skin_condition %}
-        <span style="padding:5px 14px;border-radius:20px;background:#eff6ff;
-                     color:#1d4ed8;font-weight:600;font-size:.82rem;">
-          {{ entry.get_skin_condition_display }}
-        </span>
-        {% endif %}
-      </div>
-
-      <!-- Image -->
-      {% if entry.image %}
-      <img src="{{ entry.image.url }}" alt="skin photo"
-           style="width:100%;border-radius:14px;margin-bottom:1.5rem;
-                  max-height:320px;object-fit:cover;">
-      {% endif %}
-
-      <!-- Notes -->
-      {% if entry.notes %}
-      <div style="background:#f8fafc;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
-        <p style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-                  color:#94a3b8;margin:0 0 .5rem;">Notes</p>
-        <p style="margin:0;color:#1e293b;line-height:1.65;font-size:.92rem;">{{ entry.notes|linebreaksbr }}</p>
-      </div>
-      {% endif %}
-
-      <!-- Skin concern severity -->
-      {% if entry.acne_severity or entry.dark_spots_severity or entry.wrinkles_severity %}
-      <div style="margin-bottom:1.25rem;">
-        <p style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-                  color:#94a3b8;margin:0 0 .75rem;">Skin Concern Severity</p>
-        <div style="display:flex;flex-direction:column;gap:.6rem;">
-
-          {% if entry.acne_severity %}
-          <div style="display:flex;align-items:center;gap:.75rem;">
-            <span style="width:90px;font-size:.83rem;font-weight:600;color:#374151;">🔴 Acne</span>
-            <div style="display:flex;gap:.3rem;">
-              {% for i in "12345" %}
-              <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;
-                           align-items:center;justify-content:center;font-size:.75rem;font-weight:700;
-                           {% if forloop.counter <= entry.acne_severity %}background:#ef4444;color:#fff;
-                           {% else %}background:#fee2e2;color:#ef4444;{% endif %}">
-                {{ forloop.counter }}
-              </span>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-          {% if entry.dark_spots_severity %}
-          <div style="display:flex;align-items:center;gap:.75rem;">
-            <span style="width:90px;font-size:.83rem;font-weight:600;color:#374151;">🟣 Dark Spots</span>
-            <div style="display:flex;gap:.3rem;">
-              {% for i in "12345" %}
-              <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;
-                           align-items:center;justify-content:center;font-size:.75rem;font-weight:700;
-                           {% if forloop.counter <= entry.dark_spots_severity %}background:#8b5cf6;color:#fff;
-                           {% else %}background:#ede9fe;color:#8b5cf6;{% endif %}">
-                {{ forloop.counter }}
-              </span>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-          {% if entry.wrinkles_severity %}
-          <div style="display:flex;align-items:center;gap:.75rem;">
-            <span style="width:90px;font-size:.83rem;font-weight:600;color:#374151;">🔵 Wrinkles</span>
-            <div style="display:flex;gap:.3rem;">
-              {% for i in "12345" %}
-              <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;
-                           align-items:center;justify-content:center;font-size:.75rem;font-weight:700;
-                           {% if forloop.counter <= entry.wrinkles_severity %}background:#3b82f6;color:#fff;
-                           {% else %}background:#dbeafe;color:#3b82f6;{% endif %}">
-                {{ forloop.counter }}
-              </span>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- Products used -->
-      {% if entry.products_list %}
-      <div>
-        <p style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-                  color:#94a3b8;margin:0 0 .6rem;">Products Used</p>
-        <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
-          {% for p in entry.products_list %}
-          <span style="padding:4px 12px;border-radius:20px;background:#f1f5f9;
-                       color:#475569;font-size:.8rem;font-weight:500;">
-            {{ p }}
-          </span>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
-
+  <div class="sj-detail-header">
+    <div>
+      <p class="sj-detail-date">{{ entry.date|date:"l, d F Y" }}</p>
+      <p class="sj-detail-meta">Logged {{ entry.created_at|timesince }} ago</p>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <a href="{% url 'skin_journal:edit' entry.pk %}" class="sj-action-btn sj-edit-btn">Edit</a>
+      <form method="post" action="{% url 'skin_journal:delete' entry.pk %}"
+            onsubmit="return confirm('Delete this entry?')" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="sj-action-btn sj-del-btn">Delete</button>
+      </form>
     </div>
   </div>
+
+  <!-- Skin condition -->
+  {% if entry.skin_condition %}
+  <div class="sj-card">
+    <p class="sj-section-label">Skin Condition</p>
+    <span class="sj-condition-badge">{{ entry.get_skin_condition_display }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Photo -->
+  {% if entry.image %}
+  <div class="sj-card" style="padding:0;overflow:hidden;">
+    <img src="{{ entry.image.url }}" alt="skin photo"
+         style="width:100%;max-height:340px;object-fit:cover;display:block;">
+  </div>
+  {% endif %}
+
+  <!-- Concern severity -->
+  {% if entry.acne_severity or entry.dark_spots_severity or entry.wrinkles_severity %}
+  <div class="sj-card">
+    <p class="sj-section-label">Concern Severity</p>
+
+    {% if entry.acne_severity %}
+    <div class="sj-sev-row">
+      <span class="sj-sev-label">Acne</span>
+      <div class="sj-sev-track">
+        <div class="sj-sev-fill" style="width:{{ entry.acne_severity|floatformat:0 }}0%;background:#ef9a9a;"></div>
+      </div>
+      <span class="sj-sev-num" style="color:#c62828;">{{ entry.acne_severity }}/5</span>
+    </div>
+    {% endif %}
+
+    {% if entry.dark_spots_severity %}
+    <div class="sj-sev-row">
+      <span class="sj-sev-label">Dark Spots</span>
+      <div class="sj-sev-track">
+        <div class="sj-sev-fill" style="width:{{ entry.dark_spots_severity|floatformat:0 }}0%;background:#ce93d8;"></div>
+      </div>
+      <span class="sj-sev-num" style="color:#6a1b9a;">{{ entry.dark_spots_severity }}/5</span>
+    </div>
+    {% endif %}
+
+    {% if entry.wrinkles_severity %}
+    <div class="sj-sev-row">
+      <span class="sj-sev-label">Wrinkles</span>
+      <div class="sj-sev-track">
+        <div class="sj-sev-fill" style="width:{{ entry.wrinkles_severity|floatformat:0 }}0%;background:#90caf9;"></div>
+      </div>
+      <span class="sj-sev-num" style="color:#0d47a1;">{{ entry.wrinkles_severity }}/5</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Notes -->
+  {% if entry.notes %}
+  <div class="sj-card">
+    <p class="sj-section-label">Notes</p>
+    <p class="sj-notes-text">{{ entry.notes|linebreaksbr }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Products -->
+  {% if entry.products_list %}
+  <div class="sj-card">
+    <p class="sj-section-label">Products Used</p>
+    {% for p in entry.products_list %}
+    <span class="sj-product-pill">{{ p }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+</div>
 </div>
 {% endblock %}

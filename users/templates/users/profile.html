@@ -1,240 +1,517 @@
 {% extends "users/base.html" %}
 {% load static %}
 
-{% block title %} Profile Page {% endblock title%}
+{% block title %} Profile Settings {% endblock title%}
 
 {% block content %}
 
-<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Allura&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600;700&family=Allura&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* ----------------------------- */
-/*   SkincareSavvy Profile UI   */
-/* ----------------------------- */
+/* ----------------------------------- */
+/*   SkincareSavvy Premium Profile UI  */
+/* ----------------------------------- */
 
 :root {
     --primary: #0b3b17;
-    --primary-soft: rgba(11, 59, 23, 0.12);
-    --text-muted: #5b6471;
-    --bg: #f4f5f6;
-    --glass: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --radius-lg: 24px;
+    --primary-light: #1a5c2e;
+    --primary-soft: rgba(11, 59, 23, 0.08);
+    --primary-softer: rgba(11, 59, 23, 0.04);
+    --text: #1d1f23;
+    --text-muted: #6b7280;
+    --bg: #f8faf9;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --border: rgba(11, 59, 23, 0.1);
+    --radius-lg: 28px;
+    --radius-md: 16px;
     --radius-sm: 12px;
+    --shadow-soft: 0 4px 24px rgba(11, 59, 23, 0.08);
+    --shadow-medium: 0 8px 32px rgba(11, 59, 23, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    background-color: var(--bg);
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(11, 59, 23, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(11, 59, 23, 0.05) 0%, transparent 40%);
+    background: linear-gradient(135deg, #f8faf9 0%, #eef4f0 50%, #f5f9f6 100%);
     background-attachment: fixed;
     font-family: 'Lato', sans-serif;
-    color: #1d1f23;
+    color: var(--text);
+    min-height: 100vh;
 }
 
-/* CARD */
+/* Main Container */
+.profile-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+/* Profile Card */
 .profile-card {
-    background: var(--glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-    padding: 2.5rem;
-    margin-top: 2rem;
-    margin-bottom: 4rem;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
 }
 
-/* TITLE */
-.profile-header h3 {
+/* Header Section */
+.profile-header {
+    background: linear-gradient(135deg, rgba(11, 59, 23, 0.06) 0%, rgba(11, 59, 23, 0.02) 100%);
+    padding: 3rem 2.5rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-header h2 {
     font-family: 'Lato', sans-serif;
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 600;
     color: var(--primary);
-    margin-bottom: 2rem;
-    text-align: center;
+    margin: 0;
+    letter-spacing: -0.5px;
 }
 
-/* LABELS */
-label.small {
-    font-weight: 600;
-    color: var(--primary);
-    margin-bottom: 0.5rem;
-    display: block;
+.profile-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
 }
 
-/* INPUTS */
-input, textarea, select {
-    border-radius: var(--radius-sm) !important;
-    padding: 12px 16px !important;
-    background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    color: #1d1f23 !important;
-    transition: all 0.3s ease;
-    width: 100%;
+/* Profile Image Section */
+.profile-image-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem;
+    background: linear-gradient(180deg, rgba(11, 59, 23, 0.03) 0%, transparent 100%);
 }
 
-input:focus, textarea:focus, select:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 4px var(--primary-soft) !important;
-    outline: none !important;
+.profile-image-wrapper {
+    position: relative;
+    display: inline-block;
 }
 
-/* PROFILE IMAGE */
-.profile-image-container {
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-.profile-image-container img {
-    border: 4px solid #fff;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+.profile-image-wrapper img {
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    transition: transform 0.3s ease;
+    object-fit: cover;
+    border: 4px solid #ffffff;
+    box-shadow: 
+        0 8px 32px rgba(11, 59, 23, 0.15),
+        0 0 0 6px rgba(11, 59, 23, 0.08);
+    transition: var(--transition);
 }
 
-.profile-image-container img:hover {
-    transform: scale(1.05);
+.profile-image-wrapper img:hover {
+    transform: scale(1.03);
+    box-shadow: 
+        0 12px 40px rgba(11, 59, 23, 0.2),
+        0 0 0 8px rgba(11, 59, 23, 0.12);
 }
 
-.file-upload-btn {
-    margin-top: 1rem;
+/* Change Photo Button */
+.file-upload-wrapper {
+    margin-top: 1.25rem;
 }
 
-/* BUTTON */
-.btn-primary-theme {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 14px 28px;
+.file-upload-input {
+    display: none;
+}
+
+.file-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(11, 59, 23, 0.2);
+    color: var(--primary);
+    background: transparent;
+    border: 1.5px solid rgba(11, 59, 23, 0.25);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.file-upload-label:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.file-upload-label i {
+    font-size: 0.9rem;
+}
+
+/* Form Content */
+.form-content {
+    padding: 2rem 2.5rem 2.5rem;
+}
+
+/* Section Styling */
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.form-section:last-of-type {
+    margin-bottom: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(11, 59, 23, 0.08);
+}
+
+.section-header i {
+    font-size: 1.1rem;
+    color: var(--primary);
+    opacity: 0.7;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--primary);
+    opacity: 0.8;
+}
+
+/* Form Group */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Labels */
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+
+/* Input Styling */
+.form-control {
     width: 100%;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    font-family: 'Lato', sans-serif;
+    color: var(--text);
+    background: #ffffff;
+    border: 1.5px solid rgba(11, 59, 23, 0.12);
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
 }
 
-.btn-primary-theme:hover {
-    background: #094a1e;
+.form-control:hover {
+    border-color: rgba(11, 59, 23, 0.2);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(11, 59, 23, 0.08);
+    background: #ffffff;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Textarea */
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+/* Input with Icon */
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+.input-with-icon .form-control {
+    padding-left: 44px;
+}
+
+/* Date Input */
+input[type="date"].form-control {
+    font-family: 'Lato', sans-serif;
+}
+
+/* Section Divider */
+.section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(11, 59, 23, 0.1), transparent);
+    margin: 2rem 0;
+}
+
+/* Submit Button */
+.submit-section {
+    padding-top: 0.5rem;
+}
+
+.btn-update {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Lato', sans-serif;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 20px rgba(11, 59, 23, 0.25);
+}
+
+.btn-update:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(11, 59, 23, 0.3);
-    color: #fff;
+    box-shadow: 0 8px 28px rgba(11, 59, 23, 0.35);
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
 }
 
-.btn-primary-theme:active {
+.btn-update:active {
     transform: translateY(0);
 }
 
-.alert-danger {
-    background: #fdecea;
-    color: #a83a34;
-    border: 1px solid #f5c6c0;
-    border-radius: var(--radius-sm);
-    padding: 1rem;
-    margin-bottom: 2rem;
+.btn-update i {
+    font-size: 1rem;
 }
 
-.form-group {
+/* Alert */
+.alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
     margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.alert-danger strong {
+    font-weight: 600;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-card {
+    animation: fadeIn 0.5s ease-out;
 }
 </style>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="profile-card">
-                <div class="profile-header">
-                    <h3>Profile Settings</h3>
-                </div>
-                
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    {% if u_form.errors or p_form.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {% for key, value in u_form.errors.items %}
-                                <div><strong>{{ value }}</strong></div>
-                            {% endfor %}
-                            {% for key, value in p_form.errors.items %}
-                                <div><strong>{{ value }}</strong></div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Profile Image -->
-                    <div class="profile-image-container">
-                        {% if user.profile.image and user.profile.image.url %}
-                            <img src="{{ user.profile.image.url }}" width="150" height="150" alt="Profile Image">
-                        {% else %}
-                            <img src="/media/profile_images/default.jpg" width="150" height="150" alt="Default Profile Image">
-                        {% endif %}
-                        <div class="file-upload-btn mt-3">
-                            <label class="small text-center">Change Profile Picture</label>
-                            {{ p_form.image }}
-                        </div>
-                    </div>
-
-                    <!-- User Information -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">Username</label>
-                                {{ u_form.username }}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">Email</label>
-                                {{ u_form.email }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">First Name</label>
-                                {{ u_form.first_name }}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">Last Name</label>
-                                {{ u_form.last_name }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Profile Bio -->
-                    <div class="form-group">
-                        <label class="small">Bio</label>
-                        {{ p_form.bio }}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">Location</label>
-                                {{ p_form.location }}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="small">Birth Date</label>
-                                {{ p_form.birth_date }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary-theme">Update Profile</button>
-                    </div>
-                </form>
+<div class="profile-container">
+    <div class="profile-card">
+        <!-- Header -->
+        <div class="profile-header">
+            <h2>Profile Settings</h2>
+            <p>Manage your personal information and preferences</p>
+        </div>
+        
+        <!-- Profile Image Section -->
+        <div class="profile-image-section">
+            <div class="profile-image-wrapper">
+                {% if user.profile.image and user.profile.image.url %}
+                    <img src="{{ user.profile.image.url }}" alt="Profile Image">
+                {% else %}
+                    <img src="/media/profile_images/default.jpg" alt="Default Profile Image">
+                {% endif %}
             </div>
+            <div class="file-upload-wrapper">
+                <input type="file" name="image" id="id_image" class="file-upload-input" accept="image/*">
+                <label for="id_image" class="file-upload-label">
+                    <i class="fas fa-camera"></i>
+                    Change Photo
+                </label>
+            </div>
+        </div>
+        
+        <!-- Form Content -->
+        <div class="form-content">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {% if u_form.errors or p_form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for key, value in u_form.errors.items %}
+                            <div><strong>{{ value }}</strong></div>
+                        {% endfor %}
+                        {% for key, value in p_form.errors.items %}
+                            <div><strong>{{ value }}</strong></div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Section 1: Account Info -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="section-title">Account Information</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ u_form.username.id_for_label }}">Username</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-user"></i>
+                                <input type="text" name="{{ u_form.username.name }}" 
+                                       id="{{ u_form.username.id_for_label }}" 
+                                       value="{{ u_form.username.value|default:'' }}"
+                                       class="form-control" placeholder="Enter username">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="{{ u_form.email.id_for_label }}">Email</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" name="{{ u_form.email.name }}" 
+                                       id="{{ u_form.email.id_for_label }}" 
+                                       value="{{ u_form.email.value|default:'' }}"
+                                       class="form-control" placeholder="your@email.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Section 2: Personal Info -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-user-circle"></i>
+                        <span class="section-title">Personal Information</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ u_form.first_name.id_for_label }}">First Name</label>
+                            <input type="text" name="{{ u_form.first_name.name }}" 
+                                   id="{{ u_form.first_name.id_for_label }}" 
+                                   value="{{ u_form.first_name.value|default:'' }}"
+                                   class="form-control" placeholder="First name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="{{ u_form.last_name.id_for_label }}">Last Name</label>
+                            <input type="text" name="{{ u_form.last_name.name }}" 
+                                   id="{{ u_form.last_name.id_for_label }}" 
+                                   value="{{ u_form.last_name.value|default:'' }}"
+                                   class="form-control" placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ p_form.birth_date.id_for_label }}">Birth Date</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                                <input type="date" name="{{ p_form.birth_date.name }}" 
+                                       id="{{ p_form.birth_date.id_for_label }}" 
+                                       value="{{ p_form.birth_date.value|default:''|date:'Y-m-d' }}"
+                                       class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="{{ p_form.location.id_for_label }}">Location</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <input type="text" name="{{ p_form.location.name }}" 
+                                       id="{{ p_form.location.id_for_label }}" 
+                                       value="{{ p_form.location.value|default:'' }}"
+                                       class="form-control" placeholder="City, Country">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Section 3: About You -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-heart"></i>
+                        <span class="section-title">About You</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="{{ p_form.bio.id_for_label }}">Bio</label>
+                        <textarea name="{{ p_form.bio.name }}" 
+                                  id="{{ p_form.bio.id_for_label }}" 
+                                  class="form-control" 
+                                  placeholder="Tell us about yourself and your skincare journey...">{{ p_form.bio.value|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="submit-section">
+                    <button type="submit" class="btn-update">
+                        <i class="fas fa-check"></i>
+                        Update Profile
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    // Sync styled file input with actual form field
+    document.getElementById('id_image').addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const label = document.querySelector('.file-upload-label');
+            label.innerHTML = '<i class="fas fa-check"></i> Photo Selected';
+            label.style.background = 'rgba(11, 59, 23, 0.1)';
+            label.style.borderColor = 'var(--primary)';
+        }
+    });
+</script>
+
 {% endblock content %}
 

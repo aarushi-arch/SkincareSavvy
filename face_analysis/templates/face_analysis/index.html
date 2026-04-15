@@ -550,40 +550,13 @@
                         </div>
                     </li>
                     {% if user.is_authenticated %}
-                    <li class="notification-dropdown">
-                        <button class="notification-btn" id="notificationBtn">
-                            Notification
+                    <li>
+                        <a href="{% url 'notifications' %}" style="position:relative;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:inherit;">
+                            Notifications
                             {% if unread_count > 0 %}
-                            <span class="notification-badge">{{ unread_count }}</span>
+                            <span style="background:#e74c3c;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1;">{{ unread_count }}</span>
                             {% endif %}
-                        </button>
-                        <div class="notification-content" id="notificationContent">
-                            <div class="notification-header">
-                                Notifications
-                                {% if unread_count > 0 %}
-                                <span
-                                    style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">{{
-                                    unread_count }} new</span>
-                                {% endif %}
-                            </div>
-                            <div class="notification-body">
-                                {% if unread_notifications %}
-                                {% for notification in unread_notifications %}
-                                <div class="notification-item">
-                                    <span class="message">{{ notification.message }}</span>
-                                    <span class="time">{{ notification.created_at|timesince }} ago</span>
-                                </div>
-                                {% endfor %}
-                                {% else %}
-                                <div class="notification-item" style="text-align: center; padding: 20px;">
-                                    <p style="color: #7a8b81; margin: 0;">No unread notifications</p>
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="notification-footer">
-                                <a href="{% url 'notifications' %}">View All Notifications</a>
-                            </div>
-                        </div>
+                        </a>
                     </li>
                     <li><a href="{% url 'my_cart' %}">My Cart</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
