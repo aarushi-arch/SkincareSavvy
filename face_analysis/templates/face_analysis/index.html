@@ -376,9 +376,11 @@
             .footer-grid {
                 grid-template-columns: 1fr;
             }
+
             .main-footer {
                 padding: 60px 0 30px;
             }
+
             .footer-bottom {
                 flex-direction: column;
                 text-align: center;
@@ -406,8 +408,8 @@
             transform: translateY(-2px);
         }
 
-       
-        
+
+
         /* Real-time YOLO Styles */
         .camera-wrapper {
             position: relative;
@@ -416,13 +418,15 @@
             margin: 0 auto 1.5rem;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             background: #000;
         }
+
         #camera-stream {
             width: 100%;
             display: block;
         }
+
         #drawing-canvas {
             position: absolute;
             top: 0;
@@ -432,6 +436,7 @@
             pointer-events: none;
             z-index: 5;
         }
+
         .realtime-status-badge {
             position: absolute;
             top: 15px;
@@ -444,8 +449,33 @@
             font-weight: 600;
             z-index: 10;
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        /* Face detection status badge (top-right of camera) */
+        .face-status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.3px;
+            transition: background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+            background: rgba(0, 230, 118, 0.88);
+            color: #002d13;
+            box-shadow: 0 2px 12px rgba(0, 230, 118, 0.35);
+        }
+        .face-status-badge.no-face {
+            background: rgba(255, 95, 95, 0.88);
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(255, 95, 95, 0.35);
+        }
+
         .realtime-sidebar {
             width: 100%;
             max-width: 640px;
@@ -457,6 +487,7 @@
             border: 1px solid var(--border);
             display: none;
         }
+
         .realtime-sidebar h4 {
             font-size: 0.9rem;
             text-transform: uppercase;
@@ -467,6 +498,7 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .rt-det-row {
             display: flex;
             align-items: center;
@@ -478,11 +510,23 @@
             font-size: 0.85rem;
             border-left: 4px solid #ccc;
         }
-        .rt-det-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .rt-det-name { font-weight: 600; flex: 1; color: var(--text); }
-        .rt-det-conf { color: var(--muted); font-size: 0.75rem; }
 
-        
+        .rt-det-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .rt-det-name {
+            font-weight: 600;
+            flex: 1;
+            color: var(--text);
+        }
+
+        .rt-det-conf {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 
@@ -606,28 +650,27 @@
                                 border:2px dashed var(--border);border-radius:var(--radius-sm);
                                 padding:2rem 1rem;min-height:180px;background:var(--primary-soft);
                                 cursor:pointer;transition:border-color .2s,background .2s;"
-                         onclick="document.getElementById('start-camera').click()"
-                         onmouseover="this.style.borderColor='var(--primary)';this.style.background='#e8f5ec'"
-                         onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--primary-soft)'">
+                        onclick="document.getElementById('start-camera').click()"
+                        onmouseover="this.style.borderColor='var(--primary)';this.style.background='#e8f5ec'"
+                        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--primary-soft)'">
                         <span style="font-size:2.4rem;margin-bottom:.6rem;"></span>
                         <p style="margin:0;font-weight:600;color:var(--text);font-size:.95rem;">Use Camera</p>
                         <p style="margin:.3rem 0 1rem;font-size:.8rem;color:var(--muted);text-align:center;">
                             Take a live photo
                         </p>
-                        <button type="button" id="start-camera" class="btn ghost"
-                                style="pointer-events:none;">Open Camera</button>
+                        <button type="button" id="start-camera" class="btn ghost" style="pointer-events:none;">Open
+                            Camera</button>
                     </div>
 
                     <!-- Upload pane -->
-                    <label id="upload-drop"
-                           style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    <label id="upload-drop" style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                                   border:2px dashed var(--border);border-radius:var(--radius-sm);
                                   padding:2rem 1rem;min-height:180px;cursor:pointer;margin:0;
                                   transition:border-color .2s,background .2s;"
-                           onmouseover="this.style.borderColor='var(--primary)';this.style.background='#f7faf8'"
-                           onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
-                        <input type="file" name="face_image" accept="image/*" class="file-input"
-                               id="face_image_input" required style="display:none;">
+                        onmouseover="this.style.borderColor='var(--primary)';this.style.background='#f7faf8'"
+                        onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                        <input type="file" name="face_image" accept="image/*" class="file-input" id="face_image_input"
+                            required style="display:none;">
                         <div id="upload-placeholder" style="text-align:center;">
                             <span style="font-size:2.4rem;display:block;margin-bottom:.6rem;"></span>
                             <p style="margin:0;font-weight:600;color:var(--text);font-size:.95rem;">Upload Image</p>
@@ -639,21 +682,22 @@
                             </p>
                         </div>
                         <div id="image-preview" style="display:none;text-align:center;">
-                            <img id="preview-img" src="" alt="Preview"
-                                 style="max-width:100%;max-height:320px;border-radius:12px;
+                            <img id="preview-img" src="" alt="Preview" style="max-width:100%;max-height:320px;border-radius:12px;
                                         margin-bottom:.75rem;box-shadow:0 4px 16px rgba(0,0,0,.1);">
                             <p class="muted" id="file-name" style="font-size:.8rem;"></p>
                             <button type="button" id="remove-image" class="btn ghost"
-                                    style="margin-top:.4rem;font-size:.8rem;">Remove</button>
+                                style="margin-top:.4rem;font-size:.8rem;">Remove</button>
                         </div>
                     </label>
 
                 </div>
 
                 <!-- Camera feed (expands below when active) -->
-                <div id="camera-container" style="display:none;flex-direction:column;align-items:center;margin-bottom:1.5rem;">
+                <div id="camera-container"
+                    style="display:none;flex-direction:column;align-items:center;margin-bottom:1.5rem;">
                     <div class="camera-wrapper">
                         <span id="rt-badge" class="realtime-status-badge">Initializing YOLO...</span>
+                        <span id="face-status-badge" class="face-status-badge" style="display:none;"></span>
                         <video id="camera-stream" autoplay playsinline></video>
                         <canvas id="drawing-canvas"></canvas>
                     </div>
@@ -675,7 +719,7 @@
 
                 <div class="upload-actions">
                     <button type="button" class="btn primary" id="scan-button" disabled
-                            onclick="openAllergyModal()">Scan Photo</button>
+                        onclick="openAllergyModal()">Scan Photo</button>
                     <input type="hidden" name="allergies" id="allergies-input" value="">
                     <div id="loading-indicator"
                         style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600; align-items: center;">
@@ -720,10 +764,8 @@
                         <p class="sa-section-label">Analysed Image</p>
                         {% if analysis_result.image_base64 %}
                         <div class="sa-img-wrap">
-                            <img id="result-face-image"
-                                 src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
-                                 alt="Your Face Analysis"
-                                 class="sa-face-img">
+                            <img id="result-face-image" src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
+                                alt="Your Face Analysis" class="sa-face-img">
                             {% if analysis_result.face_bbox %}
                             <div id="face-box" class="face-box"></div>
                             {% endif %}
@@ -763,13 +805,14 @@
                                     <div class="sa-concern-title-row">
                                         <span class="sa-concern-dot sa-dot-{{ c.name|lower|cut:' ' }}"></span>
                                         <span class="sa-concern-name">
-                                            {% if c.explanation %}{{ c.explanation.title }}{% else %}{{ c.name|title }}{% endif %}
+                                            {% if c.explanation %}{{ c.explanation.title }}{% else %}{{ c.name|title
+                                            }}{% endif %}
                                         </span>
                                         <span class="sa-conf-pct">{{ c.confidence|floatformat:0 }}%</span>
                                     </div>
                                     <div class="sa-conf-track">
                                         <div class="sa-conf-fill sa-fill-{{ c.name|lower|cut:' ' }}"
-                                             style="width:{{ c.confidence }}%"></div>
+                                            style="width:{{ c.confidence }}%"></div>
                                     </div>
                                 </div>
                                 {% if c.explanation %}
@@ -802,8 +845,8 @@
                         <div class="sa-disclaimer">
                             <span class="sa-disclaimer-icon">ℹ</span>
                             <p>Our model detected the above skin concerns based on your image.
-                               Predictions may not be 100% accurate. Consult a dermatologist
-                               for a professional assessment.</p>
+                                Predictions may not be 100% accurate. Consult a dermatologist
+                                for a professional assessment.</p>
                         </div>
 
                         <a href="#recommendations-section" class="sa-cta">
@@ -828,6 +871,7 @@
                 text-align: center;
                 margin-bottom: 2.5rem;
             }
+
             .sa-eyebrow {
                 display: inline-block;
                 font-size: .72rem;
@@ -837,12 +881,14 @@
                 color: #166534;
                 margin-bottom: .5rem;
             }
+
             .sa-page-title {
                 font-size: 2rem;
                 font-weight: 800;
                 color: #0f172a;
                 margin: .25rem 0 .5rem;
             }
+
             .sa-page-sub {
                 color: #64748b;
                 font-size: .9rem;
@@ -853,7 +899,7 @@
             .results-card {
                 background: #fff;
                 border-radius: 24px;
-                box-shadow: 0 4px 6px rgba(0,0,0,.04), 0 20px 50px rgba(0,0,0,.07);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, .04), 0 20px 50px rgba(0, 0, 0, .07);
                 overflow: hidden;
                 max-width: 1040px;
                 margin: 0 auto;
@@ -864,8 +910,11 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr;
             }
+
             @media (max-width: 720px) {
-                .sa-grid { grid-template-columns: 1fr; }
+                .sa-grid {
+                    grid-template-columns: 1fr;
+                }
             }
 
             /* ── Left panel ── */
@@ -877,25 +926,31 @@
                 flex-direction: column;
                 gap: 1rem;
             }
+
             .sa-img-wrap {
                 position: relative;
                 border-radius: 16px;
                 overflow: hidden;
-                box-shadow: 0 4px 20px rgba(0,0,0,.1);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, .1);
                 line-height: 0;
             }
+
             .sa-face-img {
                 width: 100%;
                 display: block;
                 border-radius: 16px;
             }
+
             .sa-bbox-canvas {
                 position: absolute;
-                top: 0; left: 0;
-                width: 100%; height: 100%;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
                 border-radius: 16px;
                 pointer-events: none;
             }
+
             .sa-img-placeholder {
                 background: #f0f4f8;
                 border-radius: 16px;
@@ -906,11 +961,13 @@
                 color: #aaa;
                 font-size: .9rem;
             }
+
             .sa-legend {
                 display: flex;
                 flex-wrap: wrap;
                 gap: .4rem;
             }
+
             .sa-legend-pill {
                 padding: 4px 12px;
                 border-radius: 20px;
@@ -930,6 +987,7 @@
                 max-height: 600px;
                 background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
             }
+
             .sa-right-header {
                 display: flex;
                 align-items: center;
@@ -939,12 +997,14 @@
                 padding-bottom: 1rem;
                 border-bottom: 1px solid #f1f5f9;
             }
+
             .sa-right-title {
                 font-size: 1.15rem;
                 font-weight: 700;
                 color: #0f172a;
                 margin: 0;
             }
+
             .sa-skin-badge {
                 padding: 5px 16px;
                 border-radius: 20px;
@@ -972,6 +1032,7 @@
                 flex-direction: column;
                 gap: .65rem;
             }
+
             .sa-concern-card {
                 background: rgba(255, 255, 255, 0.45);
                 backdrop-filter: blur(12px);
@@ -983,49 +1044,63 @@
                 display: flex;
                 flex-direction: column;
                 gap: .55rem;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, .06), inset 0 1px 0 rgba(255,255,255,.8);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, .06), inset 0 1px 0 rgba(255, 255, 255, .8);
                 transition: box-shadow .2s, transform .15s;
             }
+
             .sa-concern-card:hover {
-                box-shadow: 0 8px 24px rgba(0, 0, 0, .1), inset 0 1px 0 rgba(255,255,255,.9);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .1), inset 0 1px 0 rgba(255, 255, 255, .9);
                 transform: translateY(-1px);
             }
-            .sa-concern-top { display: flex; flex-direction: column; gap: .4rem; }
+
+            .sa-concern-top {
+                display: flex;
+                flex-direction: column;
+                gap: .4rem;
+            }
+
             .sa-concern-title-row {
                 display: flex;
                 align-items: center;
                 gap: .55rem;
             }
+
             .sa-concern-dot {
-                width: 9px; height: 9px;
+                width: 9px;
+                height: 9px;
                 border-radius: 50%;
                 background: #94a3b8;
                 flex-shrink: 0;
             }
+
             .sa-concern-name {
                 font-weight: 700;
                 font-size: .9rem;
                 color: #1e293b;
                 flex: 1;
             }
+
             .sa-conf-pct {
                 font-size: .82rem;
                 font-weight: 700;
                 color: #475569;
                 flex-shrink: 0;
             }
+
             .sa-conf-track {
                 height: 6px;
                 background: #e2e8f0;
                 border-radius: 3px;
                 overflow: hidden;
             }
+
             .sa-conf-fill {
                 height: 100%;
                 border-radius: 3px;
                 background: linear-gradient(90deg, #16a34a, #4ade80);
                 transition: width .6s ease;
             }
+
             .sa-ai-msg {
                 margin: 0;
                 font-size: .78rem;
@@ -1037,29 +1112,73 @@
 
             /* ── Colour coding per concern ── */
             /* Accent borders */
-            .sa-border-acne          { border-left-color: #ef4444; }
+            .sa-border-acne {
+                border-left-color: #ef4444;
+            }
+
             .sa-border-blackheads,
-            .sa-border-blackheades   { border-left-color: #f59e0b; }
+            .sa-border-blackheades {
+                border-left-color: #f59e0b;
+            }
+
             .sa-border-darkspots,
-            .sa-border-dark_spots    { border-left-color: #8b5cf6; }
-            .sa-border-wrinkles      { border-left-color: #22c55e; }
-            .sa-border-pores         { border-left-color: #10b981; }
+            .sa-border-dark_spots {
+                border-left-color: #8b5cf6;
+            }
+
+            .sa-border-wrinkles {
+                border-left-color: #22c55e;
+            }
+
+            .sa-border-pores {
+                border-left-color: #10b981;
+            }
+
             /* Dots */
-            .sa-dot-acne             { background: #ef4444; }
+            .sa-dot-acne {
+                background: #ef4444;
+            }
+
             .sa-dot-blackheads,
-            .sa-dot-blackheades      { background: #f59e0b; }
+            .sa-dot-blackheades {
+                background: #f59e0b;
+            }
+
             .sa-dot-darkspots,
-            .sa-dot-dark_spots       { background: #8b5cf6; }
-            .sa-dot-wrinkles         { background: #22c55e; }
-            .sa-dot-pores            { background: #10b981; }
+            .sa-dot-dark_spots {
+                background: #8b5cf6;
+            }
+
+            .sa-dot-wrinkles {
+                background: #22c55e;
+            }
+
+            .sa-dot-pores {
+                background: #10b981;
+            }
+
             /* Progress fills */
-            .sa-fill-acne            { background: linear-gradient(90deg,#ef4444,#f87171); }
+            .sa-fill-acne {
+                background: linear-gradient(90deg, #ef4444, #f87171);
+            }
+
             .sa-fill-blackheads,
-            .sa-fill-blackheades     { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+            .sa-fill-blackheades {
+                background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            }
+
             .sa-fill-darkspots,
-            .sa-fill-dark_spots      { background: linear-gradient(90deg,#8b5cf6,#a78bfa); }
-            .sa-fill-wrinkles        { background: linear-gradient(90deg,#22c55e,#86efac); }
-            .sa-fill-pores           { background: linear-gradient(90deg,#10b981,#34d399); }
+            .sa-fill-dark_spots {
+                background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+            }
+
+            .sa-fill-wrinkles {
+                background: linear-gradient(90deg, #22c55e, #86efac);
+            }
+
+            .sa-fill-pores {
+                background: linear-gradient(90deg, #10b981, #34d399);
+            }
 
             /* ── No concerns ── */
             .sa-no-concerns {
@@ -1073,7 +1192,11 @@
                 text-align: center;
                 gap: .4rem;
             }
-            .sa-no-icon { font-size: 1.8rem; }
+
+            .sa-no-icon {
+                font-size: 1.8rem;
+            }
+
             .sa-no-concerns p {
                 margin: 0;
                 font-weight: 600;
@@ -1092,6 +1215,7 @@
                 padding: .9rem 1rem;
                 margin-top: auto;
             }
+
             .sa-disclaimer-icon {
                 font-size: 1rem;
                 color: #166534;
@@ -1099,6 +1223,7 @@
                 font-weight: 700;
                 line-height: 1.5;
             }
+
             .sa-disclaimer p {
                 margin: 0;
                 font-size: .78rem;
@@ -1119,12 +1244,13 @@
                 text-decoration: none;
                 letter-spacing: .3px;
                 transition: opacity .2s, transform .15s, box-shadow .2s;
-                box-shadow: 0 4px 14px rgba(22,163,74,.3);
+                box-shadow: 0 4px 14px rgba(22, 163, 74, .3);
             }
+
             .sa-cta:hover {
                 opacity: .92;
                 transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(22,163,74,.4);
+                box-shadow: 0 8px 20px rgba(22, 163, 74, .4);
                 color: #fff;
             }
 
@@ -1140,17 +1266,17 @@
                 color: #64748b;
                 line-height: 1.6;
                 text-align: center;
-                box-shadow: 0 2px 8px rgba(0,0,0,.04);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
             }
         </style>
 
         <script>
             // Auto-scroll to results card after analysis completes
-            window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', function () {
                 {% if analysis_result %}
                 var resultsCard = document.querySelector('.results-card');
                 if (resultsCard) {
-                    setTimeout(function() {
+                    setTimeout(function () {
                         resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 300);
                 }
@@ -1158,7 +1284,7 @@
             });
 
             // Show popup only after user has scrolled completely past the results card
-            window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', function () {
                 {% if analysis_result %}
                 // Recommendations are always visible — no popup needed
                 {% endif %}
@@ -1169,72 +1295,73 @@
 
         {% if recommended_products %}
         <div id="recommendations-section">
-        <section class="panel result-panel" style="margin-top: 2rem;">
-            <div class="panel-head">
-                <div>
-                    <p class="eyebrow">Recommendations</p>
-                    <h2>Expert Picks for You</h2>
-                    <p class="muted">Based on your {{ analysis_result.skin_type_label|title }} skin and
-                        detected concerns.</p>
+            <section class="panel result-panel" style="margin-top: 2rem;">
+                <div class="panel-head">
+                    <div>
+                        <p class="eyebrow">Recommendations</p>
+                        <h2>Expert Picks for You</h2>
+                        <p class="muted">Based on your {{ analysis_result.skin_type_label|title }} skin and
+                            detected concerns.</p>
+                    </div>
                 </div>
-            </div>
 
-            <!-- ── Category filter bar ── -->
-            <div id="rec-filter-bar" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem;">
-                <button class="rec-filter active" data-filter="all">All</button>
-                <button class="rec-filter" data-filter="moisturiser">Moisturiser</button>
-                <button class="rec-filter" data-filter="serum">Serum</button>
-                <button class="rec-filter" data-filter="sunscreen">Sunscreen</button>
-                <button class="rec-filter" data-filter="cleanser">Cleanser</button>
-                <button class="rec-filter" data-filter="eye care">Eye Care</button>
-            </div>
+                <!-- ── Category filter bar ── -->
+                <div id="rec-filter-bar" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem;">
+                    <button class="rec-filter active" data-filter="all">All</button>
+                    <button class="rec-filter" data-filter="moisturiser">Moisturiser</button>
+                    <button class="rec-filter" data-filter="serum">Serum</button>
+                    <button class="rec-filter" data-filter="sunscreen">Sunscreen</button>
+                    <button class="rec-filter" data-filter="cleanser">Cleanser</button>
+                    <button class="rec-filter" data-filter="eye care">Eye Care</button>
+                </div>
 
-            <!-- ── Price range filter ── -->
-            <div id="price-filter-bar" style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.75rem;">
-                <span style="font-size:.78rem;font-weight:600;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase;">Price:</span>
-                <button class="price-filter active" data-min="0" data-max="99999">All</button>
-                <button class="price-filter" data-min="0"    data-max="500">Under NPR 500</button>
-                <button class="price-filter" data-min="500"  data-max="1000">NPR 500–1,000</button>
-                <button class="price-filter" data-min="1000" data-max="2000">NPR 1,000–2,000</button>
-                <button class="price-filter" data-min="2000" data-max="99999">NPR 2,000+</button>
-            </div>
+                <!-- ── Price range filter ── -->
+                <div id="price-filter-bar"
+                    style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.75rem;">
+                    <span
+                        style="font-size:.78rem;font-weight:600;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase;">Price:</span>
+                    <button class="price-filter active" data-min="0" data-max="99999">All</button>
+                    <button class="price-filter" data-min="0" data-max="500">Under NPR 500</button>
+                    <button class="price-filter" data-min="500" data-max="1000">NPR 500–1,000</button>
+                    <button class="price-filter" data-min="1000" data-max="2000">NPR 1,000–2,000</button>
+                    <button class="price-filter" data-min="2000" data-max="99999">NPR 2,000+</button>
+                </div>
 
-            <p id="rec-no-results" style="display:none;color:#94a3b8;font-size:.9rem;margin-top:1rem;">
-                No products found in this category.
-            </p>
+                <p id="rec-no-results" style="display:none;color:#94a3b8;font-size:.9rem;margin-top:1rem;">
+                    No products found in this category.
+                </p>
 
-            <div class="product-grid" style="
+                <div class="product-grid" style="
                 display: grid; 
                 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
                 gap: 1.5rem; 
                 margin-top: 1.5rem;">
 
-                {% for product in recommended_products %}
-                <div class="product-card" style="
+                    {% for product in recommended_products %}
+                    <div class="product-card" style="
                     border: 1px solid #eee; 
                     border-radius: 12px; 
                     padding: 1.5rem; 
                     transition: transform 0.2s, box-shadow 0.2s;
                     display: flex;
                     flex-direction: column;
-                    background: white;"
-                    data-type="{{ product.type|default:'skincare'|lower }}"
-                    data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
+                    background: white;" data-type="{{ product.type|default:'skincare'|lower }}"
+                        data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
 
-                    <div class="card-header" style="margin-bottom: 1rem;">
-                        {% if product.image_url %}
-                        <div class="product-image-container"
-                            style="width: 100%; height: 180px; margin-bottom: 1rem; overflow: hidden; border-radius: 8px;">
-                            <img src="{{ product.image_url }}" alt="{{ product.name }}"
-                                style="width: 100%; height: 100%; object-fit: contain;">
-                        </div>
-                        {% else %}
-                        <div class="product-image-container"
-                            style="width: 100%; height: 180px; margin-bottom: 1rem; background: #f9f9f9; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                            <i class="fas fa-image" style="font-size: 2rem; color: #ddd;"></i>
-                        </div>
-                        {% endif %}
-                        <span class="badge" style="
+                        <div class="card-header" style="margin-bottom: 1rem;">
+                            {% if product.image_url %}
+                            <div class="product-image-container"
+                                style="width: 100%; height: 180px; margin-bottom: 1rem; overflow: hidden; border-radius: 8px;">
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}"
+                                    style="width: 100%; height: 100%; object-fit: contain;">
+                            </div>
+                            {% else %}
+                            <div class="product-image-container"
+                                style="width: 100%; height: 180px; margin-bottom: 1rem; background: #f9f9f9; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                                <i class="fas fa-image" style="font-size: 2rem; color: #ddd;"></i>
+                            </div>
+                            {% endif %}
+                            <span class="badge" style="
                             background: #f8f9fa;
                             color: #6c757d;
                             padding: 0.25rem 0.6rem;
@@ -1242,43 +1369,45 @@
                             font-size: 0.75rem;
                             text-transform: uppercase;
                             letter-spacing: 0.5px;">
-                            {{ product.type|default:'Skincare' }}
-                        </span>
-                    </div>
+                                {{ product.type|default:'Skincare' }}
+                            </span>
+                        </div>
 
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; line-height: 1.4;">
-                        {{ product.name }}
-                    </h3>
+                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; line-height: 1.4;">
+                            {{ product.name }}
+                        </h3>
 
-                    <p class="brand" style="
+                        <p class="brand" style="
                         color: #6c757d; 
                         font-family: 'Lato', sans-serif; 
                         margin: 0 0 1rem 0; 
                         font-weight: 600;
                         text-transform: uppercase;
                         font-size: 0.8rem;">
-                        {{ product.brand }}
-                    </p>
-
-                    {% if product.price %}
-                    <div style="margin: 0 0 1rem 0;">
-                        <span style="font-size:1.1rem;font-weight:700;color:#166534;">
-                            {{ product.price }}
-                        </span>
-                    </div>
-                    {% endif %}
-
-                    <!-- Key Benefits -->
-                    {% if product.concern %}
-                    <div style="margin-bottom: 1.2rem; padding: 0.9rem; background: linear-gradient(135deg, rgba(11, 59, 23, 0.04) 0%, rgba(11, 59, 23, 0.02) 100%); border-left: 3px solid #0b3b17; border-radius: 6px;">
-                        <p style="font-size: 0.8rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.6rem 0; letter-spacing: 0.5px; text-transform: uppercase;">
-                            Key Benefits
+                            {{ product.brand }}
                         </p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
-                            {% if product.concern is list %}
+
+                        {% if product.price %}
+                        <div style="margin: 0 0 1rem 0;">
+                            <span style="font-size:1.1rem;font-weight:700;color:#166534;">
+                                {{ product.price }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Key Benefits -->
+                        {% if product.concern %}
+                        <div
+                            style="margin-bottom: 1.2rem; padding: 0.9rem; background: linear-gradient(135deg, rgba(11, 59, 23, 0.04) 0%, rgba(11, 59, 23, 0.02) 100%); border-left: 3px solid #0b3b17; border-radius: 6px;">
+                            <p
+                                style="font-size: 0.8rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.6rem 0; letter-spacing: 0.5px; text-transform: uppercase;">
+                                Key Benefits
+                            </p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+                                {% if product.concern is list %}
                                 {% for effect in product.concern %}
-                                    {% if effect %}
-                                    <span style="
+                                {% if effect %}
+                                <span style="
                                         background: white;
                                         color: #0b3b17;
                                         padding: 0.35rem 0.75rem;
@@ -1287,16 +1416,16 @@
                                         font-weight: 500;
                                         border: 1px solid rgba(11, 59, 23, 0.15);
                                         box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                        {{ effect|stringformat:"s"|cut:"'"|cut:'"' }}
-                                    </span>
-                                    {% endif %}
+                                    {{ effect|stringformat:"s"|cut:"'"|cut:'"' }}
+                                </span>
+                                {% endif %}
                                 {% endfor %}
-                            {% else %}
+                                {% else %}
                                 {% if product.concern|stringformat:"s"|slice:":1" == "[" %}
-                                    <!-- Handle stringified list - parse and display each item separately -->
-                                    {% with effect_str=product.concern|stringformat:"s"|slice:"1:-1" %}
-                                        {% for item in effect_str|split:"," %}
-                                        <span style="
+                                <!-- Handle stringified list - parse and display each item separately -->
+                                {% with effect_str=product.concern|stringformat:"s"|slice:"1:-1" %}
+                                {% for item in effect_str|split:"," %}
+                                <span style="
                                             background: white;
                                             color: #0b3b17;
                                             padding: 0.35rem 0.75rem;
@@ -1305,12 +1434,12 @@
                                             font-weight: 500;
                                             border: 1px solid rgba(11, 59, 23, 0.15);
                                             box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                            {{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}
-                                        </span>
-                                        {% endfor %}
-                                    {% endwith %}
+                                    {{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}
+                                </span>
+                                {% endfor %}
+                                {% endwith %}
                                 {% else %}
-                                    <span style="
+                                <span style="
                                         background: white;
                                         color: #0b3b17;
                                         padding: 0.35rem 0.75rem;
@@ -1319,45 +1448,45 @@
                                         font-weight: 500;
                                         border: 1px solid rgba(11, 59, 23, 0.15);
                                         box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                        {{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}
-                                    </span>
+                                    {{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}
+                                </span>
                                 {% endif %}
-                            {% endif %}
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    {% endif %}
+                        {% endif %}
 
-                    <!-- Active Ingredients -->
-                    {% if product.active_ingredients %}
-                    <div style="margin-bottom: 1rem;">
-                        <p style="font-size: 0.85rem; font-weight: 600; color: #0b3b17; margin-bottom: 0.5rem;">
-                             Active Ingredients:
-                        </p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
-                            {% for ingredient in product.active_ingredients %}
-                            <span style="
+                        <!-- Active Ingredients -->
+                        {% if product.active_ingredients %}
+                        <div style="margin-bottom: 1rem;">
+                            <p style="font-size: 0.85rem; font-weight: 600; color: #0b3b17; margin-bottom: 0.5rem;">
+                                Active Ingredients:
+                            </p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                {% for ingredient in product.active_ingredients %}
+                                <span style="
                                 background: #e8f5e8;
                                 color: #2e7d32;
                                 padding: 0.2rem 0.5rem;
                                 border-radius: 12px;
                                 font-size: 0.75rem;
                                 font-weight: 500;">
-                                {{ ingredient }}
-                            </span>
-                            {% endfor %}
+                                    {{ ingredient }}
+                                </span>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                    {% endif %}
+                        {% endif %}
 
-                    <!-- Allergy Warning -->
-                    {% if product.allergy_warning %}
-                    <div style="
+                        <!-- Allergy Warning -->
+                        {% if product.allergy_warning %}
+                        <div style="
                         background: #ffebee;
                         border: 1px solid #ffcdd2;
                         border-radius: 8px;
                         padding: 0.75rem;
                         margin-bottom: 1rem;">
-                        <p style="
+                            <p style="
                             font-size: 0.85rem;
                             color: #c62828;
                             margin: 0 0 0.5rem 0;
@@ -1365,55 +1494,55 @@
                             display: flex;
                             align-items: center;
                             gap: 0.5rem;">
-                            ⚠️ Allergy Alert
-                        </p>
-                        <p style="font-size: 0.8rem; color: #c62828; margin: 0;">
-                            Contains: {{ product.matched_allergens|join:", " }}
-                        </p>
-                    </div>
-                    {% endif %}
+                                ⚠️ Allergy Alert
+                            </p>
+                            <p style="font-size: 0.8rem; color: #c62828; margin: 0;">
+                                Contains: {{ product.matched_allergens|join:", " }}
+                            </p>
+                        </div>
+                        {% endif %}
 
-                    <!-- Product Description -->
-                    {% if product.description %}
-                    <p style="font-size: 0.85rem; color: #666; margin: 0 0 1rem 0; line-height: 1.4;">
-                        {{ product.description|truncatechars:120 }}
-                    </p>
-                    {% endif %}
+                        <!-- Product Description -->
+                        {% if product.description %}
+                        <p style="font-size: 0.85rem; color: #666; margin: 0 0 1rem 0; line-height: 1.4;">
+                            {{ product.description|truncatechars:120 }}
+                        </p>
+                        {% endif %}
 
-                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid rgba(11, 59, 23, 0.08);">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            {% if product.rating %}
+                        <div
+                            style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid rgba(11, 59, 23, 0.08);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                {% if product.rating %}
                                 <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
                                     ★ {{ product.rating|floatformat:1 }}
                                 </span>
                                 <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
                                     ({{ product.rating|floatformat:1 }}/5)
                                 </span>
-                            {% else %}
+                                {% else %}
                                 <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
                                     ★ {{ product.score|floatformat:1 }}
                                 </span>
                                 <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
                                     ({{ product.score|floatformat:1 }}/5)
                                 </span>
-                            {% endif %}
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                            {% if product.id %}
-                            <button class="btn primary small add-to-shelf-btn" 
-                                data-product-id="{{ product.id }}"
-                                style="padding: 0.5rem 1rem;">Add to Shelf</button>
-                            {% endif %}
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                {% if product.id %}
+                                <button class="btn primary small add-to-shelf-btn" data-product-id="{{ product.id }}"
+                                    style="padding: 0.5rem 1rem;">Add to Shelf</button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
 
-            <div style="margin-top: 2rem; text-align: center;">
-                <a href="{% url 'recommendations:home' %}" class="btn ghost">See All Products</a>
-            </div>
-        </section>
+                <div style="margin-top: 2rem; text-align: center;">
+                    <a href="{% url 'recommendations:home' %}" class="btn ghost">See All Products</a>
+                </div>
+            </section>
         </div>{# /recommendations-section #}
 
         <style>
@@ -1429,16 +1558,19 @@
                 transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
                 white-space: nowrap;
             }
+
             .rec-filter:hover {
                 background: #f0fdf4;
                 border-color: #16a34a;
             }
+
             .rec-filter.active {
                 background: linear-gradient(135deg, #16a34a, #0b3b17);
                 color: #fff;
                 border-color: transparent;
-                box-shadow: 0 3px 10px rgba(22,163,74,.3);
+                box-shadow: 0 3px 10px rgba(22, 163, 74, .3);
             }
+
             .price-filter {
                 padding: 5px 14px;
                 border-radius: 50px;
@@ -1451,30 +1583,32 @@
                 transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
                 white-space: nowrap;
             }
+
             .price-filter:hover {
                 background: #f8fafc;
                 border-color: #94a3b8;
             }
+
             .price-filter.active {
                 background: linear-gradient(135deg, #0f172a, #1e293b);
                 color: #fff;
                 border-color: transparent;
-                box-shadow: 0 3px 10px rgba(15,23,42,.2);
+                box-shadow: 0 3px 10px rgba(15, 23, 42, .2);
             }
         </style>
 
         <script>
             (function () {
-                var catBar   = document.getElementById('rec-filter-bar');
+                var catBar = document.getElementById('rec-filter-bar');
                 var priceBar = document.getElementById('price-filter-bar');
                 if (!catBar) return;
 
                 var cards = document.querySelectorAll('.product-card');
 
                 // Active filter state
-                var activeCat   = 'all';
-                var activeMin   = 0;
-                var activeMax   = 99999;
+                var activeCat = 'all';
+                var activeMin = 0;
+                var activeMax = 99999;
 
                 // Build per-category counts
                 catBar.querySelectorAll('.rec-filter[data-filter]').forEach(function (btn) {
@@ -1494,10 +1628,10 @@
                 function applyFilters() {
                     var visible = 0;
                     cards.forEach(function (card) {
-                        var type  = (card.dataset.type || '').toLowerCase();
+                        var type = (card.dataset.type || '').toLowerCase();
                         var price = parseInt((card.dataset.price || '0').replace(/[^\d]/g, ''), 10) || 0;
 
-                        var catMatch   = activeCat === 'all' || type === activeCat;
+                        var catMatch = activeCat === 'all' || type === activeCat;
                         var priceMatch = price >= activeMin && price <= activeMax;
                         var show = catMatch && priceMatch;
 
@@ -1566,8 +1700,7 @@
     </main>
 
     <!-- ── Allergy Modal ── -->
-    <div id="allergy-modal"
-         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+    <div id="allergy-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
                 z-index:9999;align-items:center;justify-content:center;padding:1rem;">
         <div style="background:#fff;border-radius:24px;padding:2.5rem;max-width:560px;
                     width:100%;box-shadow:0 30px 60px rgba(0,0,0,.18);
@@ -1649,17 +1782,16 @@
             </div>
 
             <!-- Selected summary -->
-            <div id="ag-summary" style="margin-top:1.25rem;min-height:24px;font-size:.82rem;color:#166534;font-weight:600;"></div>
+            <div id="ag-summary"
+                style="margin-top:1.25rem;min-height:24px;font-size:.82rem;color:#166534;font-weight:600;"></div>
 
             <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
-                <button onclick="confirmAllergies()"
-                        style="flex:1;padding:13px;border-radius:50px;border:none;
+                <button onclick="confirmAllergies()" style="flex:1;padding:13px;border-radius:50px;border:none;
                                background:linear-gradient(135deg,#16a34a,#0b3b17);
                                color:#fff;font-weight:700;font-size:.92rem;cursor:pointer;">
                     Continue to Analysis →
                 </button>
-                <button onclick="skipAllergies()"
-                        style="padding:13px 20px;border-radius:50px;border:1.5px solid #e2e8f0;
+                <button onclick="skipAllergies()" style="padding:13px 20px;border-radius:50px;border:1.5px solid #e2e8f0;
                                background:transparent;color:#64748b;font-weight:600;
                                font-size:.88rem;cursor:pointer;">
                     Skip
@@ -1669,31 +1801,62 @@
     </div>
 
     <style>
-        .ag-group { }
+        .ag-group {}
+
         .ag-label {
-            font-size:.7rem;font-weight:700;letter-spacing:1.2px;
-            text-transform:uppercase;color:#94a3b8;margin:0 0 .6rem;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin: 0 0 .6rem;
         }
-        .ag-chips { display:flex;flex-wrap:wrap;gap:.4rem; }
+
+        .ag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+        }
+
         .ag-chip {
-            display:inline-flex;align-items:center;gap:.35rem;
-            padding:6px 14px;border-radius:20px;
-            border:1.5px solid #e2e8f0;background:#f8fafc;
-            font-size:.8rem;color:#334155;cursor:pointer;
-            transition:border-color .15s,background .15s,transform .1s;
-            user-select:none;font-family:inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: .8rem;
+            color: #334155;
+            cursor: pointer;
+            transition: border-color .15s, background .15s, transform .1s;
+            user-select: none;
+            font-family: inherit;
         }
-        .ag-chip:hover { border-color:#dc2626;background:#fff5f5;transform:translateY(-1px); }
+
+        .ag-chip:hover {
+            border-color: #dc2626;
+            background: #fff5f5;
+            transform: translateY(-1px);
+        }
+
         .ag-chip.selected {
-            border-color:#dc2626;background:#fef2f2;color:#991b1b;font-weight:600;
+            border-color: #dc2626;
+            background: #fef2f2;
+            color: #991b1b;
+            font-weight: 600;
         }
-        .ag-chip.selected::after { content:" ✕";font-size:.72rem; }
+
+        .ag-chip.selected::after {
+            content: " ✕";
+            font-size: .72rem;
+        }
     </style>
 
     <script>
         // Toggle chip selection
-        document.querySelectorAll('.ag-chip').forEach(function(chip) {
-            chip.addEventListener('click', function() {
+        document.querySelectorAll('.ag-chip').forEach(function (chip) {
+            chip.addEventListener('click', function () {
                 chip.classList.toggle('selected');
                 updateSummary();
             });
@@ -1710,7 +1873,7 @@
                 el.innerHTML = '<span style="background:#fef2f2;color:#991b1b;padding:4px 12px;border-radius:20px;font-weight:700;">'
                     + '🚫 ' + selected.length + ' ingredient' + (selected.length > 1 ? 's' : '') + ' excluded</span>'
                     + ' &nbsp;<span style="color:#64748b;font-size:.78rem;">'
-                    + selected.map(function(s){ return s.charAt(0).toUpperCase()+s.slice(1); }).join(', ')
+                    + selected.map(function (s) { return s.charAt(0).toUpperCase() + s.slice(1); }).join(', ')
                     + '</span>';
                 btn.textContent = 'Exclude & Continue →';
             }
@@ -1718,7 +1881,7 @@
 
         function getSelected() {
             return Array.from(document.querySelectorAll('.ag-chip.selected'))
-                        .map(function(c) { return c.dataset.value; });
+                .map(function (c) { return c.dataset.value; });
         }
 
         function openAllergyModal() {
@@ -1741,14 +1904,13 @@
         }
 
         // Close on backdrop click
-        document.getElementById('allergy-modal').addEventListener('click', function(e) {
+        document.getElementById('allergy-modal').addEventListener('click', function (e) {
             if (e.target === this) skipAllergies();
         });
     </script>
 
     <!-- ── Analysis Loading Modal ── -->
-    <div id="analysis-loader"
-         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+    <div id="analysis-loader" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
                 z-index:10000;align-items:center;justify-content:center;padding:1rem;">
         <div style="background:#fff;border-radius:24px;padding:2.5rem 2rem;
                     max-width:380px;width:100%;text-align:center;
@@ -1757,18 +1919,18 @@
             <!-- Animated ring -->
             <div style="position:relative;width:72px;height:72px;margin:0 auto 1.5rem;">
                 <svg viewBox="0 0 72 72" style="width:72px;height:72px;animation:loaderSpin 1.2s linear infinite;">
-                    <circle cx="36" cy="36" r="30" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="#e2e8f0" stroke-width="5" />
                     <circle cx="36" cy="36" r="30" fill="none" stroke="#16a34a" stroke-width="5"
-                            stroke-dasharray="60 130" stroke-linecap="round"/>
+                        stroke-dasharray="60 130" stroke-linecap="round" />
                 </svg>
                 <span style="position:absolute;inset:0;display:flex;align-items:center;
                              justify-content:center;font-size:1.5rem;" id="loader-icon">🔍</span>
             </div>
 
-            <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.15rem;font-weight:700;"
-                id="loader-title">Analysing your photo…</h3>
-            <p style="margin:0 0 1.5rem;color:#64748b;font-size:.85rem;line-height:1.5;"
-               id="loader-msg">Detecting face in image</p>
+            <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.15rem;font-weight:700;" id="loader-title">Analysing
+                your photo…</h3>
+            <p style="margin:0 0 1.5rem;color:#64748b;font-size:.85rem;line-height:1.5;" id="loader-msg">Detecting face
+                in image</p>
 
             <!-- Step progress dots -->
             <div style="display:flex;justify-content:center;gap:.5rem;" id="loader-dots">
@@ -1782,21 +1944,32 @@
     </div>
 
     <style>
-        @keyframes loaderSpin { to { transform: rotate(360deg); } }
-        .ldot {
-            width:8px;height:8px;border-radius:50%;
-            background:#e2e8f0;transition:background .3s;
+        @keyframes loaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
         }
-        .ldot.active { background:#16a34a; }
+
+        .ldot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            transition: background .3s;
+        }
+
+        .ldot.active {
+            background: #16a34a;
+        }
     </style>
 
     <script>
         var LOADER_STEPS = [
-            { icon:"🔍", title:"Detecting face…",          msg:"Locating your face in the image" },
-            { icon:"✂️",  title:"Cropping face region…",   msg:"Isolating skin area for analysis" },
-            { icon:"🧠", title:"Running CNN model…",       msg:"Classifying skin type" },
-            { icon:"🔬", title:"Extracting concerns…",     msg:"Identifying skin concerns" },
-            { icon:"💊", title:"Matching products…",       msg:"Finding the best recommendations for you" },
+            { icon: "🔍", title: "Detecting face…", msg: "Locating your face in the image" },
+            { icon: "✂️", title: "Cropping face region…", msg: "Isolating skin area for analysis" },
+            { icon: "🧠", title: "Running CNN model…", msg: "Classifying skin type" },
+            { icon: "🔬", title: "Extracting concerns…", msg: "Identifying skin concerns" },
+            { icon: "💊", title: "Matching products…", msg: "Finding the best recommendations for you" },
         ];
 
         function showAnalysisLoader() {
@@ -1804,9 +1977,9 @@
             modal.style.display = 'flex';
 
             var titleEl = document.getElementById('loader-title');
-            var msgEl   = document.getElementById('loader-msg');
-            var iconEl  = document.getElementById('loader-icon');
-            var dots    = document.querySelectorAll('.ldot');
+            var msgEl = document.getElementById('loader-msg');
+            var iconEl = document.getElementById('loader-icon');
+            var dots = document.querySelectorAll('.ldot');
 
             var step = 0;
 
@@ -1814,9 +1987,9 @@
                 if (step >= LOADER_STEPS.length) return;
                 var s = LOADER_STEPS[step];
                 titleEl.textContent = s.title;
-                msgEl.textContent   = s.msg;
-                iconEl.textContent  = s.icon;
-                dots.forEach(function(d, i) {
+                msgEl.textContent = s.msg;
+                iconEl.textContent = s.icon;
+                dots.forEach(function (d, i) {
                     d.classList.toggle('active', i <= step);
                 });
                 step++;
@@ -1837,8 +2010,10 @@
             <div class="footer-grid">
                 <!-- Column 1: Brand Info -->
                 <div class="footer-column">
-                    <img src="{% static 'images/Skincare.png' %}" alt="Logo" style="width: 120px; margin-bottom: 20px; filter: brightness(0) invert(1);">
-                    <p>Empowering you to understand your skin through AI-powered analysis and expert recommendations. Your skin, Your story.</p>
+                    <img src="{% static 'images/Skincare.png' %}" alt="Logo"
+                        style="width: 120px; margin-bottom: 20px; filter: brightness(0) invert(1);">
+                    <p>Empowering you to understand your skin through AI-powered analysis and expert recommendations.
+                        Your skin, Your story.</p>
                     <div class="footer-social">
                         <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
                         <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
@@ -1942,9 +2117,9 @@
 
                         // Hide camera pane, expand upload pane to full width
                         const grid = uploadDrop.closest('[style*="grid-template-columns"]')
-                                  || uploadDrop.parentElement;
+                            || uploadDrop.parentElement;
                         const cameraPaneWrapper = document.getElementById('start-camera')
-                                                           .closest('[onclick]');
+                            .closest('[onclick]');
                         if (cameraPaneWrapper) cameraPaneWrapper.style.display = 'none';
                         if (grid && grid.style.gridTemplateColumns) {
                             grid.style.gridTemplateColumns = '1fr';
@@ -1964,10 +2139,10 @@
 
                 // Restore camera pane and grid
                 const cameraPaneWrapper = document.getElementById('start-camera')
-                                                   .closest('[onclick]');
+                    .closest('[onclick]');
                 if (cameraPaneWrapper) cameraPaneWrapper.style.display = '';
                 const grid = uploadDrop.closest('[style*="grid-template-columns"]')
-                          || uploadDrop.parentElement;
+                    || uploadDrop.parentElement;
                 if (grid && grid.style.gridTemplateColumns !== undefined) {
                     grid.style.gridTemplateColumns = '1fr 1fr';
                 }
@@ -2069,7 +2244,7 @@
 
             {% if analysis_result.face_bbox %}
             // Draw face bounding box overlay on the displayed result image
-            (function() {
+            (function () {
                 const faceBBox = {
                     x: {{ analysis_result.face_bbox.x }},
                     y: {{ analysis_result.face_bbox.y }},
@@ -2082,10 +2257,8 @@
 
                 function renderBox() {
                     if (!image || !faceBox || !image.naturalWidth || !image.naturalHeight) return;
-
                     const scaleX = image.clientWidth / image.naturalWidth;
                     const scaleY = image.clientHeight / image.naturalHeight;
-
                     faceBox.style.display = 'block';
                     faceBox.style.left = `${Math.max(0, Math.round(faceBBox.x * scaleX))}px`;
                     faceBox.style.top = `${Math.max(0, Math.round(faceBBox.y * scaleY))}px`;
@@ -2102,230 +2275,332 @@
                     window.addEventListener('resize', renderBox);
                 }
             })();
-            {% endif %}
+        {% endif %}
 
-            {% endif %}
+        {% endif %}
 
-            // Scroll to error if it exists
-            {% if error %}
-            setTimeout(function () {
-                const errorAlert = document.querySelector('.alert.error');
-                if (errorAlert) {
-                    errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 300);
-            {% endif %}
-            {% endif %}
+        // Scroll to error if it exists
+        {% if error %}
+        setTimeout(function () {
+            const errorAlert = document.querySelector('.alert.error');
+            if (errorAlert) {
+                errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+        {% endif %}
+        {% endif %}
 
 
-            // Add spinning animation for loading indicator
-            const style = document.createElement('style');
-            style.textContent = `
+        // Add spinning animation for loading indicator
+        const style = document.createElement('style');
+        style.textContent = `
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
 `;
-            document.head.appendChild(style);
+        document.head.appendChild(style);
 
-            // Toast helper (non-blocking notifications)
-            function showToast(message, type = 'info', duration = 4000) {
-                let container = document.getElementById('toast-container');
-                if (!container) {
-                    container = document.createElement('div');
-                    container.id = 'toast-container';
-                    document.body.appendChild(container);
+        // Toast helper (non-blocking notifications)
+        function showToast(message, type = 'info', duration = 4000) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast-item toast-${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 500);
+            }, duration);
+        }
+
+        // --- Real-time YOLO & Camera Logic ---
+        const drawingCanvas = document.getElementById('drawing-canvas');
+        const rtCtx = drawingCanvas.getContext('2d');
+        const rtBadge = document.getElementById('rt-badge');
+        const rtSidebar = document.getElementById('rt-sidebar');
+        const rtList = document.getElementById('rt-results-list');
+        const rtCount = document.getElementById('rt-count');
+
+        const YOLO_URL = "{% url 'face_analysis:realtime_yolo_analyze' %}";
+        const DETECTION_INTERVAL = 400; // ms
+
+        let lastDetections = [];
+        let isProcessingRT = false;
+        let rtRunning = false;
+        let rtInterval = null;
+
+        // Face bbox from backend (updated on every YOLO response)
+        let lastFaceBbox = null;  // [x1, y1, x2, y2] in original frame pixel coords
+        const faceBadgeEl = document.getElementById('face-status-badge');
+
+        const YOLO_COLORS = {
+            acne: "#ff6b6b", blackheads: "#ffa94d", blackheades: "#ffa94d",
+            dark_spots: "#cc5de8", darkspots: "#cc5de8",
+            wrinkles: "#74c0fc", pores: "#63e6be",
+        };
+
+        function getYOLOColor(label) {
+            return YOLO_COLORS[(label || "").toLowerCase().replace(/ /g, "_")] || "#00e676";
+        }
+
+        // ── Face badge helpers ────────────────────────────────────────────
+        function updateFaceBadge(hasFace) {
+            if (!faceBadgeEl) return;
+            faceBadgeEl.style.display = 'block';
+            if (hasFace) {
+                faceBadgeEl.textContent = '✔ Face Detected';
+                faceBadgeEl.className = 'face-status-badge';
+            } else {
+                faceBadgeEl.textContent = '◎ No Face';
+                faceBadgeEl.className = 'face-status-badge no-face';
+            }
+        }
+        function hideFaceBadge() {
+            if (faceBadgeEl) faceBadgeEl.style.display = 'none';
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        function renderRTLoop() {
+            if (!rtRunning) return;
+            requestAnimationFrame(renderRTLoop);
+            if (!video.videoWidth) return;
+
+            rtCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+            // ── 1. Face bounding box from backend (MediaPipe) ──────────────
+            if (lastFaceBbox) {
+                const [fx1, fy1, fx2, fy2] = lastFaceBbox;
+                const sx = drawingCanvas.width  / video.videoWidth;
+                const sy = drawingCanvas.height / video.videoHeight;
+                const fx = fx1 * sx,  fy = fy1 * sy;
+                const fw = (fx2 - fx1) * sx,  fh = (fy2 - fy1) * sy;
+                const bL = Math.min(fw, fh) * 0.18;
+
+                // Subtle dashed inner rectangle
+                rtCtx.save();
+                rtCtx.strokeStyle = 'rgba(0, 230, 118, 0.3)';
+                rtCtx.lineWidth = 1.5;
+                rtCtx.setLineDash([8, 5]);
+                rtCtx.strokeRect(fx, fy, fw, fh);
+                rtCtx.setLineDash([]);
+                rtCtx.restore();
+
+                // Glowing L-bracket corners
+                rtCtx.save();
+                rtCtx.shadowColor = 'rgba(0, 230, 118, 0.9)';
+                rtCtx.shadowBlur = 12;
+                rtCtx.strokeStyle = '#00e676';
+                rtCtx.lineWidth = 3;
+                rtCtx.lineCap = 'round';
+                rtCtx.beginPath(); rtCtx.moveTo(fx, fy + bL); rtCtx.lineTo(fx, fy); rtCtx.lineTo(fx + bL, fy); rtCtx.stroke();
+                rtCtx.beginPath(); rtCtx.moveTo(fx + fw - bL, fy); rtCtx.lineTo(fx + fw, fy); rtCtx.lineTo(fx + fw, fy + bL); rtCtx.stroke();
+                rtCtx.beginPath(); rtCtx.moveTo(fx + fw, fy + fh - bL); rtCtx.lineTo(fx + fw, fy + fh); rtCtx.lineTo(fx + fw - bL, fy + fh); rtCtx.stroke();
+                rtCtx.beginPath(); rtCtx.moveTo(fx + bL, fy + fh); rtCtx.lineTo(fx, fy + fh); rtCtx.lineTo(fx, fy + fh - bL); rtCtx.stroke();
+                rtCtx.restore();
+
+                // Label badge
+                const fLabel = '✔ Face';
+                rtCtx.font = 'bold 12px Lato, sans-serif';
+                const ftw = rtCtx.measureText(fLabel).width;
+                const flx = fx;
+                const fly = fy > 26 ? fy - 24 : fy + fh + 6;
+                rtCtx.fillStyle = '#00e676';
+                rtCtx.fillRect(flx, fly, ftw + 14, 20);
+                rtCtx.fillStyle = '#002d13';
+                rtCtx.fillText(fLabel, flx + 7, fly + 14);
+
+            } else if (rtRunning) {
+                // No face — show guide ellipse
+                const cx = drawingCanvas.width  / 2;
+                const cy = drawingCanvas.height / 2;
+                const rx = drawingCanvas.width  * 0.25;
+                const ry = drawingCanvas.height * 0.33;
+                rtCtx.save();
+                rtCtx.strokeStyle = 'rgba(255, 95, 95, 0.55)';
+                rtCtx.lineWidth = 2;
+                rtCtx.setLineDash([10, 7]);
+                rtCtx.beginPath();
+                rtCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                rtCtx.stroke();
+                rtCtx.setLineDash([]);
+                const msg = 'Center your face here';
+                rtCtx.font = 'bold 12px Lato, sans-serif';
+                const mw = rtCtx.measureText(msg).width;
+                const mx = cx - mw / 2;
+                const my = cy + ry + 8;
+                rtCtx.fillStyle = 'rgba(220, 60, 60, 0.88)';
+                rtCtx.fillRect(mx - 8, my, mw + 16, 20);
+                rtCtx.fillStyle = '#fff';
+                rtCtx.fillText(msg, mx, my + 14);
+                rtCtx.restore();
+            }
+
+            // ── 2. YOLO skin-concern boxes ─────────────────────────────────
+            lastDetections.forEach(det => {
+                const [x1, y1, x2, y2] = det.box;
+                const color = getYOLOColor(det.label);
+                const labelStr = `${det.label} ${Math.round(det.confidence * 100)}%`;
+                rtCtx.strokeStyle = color;
+                rtCtx.lineWidth = 3;
+                rtCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                rtCtx.font = "bold 14px Lato, sans-serif";
+                const textWidth = rtCtx.measureText(labelStr).width;
+                const labelY = y1 > 25 ? y1 - 22 : y2 + 5;
+                rtCtx.fillStyle = color;
+                rtCtx.fillRect(x1 - 1, labelY, textWidth + 12, 20);
+                rtCtx.fillStyle = "#fff";
+                rtCtx.fillText(labelStr, x1 + 5, labelY + 15);
+            });
+        }
+
+        async function sendRTFrame() {
+            if (isProcessingRT || !rtRunning || !video.videoWidth) return;
+            isProcessingRT = true;
+
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = video.videoWidth;
+            tmpCanvas.height = video.videoHeight;
+            tmpCanvas.getContext('2d').drawImage(video, 0, 0);
+            const frameData = tmpCanvas.toDataURL('image/jpeg', 0.6);
+
+            try {
+                const response = await fetch(YOLO_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ frame: frameData })
+                });
+                const data = await response.json();
+
+                // Update face bbox from backend (MediaPipe result)
+                if (data.face_bbox) {
+                    lastFaceBbox = data.face_bbox;  // [x1, y1, x2, y2]
+                    updateFaceBadge(true);
+                } else {
+                    lastFaceBbox = null;
+                    updateFaceBadge(false);
                 }
 
-                const toast = document.createElement('div');
-                toast.className = `toast-item toast-${type}`;
-                toast.innerHTML = `<span>${message}</span>`;
-                container.appendChild(toast);
+                // Update concern detections
+                if (data.detections) {
+                    lastDetections = data.detections;
+                    updateRTPanel(data);
+                    rtBadge.textContent = lastDetections.length > 0
+                        ? `${lastDetections.length} concern${lastDetections.length !== 1 ? 's' : ''} detected`
+                        : 'Live Scanning…';
+                }
+            } catch (err) { console.error("YOLO Error:", err); }
+            finally { isProcessingRT = false; }
+        }
 
-                setTimeout(() => toast.classList.add('show'), 10);
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    toast.style.transform = 'translateY(-20px)';
-                    setTimeout(() => {
-                        if (toast.parentNode) container.removeChild(toast);
-                    }, 500);
-                }, duration);
+        function updateRTPanel(data) {
+            const dets = data.detections || [];
+            rtCount.textContent = dets.length;
+            if (dets.length === 0) {
+                rtList.innerHTML = '<p class="muted small text-center">No concerns detected in current view.</p>';
+                return;
             }
+            let html = "";
+            dets.forEach(det => {
+                const col = getYOLOColor(det.label);
+                html += `<div class="rt-det-row" style="border-left-color:${col};"><div class="rt-det-dot" style="background:${col};"></div><span class="rt-det-name">${det.label}</span><span class="rt-det-conf">${Math.round(det.confidence * 100)}%</span></div>`;
+            });
+            rtList.innerHTML = html;
+        }
 
-            // --- Real-time YOLO & Camera Logic ---
-            const drawingCanvas = document.getElementById('drawing-canvas');
-            const rtCtx = drawingCanvas.getContext('2d');
-            const rtBadge = document.getElementById('rt-badge');
-            const rtSidebar = document.getElementById('rt-sidebar');
-            const rtList = document.getElementById('rt-results-list');
-            const rtCount = document.getElementById('rt-count');
+        startCameraBtn.addEventListener('click', async function () {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    drawingCanvas.width = video.videoWidth;
+                    drawingCanvas.height = video.videoHeight;
+                    rtRunning = true;
+                    rtSidebar.style.display = 'block';
+                    requestAnimationFrame(renderRTLoop);
+                    rtInterval = setInterval(sendRTFrame, DETECTION_INTERVAL);
+                    rtBadge.textContent = 'Live Scanning…';
+                    updateFaceBadge(false); // Show "No Face" until backend responds
+                };
+                cameraContainer.style.display = 'flex';
+                uploadDrop.style.display = 'none';
+                startCameraBtn.style.display = 'none';
+            } catch (err) { alert("Could not access camera. Please check permissions."); }
+        });
 
-            const YOLO_URL = "{% url 'face_analysis:realtime_yolo_analyze' %}";
-            const DETECTION_INTERVAL = 400; // ms
+        stopCameraBtn.addEventListener('click', stopCamera);
 
-            let lastDetections = [];
-            let isProcessingRT = false;
-            let rtRunning = false;
-            let rtInterval = null;
-
-            const YOLO_COLORS = {
-                acne: "#ff6b6b", blackheads: "#ffa94d", blackheades: "#ffa94d",
-                dark_spots: "#cc5de8", darkspots: "#cc5de8",
-                wrinkles: "#74c0fc", pores: "#63e6be",
-            };
-
-            function getYOLOColor(label) {
-                return YOLO_COLORS[(label || "").toLowerCase().replace(/ /g, "_")] || "#00e676";
+        function stopCamera() {
+            rtRunning = false;
+            lastFaceBbox = null;
+            hideFaceBadge();
+            if (rtInterval) clearInterval(rtInterval);
+            rtInterval = null;
+            lastDetections = [];
+            rtSidebar.style.display = 'none';
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
+            cameraContainer.style.display = 'none';
+            uploadDrop.style.display = 'block';
+            startCameraBtn.style.display = 'inline-block';
+        }
 
-            function renderRTLoop() {
-                if (!rtRunning) return;
-                requestAnimationFrame(renderRTLoop);
-                if (!video.videoWidth) return;
+        captureBtn.addEventListener('click', function () {
+            if (!stream) return;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.toBlob(function (blob) {
+                const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+                stopCamera();
+            }, 'image/jpeg', 0.95);
+        });
 
-                rtCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-                lastDetections.forEach(det => {
-                    const [x1, y1, x2, y2] = det.box;
-                    const color = getYOLOColor(det.label);
-                    const labelStr = `${det.label} ${Math.round(det.confidence * 100)}%`;
+        // --- Shelf Logic ---
+        const buttons = document.querySelectorAll('.add-to-shelf-btn');
+        const csrfTokenElem = document.getElementById('csrf-token');
+        const localCsrfToken = csrfTokenElem ? csrfTokenElem.value : '{{ csrf_token }}';
 
-                    rtCtx.strokeStyle = color;
-                    rtCtx.lineWidth = 3;
-                    rtCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-                    rtCtx.font = "bold 14px Lato, sans-serif";
-                    const textWidth = rtCtx.measureText(labelStr).width;
-                    const labelY = y1 > 25 ? y1 - 22 : y2 + 5;
-                    
-                    rtCtx.fillStyle = color;
-                    rtCtx.fillRect(x1 - 1, labelY, textWidth + 12, 20);
-                    rtCtx.fillStyle = "#fff";
-                    rtCtx.fillText(labelStr, x1 + 5, labelY + 15);
-                });
-            }
-
-            async function sendRTFrame() {
-                if (isProcessingRT || !rtRunning || !video.videoWidth) return;
-                isProcessingRT = true;
-
-                const tmpCanvas = document.createElement('canvas');
-                tmpCanvas.width = video.videoWidth;
-                tmpCanvas.height = video.videoHeight;
-                tmpCanvas.getContext('2d').drawImage(video, 0, 0);
-                const frameData = tmpCanvas.toDataURL('image/jpeg', 0.6);
-
-                try {
-                    const response = await fetch(YOLO_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify({ frame: frameData })
-                    });
-                    const data = await response.json();
-                    if (data.detections) {
-                        lastDetections = data.detections;
-                        updateRTPanel(data);
-                        rtBadge.textContent = lastDetections.length > 0 
-                            ? `${lastDetections.length} concern${lastDetections.length !== 1 ? 's' : ''} detected` 
-                            : 'Live Scanning...';
-                    }
-                } catch (err) { console.error("YOLO Error:", err); }
-                finally { isProcessingRT = false; }
-            }
-
-            function updateRTPanel(data) {
-                const dets = data.detections || [];
-                rtCount.textContent = dets.length;
-                if (dets.length === 0) {
-                    rtList.innerHTML = '<p class="muted small text-center">No concerns detected in current view.</p>';
+        buttons.forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const productId = this.dataset.productId;
+                const btn = this;
+                const originalText = btn.textContent;
+                if ('{{ user.is_authenticated|yesno:"true,false" }}' === 'false') {
+                    showToast('Please login to add products to your shelf', 'error');
                     return;
                 }
-                let html = "";
-                dets.forEach(det => {
-                    const col = getYOLOColor(det.label);
-                    html += `<div class="rt-det-row" style="border-left-color:${col};"><div class="rt-det-dot" style="background:${col};"></div><span class="rt-det-name">${det.label}</span><span class="rt-det-conf">${Math.round(det.confidence * 100)}%</span></div>`;
-                });
-                rtList.innerHTML = html;
-            }
+                btn.textContent = 'Adding...';
+                btn.disabled = true;
 
-            startCameraBtn.addEventListener('click', async function () {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                    video.srcObject = stream;
-                    video.onloadedmetadata = () => {
-                        drawingCanvas.width = video.videoWidth;
-                        drawingCanvas.height = video.videoHeight;
-                        rtRunning = true;
-                        rtSidebar.style.display = 'block';
-                        requestAnimationFrame(renderRTLoop);
-                        rtInterval = setInterval(sendRTFrame, DETECTION_INTERVAL);
-                        rtBadge.textContent = "Live Scanning...";
-                    };
-                    cameraContainer.style.display = 'flex';
-                    uploadDrop.style.display = 'none';
-                    startCameraBtn.style.display = 'none';
-                } catch (err) { alert("Could not access camera. Please check permissions."); }
-            });
-
-            stopCameraBtn.addEventListener('click', stopCamera);
-
-            function stopCamera() {
-                rtRunning = false;
-                if (rtInterval) clearInterval(rtInterval);
-                rtInterval = null;
-                lastDetections = [];
-                rtSidebar.style.display = 'none';
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                    stream = null;
-                }
-                cameraContainer.style.display = 'none';
-                uploadDrop.style.display = 'block';
-                startCameraBtn.style.display = 'inline-block';
-            }
-
-            captureBtn.addEventListener('click', function () {
-                if (!stream) return;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                canvas.toBlob(function (blob) {
-                    const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-                    fileInput.dispatchEvent(new Event('change'));
-                    stopCamera();
-                }, 'image/jpeg', 0.95);
-            });
-
-            // --- Shelf Logic ---
-            const buttons = document.querySelectorAll('.add-to-shelf-btn');
-            const csrfTokenElem = document.getElementById('csrf-token');
-            const localCsrfToken = csrfTokenElem ? csrfTokenElem.value : '{{ csrf_token }}';
-
-            buttons.forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const productId = this.dataset.productId;
-                    const btn = this;
-                    const originalText = btn.textContent;
-                    if ('{{ user.is_authenticated|yesno:"true,false" }}' === 'false') {
-                        showToast('Please login to add products to your shelf', 'error');
-                        return;
-                    }
-                    btn.textContent = 'Adding...';
-                    btn.disabled = true;
-
-                    // Update: Use shop:add_to_cart endpoint instead of user:add_to_shelf
-                    fetch("{% url 'add_to_cart' %}", {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'X-CSRFToken': localCsrfToken, 
-                            'X-Requested-With': 'XMLHttpRequest' 
-                        },
-                        body: JSON.stringify({ product_id: productId, quantity: 1 })
-                    })
+                // Update: Use shop:add_to_cart endpoint instead of user:add_to_shelf
+                fetch("{% url 'add_to_cart' %}", {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': localCsrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ product_id: productId, quantity: 1 })
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.message || data.status === 'success') {
@@ -2345,16 +2620,16 @@
                         btn.textContent = originalText;
                         btn.disabled = false;
                     });
-                });
             });
+        });
 
-            // Notification dropdown toggle
-            const notificationBtn = document.getElementById('notificationBtn');
-            const notificationContent = document.getElementById('notificationContent');
-            if (notificationBtn && notificationContent) {
-                notificationBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationContent.classList.toggle('show'); });
-                document.addEventListener('click', (e) => { if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) notificationContent.classList.remove('show'); });
-            }
+        // Notification dropdown toggle
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationContent = document.getElementById('notificationContent');
+        if (notificationBtn && notificationContent) {
+            notificationBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationContent.classList.toggle('show'); });
+            document.addEventListener('click', (e) => { if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) notificationContent.classList.remove('show'); });
+        }
         });
     </script>
 

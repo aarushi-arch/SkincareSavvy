@@ -63,6 +63,21 @@
 const ANALYZE_URL = "{% url 'face_analysis:realtime_yolo_analyze' %}";
 const CSRF        = "{{ csrf_token }}";
 
+// roundRect polyfill for browsers that don't support it
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.arcTo(x+w, y, x+w, y+h, r);
+    this.arcTo(x+w, y+h, x, y+h, r);
+    this.arcTo(x, y+h, x, y, r);
+    this.arcTo(x, y, x+w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+
 const video    = document.getElementById("video");
 const canvas   = document.getElementById("canvas");
 const ctx      = canvas.getContext("2d");
@@ -79,8 +94,9 @@ const COLORS = {
 function getColor(l) { return COLORS[(l||"").toLowerCase()] || "#00e676"; }
 function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1).replace(/_/g," ") : ""; }
 
-// Last detections — drawn every animation frame so boxes stay visible
+// Last known state — persisted between frames
 let lastDetections = [];
+let lastFaceBbox   = null;   // [x1,y1,x2,y2] from MediaPipe
 let isProcessing   = false;
 let running        = false;
 let detectionTimer = null;
@@ -106,23 +122,62 @@ navigator.mediaDevices.getUserMedia({ video: true })
 function renderLoop() {
   if (!running) return;
   requestAnimationFrame(renderLoop);
-
   if (!video.videoWidth) return;
 
-  // Draw live video frame
+  // Keep canvas pixel dimensions in sync with video
+  if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+  }
+
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Overlay last known YOLO boxes
+  // All coordinates from the backend are in video pixel space (canvas.width × canvas.height)
+  // so we draw directly — no extra scaling needed.
+
+  // ── MediaPipe face box (cyan dashed) ──────────────────────────────────────
+  if (lastFaceBbox) {
+    const [fx1, fy1, fx2, fy2] = lastFaceBbox;
+    const fw = fx2 - fx1, fh = fy2 - fy1;
+
+    ctx.save();
+    ctx.strokeStyle = "#00e5ff";
+    ctx.lineWidth   = 3;
+    ctx.setLineDash([8, 4]);
+    ctx.shadowColor = "rgba(0,229,255,0.6)";
+    ctx.shadowBlur  = 6;
+    ctx.strokeRect(fx1, fy1, fw, fh);
+    ctx.restore();
+
+    // "Face detected" label chip
+    const label = "Face detected";
+    ctx.font = "bold 12px sans-serif";
+    const tw = ctx.measureText(label).width;
+    const lx = fx1;
+    const ly = fy1 > 20 ? fy1 - 20 : fy2 + 4;
+    ctx.fillStyle = "rgba(0,229,255,0.9)";
+    ctx.beginPath();
+    ctx.roundRect(lx, ly, tw + 12, 18, 4);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.fillText(label, lx + 6, ly + 13);
+  }
+
+  // ── YOLO concern boxes ────────────────────────────────────────────────────
   lastDetections.forEach(det => {
     const [x1, y1, x2, y2] = det.box;
     const color = getColor(det.label);
     const text  = capitalize(det.label) + " " + Math.round(det.confidence * 100) + "%";
 
+    ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth   = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 4;
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    ctx.restore();
 
-    ctx.font = "bold 13px sans-serif";
+    ctx.font = "bold 12px sans-serif";
     const tw = ctx.measureText(text).width;
     const ly = y1 > 20 ? y1 - 18 : y2 + 2;
     ctx.fillStyle = color;
@@ -137,12 +192,12 @@ function sendFrame() {
   if (isProcessing || !video.videoWidth) return;
   isProcessing = true;
 
-  // Capture at native resolution — YOLO gets the real frame
+  // Send at native resolution so MediaPipe can detect the face reliably
   const tmpCanvas = document.createElement("canvas");
   tmpCanvas.width  = video.videoWidth;
   tmpCanvas.height = video.videoHeight;
   tmpCanvas.getContext("2d").drawImage(video, 0, 0);
-  const frame = tmpCanvas.toDataURL("image/jpeg", 0.7);
+  const frame = tmpCanvas.toDataURL("image/jpeg", 0.85);
 
   fetch(ANALYZE_URL, {
     method: "POST",
@@ -151,14 +206,25 @@ function sendFrame() {
   })
   .then(r => r.json())
   .then(data => {
-    if (data.error) {
+    if (data.status === "no_face") {
+      badge.textContent      = "❌ No face detected";
+      lastDetections         = [];
+      lastFaceBbox           = null;
+      panel.innerHTML        = '<p class="text-muted small mb-0">Point your face at the camera.</p>';
+      regBadge.style.display = "none";
+    } else if (data.error) {
       badge.textContent = "Error";
       panel.innerHTML   = `<div class="err-box">${data.error}</div>`;
       lastDetections    = [];
+      lastFaceBbox      = null;
     } else {
+      lastFaceBbox   = data.face_bbox || null;
       lastDetections = data.detections || [];
       const n = lastDetections.length;
-      badge.textContent = n > 0 ? `${n} region${n !== 1 ? "s" : ""} detected` : "No regions";
+      console.log("[DEBUG] face_bbox:", lastFaceBbox, "detections:", n);
+      badge.textContent = n > 0
+        ? `✅ Face · ${n} region${n !== 1 ? "s" : ""} detected`
+        : "✅ Face detected · No concerns";
       renderPanel(data);
     }
   })
@@ -206,6 +272,7 @@ btnStop.addEventListener("click", () => {
   if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
   video.srcObject        = null;
   lastDetections         = [];
+  lastFaceBbox           = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   badge.textContent      = "Stopped";
   btnStop.disabled       = true;

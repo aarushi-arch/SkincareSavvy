@@ -64,10 +64,10 @@ class YOLOAnalysisPipeline:
 
     # ── Fast real-time detection (YOLO only, no MobileNet) ───────────────────
 
-    def detect_only(self, image_bgr: np.ndarray, conf_threshold: float = 0.25) -> dict[str, Any]:
+    def detect_only(self, image_bgr: np.ndarray, conf_threshold: float = 0.20) -> dict[str, Any]:
         """
-        Run YOLO only — no MobileNet per crop.
-        Designed for real-time webcam use where speed matters.
+        MediaPipe face gate → crop face → resize → YOLO on face crop.
+        Returns face_bbox (original coords) + YOLO concern boxes (mapped back).
         """
         self._load_yolo()
 
@@ -77,29 +77,82 @@ class YOLOAnalysisPipeline:
                 "yolo_available": False,
             }
 
-        print(f"[YOLO] Running inference on frame {image_bgr.shape}")
-        results = self.yolo_model(image_bgr, verbose=False, conf=conf_threshold)[0]
-        print(f"[YOLO] Raw boxes detected: {len(results.boxes)}")
+        # ── Step 1: MediaPipe face detection ─────────────────────────────────
+        from face_analysis.utils.face_check import detect_face
+        face_result = detect_face(image_bgr)
 
-        h, w = image_bgr.shape[:2]
+        if not face_result["face_present"]:
+            print("[YOLO] No face detected — skipping YOLO inference")
+            return {
+                "status": "no_face",
+                "message": "No face detected",
+                "face_bbox": None,
+                "yolo_available": True,
+                "detections": [],
+                "summary": {"concern_counts": {}, "top_concern": None, "total_regions": 0},
+            }
+
+        fx1, fy1, fx2, fy2 = face_result["bbox"]
+        print(f"[MediaPipe] Face bbox: [{fx1},{fy1},{fx2},{fy2}]")
+
+        # ── Step 2: Crop face region ──────────────────────────────────────────
+        face_crop = image_bgr[fy1:fy2, fx1:fx2]
+        if face_crop.size == 0:
+            print("[YOLO] Face crop is empty — skipping")
+            return {
+                "status": "no_face",
+                "message": "Face crop failed",
+                "face_bbox": face_result["bbox"],
+                "yolo_available": True,
+                "detections": [],
+                "summary": {"concern_counts": {}, "top_concern": None, "total_regions": 0},
+            }
+
+        # ── Step 3: Resize crop to 640×640 for YOLO ──────────────────────────
+        face_640 = cv2.resize(face_crop, (640, 640))
+
+        # Debug: save the crop so you can inspect it
+        cv2.imwrite("debug_face.jpg", face_640)
+        print(f"[YOLO] Running on face crop {face_crop.shape} → resized to 640×640")
+
+        # ── Step 4: YOLO on face crop ─────────────────────────────────────────
+        results = self.yolo_model(face_640, verbose=False, conf=conf_threshold)[0]
+        print(f"[YOLO] Boxes on face crop: {len(results.boxes)}")
+
+        # Scale factors to map crop coords back to original frame
+        crop_h, crop_w = face_crop.shape[:2]
+        scale_x = crop_w / 640.0
+        scale_y = crop_h / 640.0
+
         detections = []
         concern_counts: dict[str, int] = {}
 
         for box in results.boxes:
-            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-            conf = float(box.conf[0])
+            # Coords in 640×640 space
+            bx1, by1, bx2, by2 = map(int, box.xyxy[0].tolist())
+            conf   = float(box.conf[0])
             cls_id = int(box.cls[0])
-            label = results.names.get(cls_id, str(cls_id))
+            label  = results.names.get(cls_id, str(cls_id))
 
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
-            if x2 <= x1 or y2 <= y1:
+            # Map back to face_crop space
+            bx1 = int(bx1 * scale_x)
+            by1 = int(by1 * scale_y)
+            bx2 = int(bx2 * scale_x)
+            by2 = int(by2 * scale_y)
+
+            # Map to original full-frame coords
+            ox1 = max(0, fx1 + bx1)
+            oy1 = max(0, fy1 + by1)
+            ox2 = min(image_bgr.shape[1], fx1 + bx2)
+            oy2 = min(image_bgr.shape[0], fy1 + by2)
+
+            if ox2 <= ox1 or oy2 <= oy1:
                 continue
 
             detections.append({
-                "label": label,
+                "label":      label,
                 "confidence": round(conf, 4),
-                "box": [x1, y1, x2, y2],
+                "box":        [ox1, oy1, ox2, oy2],
             })
             lbl = label.lower()
             concern_counts[lbl] = concern_counts.get(lbl, 0) + 1
@@ -107,12 +160,14 @@ class YOLOAnalysisPipeline:
         top_concern = max(concern_counts, key=concern_counts.get) if concern_counts else None
 
         return {
+            "status":       "success",
             "yolo_available": True,
-            "detections": detections,
+            "face_bbox":    [fx1, fy1, fx2, fy2],
+            "detections":   detections,
             "summary": {
                 "concern_counts": concern_counts,
-                "top_concern": top_concern,
-                "total_regions": len(detections),
+                "top_concern":    top_concern,
+                "total_regions":  len(detections),
             },
         }
 

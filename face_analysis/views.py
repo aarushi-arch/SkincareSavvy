@@ -132,7 +132,7 @@ def index(request):
                         }
 
                         # Use TF-IDF based recommendations with active ingredients and allergy warnings
-                        recommended_products = get_recommendations(query, top_k=10)
+                        recommended_products = get_recommendations(query, top_k=50)
 
                         # Fetch Product objects from DB to get IDs and synchronized data
                         product_urls = [p.get('link') for p in recommended_products if p.get('link')]
@@ -342,7 +342,7 @@ def realtime_yolo_analyze(request):
         print(f"[YOLO] Frame shape: {frame_bgr.shape}")
 
         result = yolo_pipeline.detect_only(frame_bgr)
-        print("YOLO RESULT:", result)
+        print(f"[YOLO] Status: {result.get('status')} | Face bbox: {result.get('face_bbox')} | Detections: {len(result.get('detections', []))}")
         return JsonResponse(result)
 
     except Exception as e:

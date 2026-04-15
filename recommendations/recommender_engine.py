@@ -610,28 +610,22 @@ def get_recommendations(user_inputs: Dict, top_k: int = 5, ingredient_weight: fl
     
     # Filter by relevant effects if concerns are specified
     if relevant_effects:
-        def has_relevant_effect(effects_str):
-            """Check if product has any of the relevant effects."""
+        def effect_boost(effects_str):
+            """Return 1.5 bonus score if product has a relevant effect, else 0."""
             if pd.isna(effects_str) or not effects_str:
-                return False
+                return 0.0
             try:
-                if isinstance(effects_str, str) and effects_str.startswith('['):
-                    effects = ast.literal_eval(effects_str)
-                else:
-                    effects = [effects_str]
-                
-                # Check if any product effect matches any relevant effect
+                effects = ast.literal_eval(effects_str) if isinstance(effects_str, str) and effects_str.startswith('[') else [effects_str]
                 for product_effect in effects:
                     for relevant in relevant_effects:
                         if str(product_effect).lower() == relevant.lower():
-                            return True
-                return False
-            except:
-                return False
-        
-        # Only keep products that have at least one relevant effect
-        mask = data['notable_effects'].apply(has_relevant_effect)
-        data = data[mask]
+                            return 1.5
+            except Exception:
+                pass
+            return 0.0
+
+        # Boost score for matching products — do NOT exclude non-matching ones
+        data["score"] = data["score"] + data["notable_effects"].apply(effect_boost)
 
     # Exclude products containing user's allergens
     user_allergies = user_inputs.get("allergies", [])
