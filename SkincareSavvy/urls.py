@@ -11,6 +11,7 @@ urlpatterns = [
     path("face-analysis/", include("face_analysis.urls")),
     path("shop/", include("shop.urls")),
     path("chat/", include("chat.urls")),
+    path("journal/", include("skin_journal.urls")),
 ]
 
 if settings.DEBUG:

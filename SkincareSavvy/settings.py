@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "products",
     "widget_tweaks",
     "chat",
+    "skin_journal",
 ]
 
 # enable optional third-party apps only when installed

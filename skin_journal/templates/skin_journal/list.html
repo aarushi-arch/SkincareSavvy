@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}My Skin Journal{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 style="font-weight:700;color:#0b3b17;margin:0;">📓 My Skin Journal</h2>
+      <p class="text-muted mb-0" style="font-size:.9rem;">Track your skin day by day.</p>
+    </div>
+    <a href="{% url 'skin_journal:create' %}"
+       style="padding:10px 22px;border-radius:50px;background:linear-gradient(135deg,#16a34a,#0b3b17);
+              color:#fff;font-weight:600;text-decoration:none;font-size:.9rem;">
+      + New Entry
+    </a>
+  </div>
+
+  {% if entries %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;">
+    {% for entry in entries %}
+    <a href="{% url 'skin_journal:detail' entry.pk %}"
+       style="text-decoration:none;color:inherit;">
+      <div style="background:#fff;border-radius:16px;padding:1.5rem;
+                  box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #e8edf2;
+                  transition:transform .15s,box-shadow .15s;"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'"
+           onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,.07)'">
+
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span style="font-weight:700;color:#0b3b17;font-size:1rem;">
+            {{ entry.date|date:"D, d M Y" }}
+          </span>
+        </div>
+
+        {% if entry.skin_condition %}
+        <span style="display:inline-block;padding:3px 12px;border-radius:20px;
+                     background:#f0fdf4;color:#166534;font-size:.78rem;font-weight:600;margin-bottom:.75rem;">
+          {{ entry.get_skin_condition_display }}
+        </span>
+        {% endif %}
+
+        {% if entry.notes %}
+        <p style="font-size:.85rem;color:#64748b;margin:0;
+                  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+          {{ entry.notes }}
+        </p>
+        {% endif %}
+
+        {% if entry.image %}
+        <img src="{{ entry.image.url }}" alt="skin"
+             style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-top:.75rem;">
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;">
+    <div style="font-size:3rem;margin-bottom:1rem;">📓</div>
+    <h4 style="color:#0f172a;font-weight:700;">No entries yet</h4>
+    <p class="text-muted">Start tracking your skin journey today.</p>
+    <a href="{% url 'skin_journal:create' %}"
+       style="display:inline-block;margin-top:1rem;padding:12px 28px;border-radius:50px;
+              background:linear-gradient(135deg,#16a34a,#0b3b17);color:#fff;
+              font-weight:600;text-decoration:none;">
+      Write First Entry
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -346,7 +346,7 @@
                         <div class="dropdown-content">
                             <a href="{% url 'face_analysis:face_analysis_index' %}">Skin Analysis</a>
                             <a href="{% url 'recommendations:home' %}">Skin Recommendations</a>
-                            <a href="#routine-builder">Routine Builder</a>
+                            <a href="{% url 'skin_journal:list' %}">Journal</a>
                         </div>
                     </li>
                     {% if user.is_authenticated %}

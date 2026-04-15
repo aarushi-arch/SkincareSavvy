@@ -95,31 +95,37 @@ class YOLOAnalysisPipeline:
         fx1, fy1, fx2, fy2 = face_result["bbox"]
         print(f"[MediaPipe] Face bbox: [{fx1},{fy1},{fx2},{fy2}]")
 
-        # ── Step 2: Crop face region ──────────────────────────────────────────
+        # ── Step 2: Add margin + clamp to frame bounds ────────────────────────
+        img_h, img_w = image_bgr.shape[:2]
+        MARGIN = 30   # px — gives YOLO room around face edges
+        fx1 = max(0,     fx1 - MARGIN)
+        fy1 = max(0,     fy1 - MARGIN)
+        fx2 = min(img_w, fx2 + MARGIN)
+        fy2 = min(img_h, fy2 + MARGIN)
+
+        # ── Step 3: Crop face region ──────────────────────────────────────────
         face_crop = image_bgr[fy1:fy2, fx1:fx2]
         if face_crop.size == 0:
             print("[YOLO] Face crop is empty — skipping")
             return {
                 "status": "no_face",
                 "message": "Face crop failed",
-                "face_bbox": face_result["bbox"],
+                "face_bbox": [fx1, fy1, fx2, fy2],
                 "yolo_available": True,
                 "detections": [],
                 "summary": {"concern_counts": {}, "top_concern": None, "total_regions": 0},
             }
 
-        # ── Step 3: Resize crop to 640×640 for YOLO ──────────────────────────
+        # ── Step 4: Resize crop to 640×640 for YOLO ──────────────────────────
         face_640 = cv2.resize(face_crop, (640, 640))
-
-        # Debug: save the crop so you can inspect it
         cv2.imwrite("debug_face.jpg", face_640)
-        print(f"[YOLO] Running on face crop {face_crop.shape} → resized to 640×640")
+        print(f"[YOLO] Crop {face_crop.shape} → 640×640, conf={conf_threshold}")
 
-        # ── Step 4: YOLO on face crop ─────────────────────────────────────────
+        # ── Step 5: YOLO on face crop ─────────────────────────────────────────
         results = self.yolo_model(face_640, verbose=False, conf=conf_threshold)[0]
         print(f"[YOLO] Boxes on face crop: {len(results.boxes)}")
 
-        # Scale factors to map crop coords back to original frame
+        # Scale factors: 640-space → crop-space → original-frame-space
         crop_h, crop_w = face_crop.shape[:2]
         scale_x = crop_w / 640.0
         scale_y = crop_h / 640.0
@@ -128,23 +134,22 @@ class YOLOAnalysisPipeline:
         concern_counts: dict[str, int] = {}
 
         for box in results.boxes:
-            # Coords in 640×640 space
             bx1, by1, bx2, by2 = map(int, box.xyxy[0].tolist())
             conf   = float(box.conf[0])
             cls_id = int(box.cls[0])
             label  = results.names.get(cls_id, str(cls_id))
 
-            # Map back to face_crop space
+            # 640-space → crop-space
             bx1 = int(bx1 * scale_x)
             by1 = int(by1 * scale_y)
             bx2 = int(bx2 * scale_x)
             by2 = int(by2 * scale_y)
 
-            # Map to original full-frame coords
-            ox1 = max(0, fx1 + bx1)
-            oy1 = max(0, fy1 + by1)
-            ox2 = min(image_bgr.shape[1], fx1 + bx2)
-            oy2 = min(image_bgr.shape[0], fy1 + by2)
+            # crop-space → original frame-space
+            ox1 = max(0,     fx1 + bx1)
+            oy1 = max(0,     fy1 + by1)
+            ox2 = min(img_w, fx1 + bx2)
+            oy2 = min(img_h, fy1 + by2)
 
             if ox2 <= ox1 or oy2 <= oy1:
                 continue
@@ -160,10 +165,10 @@ class YOLOAnalysisPipeline:
         top_concern = max(concern_counts, key=concern_counts.get) if concern_counts else None
 
         return {
-            "status":       "success",
+            "status":         "success",
             "yolo_available": True,
-            "face_bbox":    [fx1, fy1, fx2, fy2],
-            "detections":   detections,
+            "face_bbox":      [fx1, fy1, fx2, fy2],
+            "detections":     detections,
             "summary": {
                 "concern_counts": concern_counts,
                 "top_concern":    top_concern,
