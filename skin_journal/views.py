@@ -1,15 +1,39 @@
+import json
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import JournalEntry
 from .forms import JournalEntryForm
+from .insight_engine import get_insights
 from users.models import Notification
 
 
 @login_required
 def journal_list(request):
     entries = JournalEntry.objects.filter(user=request.user)
-    return render(request, "skin_journal/list.html", {"entries": entries})
+
+    ordered = entries.order_by("date")
+    chart_data = {"dates": [], "acne": [], "dark_spots": [], "wrinkles": []}
+    engine_data = []
+
+    for e in ordered:
+        chart_data["dates"].append(e.date.strftime("%b %d"))
+        chart_data["acne"].append(e.acne_severity)
+        chart_data["dark_spots"].append(e.dark_spots_severity)
+        chart_data["wrinkles"].append(e.wrinkles_severity)
+        engine_data.append({
+            "acne":       e.acne_severity,
+            "dark_spots": e.dark_spots_severity,
+            "wrinkles":   e.wrinkles_severity,
+        })
+
+    insights = get_insights(engine_data)["insights"]
+
+    return render(request, "skin_journal/list.html", {
+        "entries":    entries,
+        "chart_data": json.dumps(chart_data),
+        "insights":   insights,
+    })
 
 
 @login_required

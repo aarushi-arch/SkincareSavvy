@@ -2,160 +2,651 @@
 {% block title %}{{ entry.date }} — Skin Journal{% endblock %}
 
 {% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
-  .sj-detail-page { background:#f6f8f6; min-height:100vh; padding:2.5rem 0 5rem; }
-  .sj-back { font-size:.8rem; color:#94a3b8; text-decoration:none; letter-spacing:.3px;
-             display:inline-flex; align-items:center; gap:.4rem; margin-bottom:2rem; }
-  .sj-back:hover { color:#0b3b17; }
+  :root {
+    --primary: #0b3b17;
+    --primary-light: #145a28;
+    --primary-soft: rgba(11, 59, 23, 0.08);
+    --primary-softer: rgba(11, 59, 23, 0.04);
+    --text: #1d1f23;
+    --text-muted: #6b7280;
+    --bg: #f8faf9;
+    --card-bg: #ffffff;
+    --border: rgba(11, 59, 23, 0.1);
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 12px;
+    --shadow-soft: 0 2px 12px rgba(11, 59, 23, 0.06);
+    --shadow-medium: 0 4px 24px rgba(11, 59, 23, 0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-  .sj-detail-wrap { max-width:700px; margin:0 auto; }
+  .sj-detail-page {
+    background: linear-gradient(180deg, #f8faf9 0%, #f0f5f2 100%);
+    min-height: 100vh;
+    padding: 2.5rem 0 5rem;
+    font-family: 'Lato', sans-serif;
+  }
 
-  .sj-detail-header { display:flex; justify-content:space-between; align-items:flex-start;
-                      margin-bottom:1.75rem; flex-wrap:wrap; gap:1rem; }
-  .sj-detail-date { font-size:1.4rem; font-weight:700; color:#0b3b17; margin:0 0 .2rem;
-                    letter-spacing:-.3px; }
-  .sj-detail-meta { font-size:.78rem; color:#94a3b8; margin:0; letter-spacing:.2px; }
+  .sj-detail-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header Section */
+  .sj-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .sj-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sj-back {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 16px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+  }
+
+  .sj-back:hover {
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+
+  .sj-header-title {
+    flex: 1;
+  }
+
+  .sj-entry-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 0.3rem;
+  }
+
+  .sj-entry-date {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .sj-condition-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 50px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  .sj-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
 
   .sj-action-btn {
-    padding:7px 16px; border-radius:6px; font-size:.78rem; font-weight:600;
-    text-decoration:none; letter-spacing:.3px; cursor:pointer;
-    transition:background .15s;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
   }
-  .sj-edit-btn { border:1px solid #c8dcc8; color:#2e7d32; background:#f6fbf6; }
-  .sj-edit-btn:hover { background:#e8f5e9; color:#2e7d32; }
-  .sj-del-btn  { border:1px solid #ffcdd2; color:#c62828; background:#fff; }
-  .sj-del-btn:hover { background:#ffebee; }
 
+  .sj-edit-btn {
+    background: #f1f5f1;
+    color: var(--text);
+    border: 1px solid #d1dcd1;
+  }
+
+  .sj-edit-btn:hover {
+    background: #e5ebe5;
+    transform: translateY(-1px);
+  }
+
+  .sj-del-btn {
+    background: #fde8e8;
+    color: #c53030;
+  }
+
+  .sj-del-btn:hover {
+    background: #fcd5d5;
+    transform: translateY(-1px);
+  }
+
+  /* Two Column Layout */
+  .sj-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .sj-content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Main Column */
+  .sj-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Photo Card */
+  .sj-photo-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+  }
+
+  .sj-photo-card img {
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .sj-no-photo {
+    background: var(--primary-softer);
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  /* Section Cards */
   .sj-card {
-    background:#fff; border-radius:14px; padding:1.5rem;
-    box-shadow:0 1px 4px rgba(0,0,0,.04), 0 4px 16px rgba(11,59,23,.04);
-    border:1px solid #eaf0ea; margin-bottom:1.25rem;
-  }
-  .sj-section-label {
-    font-size:.62rem; font-weight:700; letter-spacing:1.6px;
-    text-transform:uppercase; color:#b0bec5; margin:0 0 .9rem;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
   }
 
-  .sj-condition-badge {
-    display:inline-block; padding:4px 12px; border-radius:4px;
-    background:#f0fdf4; color:#2e7d32; font-size:.78rem; font-weight:600;
-    letter-spacing:.4px; text-transform:uppercase;
+  .sj-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  /* Severity bars */
-  .sj-sev-row { display:flex; align-items:center; gap:1rem; margin-bottom:.75rem; }
-  .sj-sev-row:last-child { margin-bottom:0; }
-  .sj-sev-label { width:100px; font-size:.82rem; font-weight:600; color:#546e7a;
-                  flex-shrink:0; letter-spacing:.1px; }
-  .sj-sev-track { flex:1; height:5px; background:#eaf0ea; border-radius:3px; overflow:hidden; }
-  .sj-sev-fill  { height:100%; border-radius:3px; }
-  .sj-sev-num   { font-size:.78rem; font-weight:700; width:28px; text-align:right;
-                  flex-shrink:0; }
+  .sj-card-title i {
+    font-size: 0.85rem;
+    color: var(--primary-light);
+  }
 
-  .sj-notes-text { font-size:.9rem; color:#37474f; line-height:1.7; margin:0; }
+  /* Severity Section */
+  .sj-severity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-  .sj-product-pill {
-    display:inline-block; padding:4px 12px; border-radius:4px;
-    background:#f6f8f6; color:#546e7a; font-size:.78rem; font-weight:500;
-    border:1px solid #eaf0ea; margin:.2rem;
+  .sj-severity-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 50px;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sj-severity-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sj-severity-bar {
+    height: 6px;
+    background: #e8ede8;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .sj-severity-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+    transition: width 0.6s ease;
+  }
+
+  .sj-severity-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  /* Regimen Grid */
+  .sj-regimen-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 500px) {
+    .sj-regimen-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .sj-product-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: var(--primary-softer);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .sj-product-item i {
+    color: var(--primary);
+    font-size: 0.9rem;
+  }
+
+  .sj-add-product {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+    background: transparent;
+  }
+
+  .sj-add-product:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+
+  /* Notes Section */
+  .sj-notes-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: #fafcfb;
+    resize: vertical;
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .sj-notes-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(11, 59, 23, 0.08);
+    background: white;
+  }
+
+  .sj-notes-textarea::placeholder {
+    color: #b8c4b8;
+  }
+
+  .sj-notes-display {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  /* Save Button */
+  .sj-save-btn {
+    width: 100%;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 16px rgba(11, 59, 23, 0.25);
+  }
+
+  .sj-save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(11, 59, 23, 0.35);
+  }
+
+  /* Sidebar */
+  .sj-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sj-tip-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+  }
+
+  .sj-tip-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .sj-tip-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 0.9rem;
+  }
+
+  .sj-tip-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .sj-tip-text {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* Timeline */
+  .sj-timeline {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+  }
+
+  .sj-timeline-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 1.25rem;
+  }
+
+  .sj-timeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sj-timeline-item {
+    display: flex;
+    gap: 0.875rem;
+    align-items: flex-start;
+  }
+
+  .sj-timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .sj-timeline-content {
+    flex: 1;
+  }
+
+  .sj-timeline-time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin: 0 0 0.2rem;
+  }
+
+  .sj-timeline-text {
+    font-size: 0.85rem;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.5;
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="sj-detail-page">
-<div class="container">
-<div class="sj-detail-wrap">
+  <div class="container">
+    <div class="sj-detail-wrap">
 
-  <a href="{% url 'skin_journal:list' %}" class="sj-back">&#8592; Journal</a>
-
-  <div class="sj-detail-header">
-    <div>
-      <p class="sj-detail-date">{{ entry.date|date:"l, d F Y" }}</p>
-      <p class="sj-detail-meta">Logged {{ entry.created_at|timesince }} ago</p>
-    </div>
-    <div style="display:flex;gap:.5rem;align-items:center;">
-      <a href="{% url 'skin_journal:edit' entry.pk %}" class="sj-action-btn sj-edit-btn">Edit</a>
-      <form method="post" action="{% url 'skin_journal:delete' entry.pk %}"
-            onsubmit="return confirm('Delete this entry?')" style="margin:0;">
-        {% csrf_token %}
-        <button type="submit" class="sj-action-btn sj-del-btn">Delete</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Skin condition -->
-  {% if entry.skin_condition %}
-  <div class="sj-card">
-    <p class="sj-section-label">Skin Condition</p>
-    <span class="sj-condition-badge">{{ entry.get_skin_condition_display }}</span>
-  </div>
-  {% endif %}
-
-  <!-- Photo -->
-  {% if entry.image %}
-  <div class="sj-card" style="padding:0;overflow:hidden;">
-    <img src="{{ entry.image.url }}" alt="skin photo"
-         style="width:100%;max-height:340px;object-fit:cover;display:block;">
-  </div>
-  {% endif %}
-
-  <!-- Concern severity -->
-  {% if entry.acne_severity or entry.dark_spots_severity or entry.wrinkles_severity %}
-  <div class="sj-card">
-    <p class="sj-section-label">Concern Severity</p>
-
-    {% if entry.acne_severity %}
-    <div class="sj-sev-row">
-      <span class="sj-sev-label">Acne</span>
-      <div class="sj-sev-track">
-        <div class="sj-sev-fill" style="width:{{ entry.acne_severity|floatformat:0 }}0%;background:#ef9a9a;"></div>
+      <!-- Header -->
+      <div class="sj-header">
+        <div class="sj-header-left">
+          <a href="{% url 'skin_journal:list' %}" class="sj-back">
+            <i class="fas fa-arrow-left"></i> Back to Journal
+          </a>
+        </div>
+        <div class="sj-header-actions">
+          <a href="{% url 'skin_journal:edit' entry.pk %}" class="sj-action-btn sj-edit-btn">
+            <i class="fas fa-pen"></i> Edit
+          </a>
+          <form method="post" action="{% url 'skin_journal:delete' entry.pk %}"
+                onsubmit="return confirm('Delete this entry?')" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="sj-action-btn sj-del-btn">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </form>
+        </div>
       </div>
-      <span class="sj-sev-num" style="color:#c62828;">{{ entry.acne_severity }}/5</span>
-    </div>
-    {% endif %}
 
-    {% if entry.dark_spots_severity %}
-    <div class="sj-sev-row">
-      <span class="sj-sev-label">Dark Spots</span>
-      <div class="sj-sev-track">
-        <div class="sj-sev-fill" style="width:{{ entry.dark_spots_severity|floatformat:0 }}0%;background:#ce93d8;"></div>
+      <!-- Title Section -->
+      <div style="margin-bottom: 2rem;">
+        <p class="sj-entry-label">Entry for Today</p>
+        <h1 class="sj-entry-date">{{ entry.date|date:"F d, Y" }}</h1>
+        {% if entry.skin_condition %}
+        <span class="sj-condition-tag">{{ entry.get_skin_condition_display }}</span>
+        {% endif %}
       </div>
-      <span class="sj-sev-num" style="color:#6a1b9a;">{{ entry.dark_spots_severity }}/5</span>
-    </div>
-    {% endif %}
 
-    {% if entry.wrinkles_severity %}
-    <div class="sj-sev-row">
-      <span class="sj-sev-label">Wrinkles</span>
-      <div class="sj-sev-track">
-        <div class="sj-sev-fill" style="width:{{ entry.wrinkles_severity|floatformat:0 }}0%;background:#90caf9;"></div>
+      <!-- Two Column Content -->
+      <div class="sj-content-grid">
+
+        <!-- Main Column -->
+        <div class="sj-main-col">
+
+          <!-- Photo -->
+          {% if entry.image %}
+          <div class="sj-photo-card">
+            <img src="{{ entry.image.url }}" alt="Skin photo for {{ entry.date }}">
+          </div>
+          {% else %}
+          <div class="sj-photo-card sj-no-photo">
+            <span><i class="fas fa-image" style="margin-right: 8px;"></i>No photo uploaded</span>
+          </div>
+          {% endif %}
+
+          <!-- Concern Severity -->
+          {% if entry.acne_severity or entry.dark_spots_severity or entry.wrinkles_severity %}
+          <div class="sj-card">
+            <h3 class="sj-card-title">Concern Severity</h3>
+            <div class="sj-severity-list">
+              {% if entry.acne_severity %}
+              <div class="sj-severity-item">
+                <span class="sj-severity-name">Acne</span>
+                <div class="sj-severity-bar">
+                  <div class="sj-severity-fill" style="width: {{ entry.acne_severity|floatformat:0 }}0%;"></div>
+                </div>
+                <span class="sj-severity-value">{{ entry.acne_severity }}/5</span>
+              </div>
+              {% endif %}
+              {% if entry.dark_spots_severity %}
+              <div class="sj-severity-item">
+                <span class="sj-severity-name">Dark Spots</span>
+                <div class="sj-severity-bar">
+                  <div class="sj-severity-fill" style="width: {{ entry.dark_spots_severity|floatformat:0 }}0%;"></div>
+                </div>
+                <span class="sj-severity-value">{{ entry.dark_spots_severity }}/5</span>
+              </div>
+              {% endif %}
+              {% if entry.wrinkles_severity %}
+              <div class="sj-severity-item">
+                <span class="sj-severity-name">Wrinkles</span>
+                <div class="sj-severity-bar">
+                  <div class="sj-severity-fill" style="width: {{ entry.wrinkles_severity|floatformat:0 }}0%;"></div>
+                </div>
+                <span class="sj-severity-value">{{ entry.wrinkles_severity }}/5</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Today's Regimen -->
+          <div class="sj-card">
+            <h3 class="sj-card-title"><i class="fas fa-leaf"></i> Today's Regimen</h3>
+            {% if entry.products_list %}
+            <div class="sj-regimen-grid">
+              {% for p in entry.products_list %}
+              <div class="sj-product-item">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ p }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">No products logged for this entry.</p>
+            {% endif %}
+          </div>
+
+          <!-- The Ritual Notes -->
+          <div class="sj-card">
+            <h3 class="sj-card-title"><i class="fas fa-sparkles"></i> The Ritual Notes</h3>
+            {% if entry.notes %}
+            <div class="sj-notes-display">{{ entry.notes }}</div>
+            {% else %}
+            <textarea class="sj-notes-textarea" placeholder="Write about your skin feels today..."></textarea>
+            {% endif %}
+          </div>
+
+          <!-- Save Button -->
+          <button class="sj-save-btn">
+            <i class="fas fa-save" style="margin-right: 8px;"></i>Save Entry
+          </button>
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sj-sidebar">
+
+          <!-- Tips Card -->
+          <div class="sj-tip-card">
+            <div class="sj-tip-header">
+              <div class="sj-tip-icon">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <h4 class="sj-tip-title">Tips</h4>
+            </div>
+            <p class="sj-tip-text">
+              Your skin barrier indicates sensitivity to high Niacinamide concentrations. Consider layering with Ceramides.
+            </p>
+          </div>
+
+          <!-- Timeline -->
+          <div class="sj-timeline">
+            <h4 class="sj-timeline-title">Today's Activity</h4>
+            <div class="sj-timeline-list">
+              <div class="sj-timeline-item">
+                <div class="sj-timeline-dot"></div>
+                <div class="sj-timeline-content">
+                  <p class="sj-timeline-time">08:15 AM</p>
+                  <p class="sj-timeline-text">Morning Cleanse & Protection applied</p>
+                </div>
+              </div>
+              <div class="sj-timeline-item">
+                <div class="sj-timeline-dot"></div>
+                <div class="sj-timeline-content">
+                  <p class="sj-timeline-time">01:30 PM</p>
+                  <p class="sj-timeline-text">Mid-day refresh: Mist applied</p>
+                </div>
+              </div>
+              {% if entry.created_at %}
+              <div class="sj-timeline-item">
+                <div class="sj-timeline-dot"></div>
+                <div class="sj-timeline-content">
+                  <p class="sj-timeline-time">{{ entry.created_at|date:"h:i A"|default:"Now" }}</p>
+                  <p class="sj-timeline-text">Journal entry created</p>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      <span class="sj-sev-num" style="color:#0d47a1;">{{ entry.wrinkles_severity }}/5</span>
+
     </div>
-    {% endif %}
   </div>
-  {% endif %}
-
-  <!-- Notes -->
-  {% if entry.notes %}
-  <div class="sj-card">
-    <p class="sj-section-label">Notes</p>
-    <p class="sj-notes-text">{{ entry.notes|linebreaksbr }}</p>
-  </div>
-  {% endif %}
-
-  <!-- Products -->
-  {% if entry.products_list %}
-  <div class="sj-card">
-    <p class="sj-section-label">Products Used</p>
-    {% for p in entry.products_list %}
-    <span class="sj-product-pill">{{ p }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-</div>
-</div>
 </div>
 {% endblock %}

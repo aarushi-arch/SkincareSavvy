@@ -8,12 +8,12 @@ def journal_image_path(instance, filename):
 
 class JournalEntry(models.Model):
     SKIN_CHOICES = [
-        ("clear",      "✨ Clear"),
-        ("oily",       "💧 Oily"),
-        ("dry",        "🌵 Dry"),
-        ("breakout",   "🔴 Breakout"),
-        ("sensitive",  "🌸 Sensitive"),
-        ("combination","🔀 Combination"),
+        ("clear",      "Clear"),
+        ("oily",       "Oily"),
+        ("dry",        "Dry"),
+        ("breakout",   "Breakout"),
+        ("sensitive",  "Sensitive"),
+        ("combination","Combination"),
     ]
 
     user           = models.ForeignKey(User, on_delete=models.CASCADE, related_name="journal_entries")
