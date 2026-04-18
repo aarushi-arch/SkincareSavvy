@@ -513,6 +513,19 @@
         }
     </style>
 
+    <style>
+        /* ── Global scrollbar ── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: #16a34a;
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #0b3b17; }
+        /* Firefox */
+        * { scrollbar-width: thin; scrollbar-color: #16a34a transparent; }
+    </style>
+
     <title>{% block title %}{% endblock %}</title>
 
     {% block extra_css %}{% endblock %}

@@ -766,125 +766,123 @@
                 <p class="sa-page-sub">Powered by CNN + YOLO detection. Results are for informational use only.</p>
             </div>
 
-            <div class="results-card">
-                <div class="sa-grid">
+            {% with top=analysis_result.all_detected_concerns|first %}
+            <div class="rc-card">
 
-                    <!-- ── LEFT: image ── -->
-                    <div class="sa-left">
-                        <p class="sa-section-label">Analysed Image</p>
+                <!-- ── LEFT: dark panel with uploaded image ── -->
+                <div class="rc-left">
+                    {% if analysis_result.skin_type_label %}
+                    <p class="rc-brand">{{ analysis_result.skin_type_label }} Skin</p>
+                    {% endif %}
+                    <p class="rc-sub">Your analysed photo</p>
+                    <div class="rc-divider"></div>
+
+                    <div class="rc-img-wrap">
                         {% if analysis_result.image_base64 %}
-                        <div class="sa-img-wrap">
-                            <img id="result-face-image" src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
-                                alt="Your Face Analysis" class="sa-face-img">
-                            <canvas id="sa-bbox-canvas" class="sa-bbox-canvas"></canvas>
-                            {% if analysis_result.face_bbox %}
-                            <div id="face-box" class="face-box"></div>
-                            {% endif %}
-                        </div>
-
-                        {% if analysis_result.all_detected_concerns %}
-                        <div class="sa-legend">
-                            {% for c in analysis_result.all_detected_concerns %}
-                            <span class="sa-legend-pill sa-color-{{ c.name|lower|cut:' ' }}">
-                                {{ c.name|title }}
-                            </span>
-                            {% endfor %}
-                        </div>
+                        <img id="result-face-image"
+                             src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
+                             alt="Your Face Analysis" class="rc-face-img">
+                        <canvas id="sa-bbox-canvas" class="sa-bbox-canvas"></canvas>
+                        {% if top %}
+                        <span class="rc-targeting-badge">Targeting {{ top.name|title }}</span>
                         {% endif %}
-
-                        {% else %}
-                        <div class="sa-img-placeholder">No image available</div>
                         {% endif %}
                     </div>
 
-                    <!-- ── RIGHT: results ── -->
-                    <div class="sa-right">
-
-                        <div class="sa-right-header">
-                            <h3 class="sa-right-title">Skin Analysis Result</h3>
-                            {% if analysis_result.skin_type_label %}
-                            <span class="sa-skin-badge">{{ analysis_result.skin_type_label }}</span>
-                            {% endif %}
-                        </div>
-
+                    <div class="rc-left-footer">
                         {% if analysis_result.all_detected_concerns %}
-                        <p class="sa-meta-label">Detected Concerns</p>
-                        <div class="sa-concerns-list">
+                        <div class="rc-concern-dots">
                             {% for c in analysis_result.all_detected_concerns %}
-                            <div class="sa-concern-card sa-border-{{ c.name|lower|cut:' ' }}">
-                                <div class="sa-concern-top">
-                                    <div class="sa-concern-title-row">
-                                        <span class="sa-concern-dot sa-dot-{{ c.name|lower|cut:' ' }}"></span>
-                                        <span class="sa-concern-name">
-                                            {% if c.explanation %}{{ c.explanation.title }}{% else %}{{ c.name|title
-                                            }}{% endif %}
-                                        </span>
-                                        <span class="sa-conf-pct">{{ c.confidence|floatformat:0 }}%</span>
-                                    </div>
-                                    <div class="sa-conf-track">
-                                        <div class="sa-conf-fill sa-fill-{{ c.name|lower|cut:' ' }}"
-                                            style="width:{{ c.confidence }}%"></div>
-                                    </div>
-                                </div>
-                                {% if c.explanation %}
-                                <p class="sa-ai-msg">{{ c.explanation.message }}</p>
-                                {% endif %}
-
-                                {% if c.ingredient_advice %}
-                                <div class="sa-ingred-box">
-                                    <p class="sa-ingred-label">Recommended ingredients</p>
-                                    <div class="sa-ingred-pills">
-                                        {% for ing in c.ingredient_advice.ingredients %}
-                                        <span class="sa-ingred-pill" title="{{ ing.why }}">{{ ing.name }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    <p class="sa-ingred-note">{{ c.ingredient_advice.text }}</p>
-                                </div>
-                                {% endif %}
-                            </div>
+                            <span class="rc-dot rc-dot-{{ c.name|lower|cut:' ' }}"
+                                  title="{{ c.name|title }}"></span>
                             {% endfor %}
                         </div>
-
-                        {% elif analysis_result.detected_concerns %}
-                        <p class="sa-meta-label">Detected Concerns</p>
-                        <div class="sa-concerns-list">
-                            {% for c in analysis_result.detected_concerns %}
-                            <div class="sa-concern-card">
-                                <div class="sa-concern-title-row">
-                                    <span class="sa-concern-dot"></span>
-                                    <span class="sa-concern-name">{{ c|title }}</span>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        {% else %}
-                        <div class="sa-no-concerns">
-                            <span class="sa-no-icon">✅</span>
-                            <p>No significant concerns detected</p>
-                        </div>
+                        <p class="rc-footer-text">
+                            {{ analysis_result.all_detected_concerns|length }}
+                            concern{{ analysis_result.all_detected_concerns|length|pluralize }}
+                            detected
+                        </p>
                         {% endif %}
-
-                        <div class="sa-disclaimer">
-                            <span class="sa-disclaimer-icon">ℹ</span>
-                            <p>Our model detected the above skin concerns based on your image.
-                                Predictions may not be 100% accurate. Consult a dermatologist
-                                for a professional assessment.</p>
-                        </div>
-
-                        <a href="#recommendations-section" class="sa-cta">
-                            View Personalised Recommendations →
-                        </a>
-
                     </div>
                 </div>
-            </div>
 
-            <div class="sa-medical-bar">
-                <strong>Medical Disclaimer:</strong> This analysis is AI-generated and intended
-                for informational purposes only. It is not a clinical diagnosis. Always seek
-                advice from a qualified dermatologist.
+                <!-- ── RIGHT: results panel ── -->
+                <div class="rc-right">
+
+                    {% if top %}
+                    <!-- Primary concern -->
+                    <div class="rc-concern-header">
+                        <div>
+                            <p class="rc-detected-label">Detected Concern</p>
+                            <h2 class="rc-concern-title">
+                                {% if top.explanation %}{{ top.explanation.title }}
+                                {% else %}{{ top.name|title }}{% endif %}
+                            </h2>
+                            <!-- Confidence bar -->
+                            <div class="rc-conf-track">
+                                <div class="rc-conf-fill" style="width:{{ top.confidence }}%"></div>
+                            </div>
+                        </div>
+                        <div class="rc-conf-score">
+                            <span class="rc-conf-num">{{ top.confidence|floatformat:0 }}%</span>
+                            <span class="rc-conf-lbl">Confidence</span>
+                        </div>
+                    </div>
+
+                    <!-- AI message -->
+                    {% if top.explanation %}
+                    <p class="rc-ai-msg">{{ top.explanation.message }}</p>
+                    {% endif %}
+
+                    <!-- Additional concerns (if any) -->
+                    {% if analysis_result.all_detected_concerns|length > 1 %}
+                    <div class="rc-other-concerns">
+                        {% for c in analysis_result.all_detected_concerns %}
+                        {% if not forloop.first %}
+                        <div class="rc-other-row">
+                            <span class="rc-other-dot rc-dot-{{ c.name|lower|cut:' ' }}"></span>
+                            <span class="rc-other-name">{{ c.name|title }}</span>
+                            <span class="rc-other-conf">{{ c.confidence|floatformat:0 }}%</span>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Bio-actives / ingredients -->
+                    {% if top.ingredient_advice %}
+                    <p class="rc-section-label">Suggested Bio-Actives</p>
+                    <div class="rc-pills">
+                        {% for ing in top.ingredient_advice.ingredients %}
+                        <span class="rc-pill" title="{{ ing.why }}">{{ ing.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <!-- No concerns -->
+                    <div class="rc-no-concerns">
+                        <p class="rc-detected-label">Result</p>
+                        <h2 class="rc-concern-title" style="color:#16a34a;">No Concerns Detected</h2>
+                        <p class="rc-ai-msg">Your skin looks healthy. Keep up your current routine.</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Note box -->
+                    <div class="rc-note">
+                        <span class="rc-note-icon">ℹ</span>
+                        <p><strong>Note:</strong> This assessment is AI-generated for informational purposes.
+                           If you believe this detection is correct, proceed to your personalised ritual.</p>
+                    </div>
+
+                    <!-- CTA -->
+                    <a href="#recommendations-section" class="rc-cta">
+                        View Personalised Recommendations
+                    </a>
+
+                </div>
             </div>
+            {% endwith %}
 
         </section>
 
@@ -1132,6 +1130,45 @@
                 padding-top: .45rem;
                 border-top: 1px solid #e8edf2;
             }
+            .sa-ingred-box {
+                margin-top: .6rem;
+                padding: .75rem .9rem;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 10px;
+            }
+            .sa-ingred-label {
+                font-size: .62rem;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+                text-transform: uppercase;
+                color: #92400e;
+                margin: 0 0 .5rem;
+            }
+            .sa-ingred-pills {
+                display: flex;
+                flex-wrap: wrap;
+                gap: .3rem;
+                margin-bottom: .5rem;
+            }
+            .sa-ingred-pill {
+                padding: 3px 10px;
+                border-radius: 20px;
+                background: #fef3c7;
+                color: #78350f;
+                font-size: .72rem;
+                font-weight: 600;
+                cursor: default;
+                border: 1px solid #fde68a;
+            }
+            .sa-ingred-pill:hover { background: #fde68a; }
+            .sa-ingred-note {
+                margin: 0;
+                font-size: .74rem;
+                color: #92400e;
+                line-height: 1.5;
+                font-style: italic;
+            }
 
             /* ── Colour coding per concern ── */
             /* Accent borders */
@@ -1297,7 +1334,7 @@
             // Auto-scroll to results card after analysis completes
             window.addEventListener('DOMContentLoaded', function () {
                 {% if analysis_result %}
-                var resultsCard = document.querySelector('.results-card');
+                var resultsCard = document.querySelector('.rc-card') || document.querySelector('.results-card');
                 if (resultsCard) {
                     setTimeout(function () {
                         resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2744,3 +2781,45 @@
 </body>
 
 </html>
+
+<!-- rc-* styles injected separately to avoid strReplace issues -->
+<style>
+.rc-card{display:grid;grid-template-columns:320px 1fr;max-width:880px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14);}
+@media(max-width:720px){.rc-card{grid-template-columns:1fr;}}
+.rc-left{background:linear-gradient(160deg,#0b3b17 0%,#0d4d20 60%,#0a2e12 100%);padding:2rem 1.75rem;display:flex;flex-direction:column;position:relative;}
+.rc-brand{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin:0 0 .2rem;}
+.rc-sub{font-size:.8rem;color:rgba(255,255,255,.35);margin:0 0 1rem;}
+.rc-divider{height:1px;background:rgba(255,255,255,.12);margin-bottom:1.25rem;}
+.rc-img-wrap{position:relative;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);flex:1;min-height:220px;display:flex;align-items:center;justify-content:center;}
+.rc-face-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:14px;}
+.rc-targeting-badge{position:absolute;top:10px;left:10px;background:#16a34a;color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:4px 10px;border-radius:20px;}
+.rc-left-footer{margin-top:1rem;display:flex;align-items:center;gap:.6rem;}
+.rc-concern-dots{display:flex;gap:.35rem;}
+.rc-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);}
+.rc-dot-acne{background:#ef5350;}.rc-dot-blackheads,.rc-dot-blackheades{background:#ffa726;}.rc-dot-darkspots,.rc-dot-dark_spots{background:#ab47bc;}.rc-dot-wrinkles{background:#42a5f5;}.rc-dot-pores{background:#26a69a;}
+.rc-footer-text{font-size:.72rem;color:rgba(255,255,255,.4);margin:0;}
+.rc-right{background:#fff;padding:2rem 2.25rem;display:flex;flex-direction:column;gap:1.1rem;}
+.rc-detected-label{font-size:.62rem;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#94a3b8;margin:0 0 .3rem;}
+.rc-concern-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;}
+.rc-concern-title{font-size:2rem;font-weight:800;color:#0b3b17;margin:0 0 .6rem;letter-spacing:-.5px;line-height:1.1;}
+.rc-conf-track{height:4px;background:#e8f5e9;border-radius:2px;overflow:hidden;width:100%;}
+.rc-conf-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:2px;}
+.rc-conf-score{text-align:right;flex-shrink:0;}
+.rc-conf-num{display:block;font-size:1.6rem;font-weight:800;color:#0b3b17;line-height:1;}
+.rc-conf-lbl{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;}
+.rc-ai-msg{font-size:.88rem;color:#475569;line-height:1.65;margin:0;}
+.rc-other-concerns{display:flex;flex-direction:column;gap:.4rem;padding:.75rem;background:#f8fafc;border-radius:10px;border:1px solid #eaf0ea;}
+.rc-other-row{display:flex;align-items:center;gap:.5rem;font-size:.82rem;}
+.rc-other-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.rc-other-name{flex:1;color:#374151;font-weight:500;}.rc-other-conf{color:#94a3b8;font-size:.75rem;}
+.rc-section-label{font-size:.62rem;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#94a3b8;margin:0 0 .5rem;}
+.rc-pills{display:flex;flex-wrap:wrap;gap:.4rem;}
+.rc-pill{padding:5px 14px;border-radius:20px;background:#f0fdf4;color:#166634;font-size:.78rem;font-weight:600;border:1px solid #bbf7d0;cursor:default;transition:background .15s;}
+.rc-pill:hover{background:#dcfce7;}
+.rc-note{display:flex;gap:.6rem;align-items:flex-start;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.8rem 1rem;margin-top:auto;}
+.rc-note-icon{font-size:.9rem;color:#16a34a;flex-shrink:0;font-weight:700;line-height:1.5;}
+.rc-note p{margin:0;font-size:.76rem;color:#64748b;line-height:1.55;}
+.rc-cta{display:block;text-align:center;padding:14px 24px;border-radius:10px;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;font-weight:700;font-size:.92rem;text-decoration:none;letter-spacing:.3px;transition:opacity .2s,transform .15s;box-shadow:0 4px 14px rgba(11,59,23,.25);}
+.rc-cta:hover{opacity:.92;transform:translateY(-1px);color:#fff;}
+.rc-no-concerns{padding:.5rem 0;}
+</style>
