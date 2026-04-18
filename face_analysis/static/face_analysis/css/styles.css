@@ -194,11 +194,11 @@ body {
 }
 
 .btn.primary:hover {
-  background: #094a1e;
+  background: #145a28;
 }
 
 .btn.ghost:hover {
-  background: var(--primary-soft);
+  background: #145a28;
 }
 
 .btn.small {

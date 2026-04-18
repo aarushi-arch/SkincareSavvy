@@ -27,12 +27,12 @@ def journal_list(request):
             "wrinkles":   e.wrinkles_severity,
         })
 
-    insights = get_insights(engine_data)["insights"]
+    insights = get_insights(engine_data)
 
     return render(request, "skin_journal/list.html", {
         "entries":    entries,
         "chart_data": json.dumps(chart_data),
-        "insights":   insights,
+        "insights":   insights,   # {insights: [...], summary: str}
     })
 
 

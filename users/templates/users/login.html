@@ -67,6 +67,11 @@ input {
     transition: 0.3s ease;
 }
 
+input[name="password"],
+input.password-visible {
+    padding-right: 44px !important;
+}
+
 input:focus {
     border-color: #0b3b17 !important;
     box-shadow: 0 0 10px rgba(11, 59, 23, 0.35);
@@ -123,12 +128,41 @@ input:focus {
 
 .btn-dark:hover {
     transform: translateY(-4px);
+    background: linear-gradient(135deg, #0b3b17 0%, #145a28 100%);
     border-color: #0b3b17;
+    color: #ffffff;
     box-shadow: 0 10px 25px rgba(11, 59, 23, 0.35);
 }
 
 .btn-dark:active {
     transform: translateY(-2px);
+}
+
+/* PASSWORD EYE ICON */
+.password-wrapper {
+    position: relative;
+    display: block;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #0b3b17;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 8px;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    color: #145a28;
+    transform: translateY(-50%) scale(1.1);
 }
 
 /* FOOTER LINK */
@@ -179,9 +213,12 @@ input:focus {
 
                             <div class="form-row">
                                 <div class="col-md-12">
-                                    <div class="form-group">
+                                    <div class="form-group password-field-group">
                                         <label class="small mb-1">Password</label>
-                                        {{ form.password }}
+                                        <div class="password-wrapper">
+                                            {{ form.password }}
+                                            <i class="fas fa-eye password-toggle" onclick="togglePassword()" id="eye-icon"></i>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -211,6 +248,23 @@ input:focus {
                             <a href="{% url 'users-register' %}">Don't have an account? Sign Up</a>
                         </div>
                     </div>
+
+<script>
+function togglePassword() {
+    var passwordInput = document.getElementById('password');
+    var eyeIcon = document.getElementById('eye-icon');
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+}
+</script>
 
                 </div>
             </div>

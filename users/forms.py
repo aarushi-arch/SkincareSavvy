@@ -54,7 +54,6 @@ class LoginForm(AuthenticationForm):
                                required=True,
                                widget=forms.PasswordInput(attrs={'placeholder': 'Password',
                                                                  'class': 'form-control',
-                                                                 'data-toggle': 'password',
                                                                  'id': 'password',
                                                                  'name': 'password',
                                                                  }))

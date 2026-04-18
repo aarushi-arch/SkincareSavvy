@@ -16,6 +16,43 @@
     <link rel="stylesheet" href="{% static 'face_analysis/css/styles.css' %}">
 
     <style>
+        /* Glassmorphic Dropdown */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(240, 248, 243, 0.80);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            min-width: 300px;
+            box-shadow: 0 12px 40px rgba(11, 59, 23, 0.18), 0 2px 8px rgba(0,0,0,0.07);
+            z-index: 1000;
+            border-radius: 18px;
+            border: 1.5px solid rgba(11, 59, 23, 0.18);
+            top: calc(100% + 10px);
+            left: 0;
+            overflow: hidden;
+            padding: 6px 0;
+        }
+
+        .dropdown-content a {
+            color: #0b3b17;
+            padding: 12px 22px;
+            text-decoration: none;
+            display: block;
+            font-weight: 400;
+            transition: background 0.22s ease, padding-left 0.2s ease;
+        }
+
+        .dropdown-content a:hover {
+            background: rgba(11, 59, 23, 0.10);
+            padding-left: 30px;
+            color: #0b3b17;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
         /* Elegant Toast System */
         #toast-container {
             position: fixed;
@@ -558,7 +595,6 @@
                             {% endif %}
                         </a>
                     </li>
-                    <li><a href="{% url 'my_cart' %}">My Cart</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}
@@ -740,6 +776,7 @@
                         <div class="sa-img-wrap">
                             <img id="result-face-image" src="data:image/jpeg;base64,{{ analysis_result.image_base64 }}"
                                 alt="Your Face Analysis" class="sa-face-img">
+                            <canvas id="sa-bbox-canvas" class="sa-bbox-canvas"></canvas>
                             {% if analysis_result.face_bbox %}
                             <div id="face-box" class="face-box"></div>
                             {% endif %}
@@ -791,6 +828,18 @@
                                 </div>
                                 {% if c.explanation %}
                                 <p class="sa-ai-msg">{{ c.explanation.message }}</p>
+                                {% endif %}
+
+                                {% if c.ingredient_advice %}
+                                <div class="sa-ingred-box">
+                                    <p class="sa-ingred-label">Recommended ingredients</p>
+                                    <div class="sa-ingred-pills">
+                                        {% for ing in c.ingredient_advice.ingredients %}
+                                        <span class="sa-ingred-pill" title="{{ ing.why }}">{{ ing.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="sa-ingred-note">{{ c.ingredient_advice.text }}</p>
+                                </div>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -1211,20 +1260,20 @@
                 text-align: center;
                 padding: 13px 24px;
                 border-radius: 50px;
-                background: linear-gradient(135deg, #16a34a 0%, #0b3b17 100%);
+                background: linear-gradient(135deg, #0b3b17 0%, #145a28 100%);
                 color: #fff;
                 font-weight: 700;
                 font-size: .92rem;
                 text-decoration: none;
                 letter-spacing: .3px;
                 transition: opacity .2s, transform .15s, box-shadow .2s;
-                box-shadow: 0 4px 14px rgba(22, 163, 74, .3);
+                box-shadow: 0 4px 14px rgba(11, 59, 23, .3);
             }
 
             .sa-cta:hover {
                 opacity: .92;
                 transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(22, 163, 74, .4);
+                box-shadow: 0 8px 20px rgba(11, 59, 23, .4);
                 color: #fff;
             }
 
@@ -1257,10 +1306,95 @@
                 {% endif %}
             });
 
-            // Show popup only after user has scrolled completely past the results card
+            // Draw YOLO bounding boxes on the result image canvas
             window.addEventListener('DOMContentLoaded', function () {
-                {% if analysis_result %}
-                // Recommendations are always visible — no popup needed
+                {% if analysis_result.yolo_detections %}
+                var detections = {{ analysis_result.yolo_detections|safe }};
+                if (!detections || detections.length === 0) return;
+
+                var img    = document.getElementById('result-face-image');
+                var canvas = document.getElementById('sa-bbox-canvas');
+                if (!img || !canvas) return;
+
+                // Colour map per concern label
+                var COLORS = {
+                    acne:        '#ef5350',
+                    blackheads:  '#ffa726',
+                    blackheades: '#ffa726',
+                    dark_spots:  '#ab47bc',
+                    darkspots:   '#ab47bc',
+                    wrinkles:    '#42a5f5',
+                    pores:       '#26a69a',
+                };
+                function getColor(label) {
+                    return COLORS[(label || '').toLowerCase()] || '#ef5350';
+                }
+
+                function drawBoxes() {
+                    // Set canvas pixel dimensions to match the DISPLAYED image size
+                    // so coordinates map 1:1 without any scaling math
+                    canvas.width  = img.offsetWidth;
+                    canvas.height = img.offsetHeight;
+
+                    // Boxes from backend are in original image pixel space.
+                    // Scale them down to displayed size.
+                    var natW = img.naturalWidth  || img.offsetWidth;
+                    var natH = img.naturalHeight || img.offsetHeight;
+                    var scaleX = img.offsetWidth  / natW;
+                    var scaleY = img.offsetHeight / natH;
+
+                    var ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    detections.forEach(function (det) {
+                        var b     = det.box;   // [x1, y1, x2, y2] in original pixel space
+                        var color = getColor(det.label);
+                        var x     = b[0] * scaleX;
+                        var y     = b[1] * scaleY;
+                        var w     = (b[2] - b[0]) * scaleX;
+                        var h     = (b[3] - b[1]) * scaleY;
+
+                        // Glow effect
+                        ctx.save();
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur  = 6;
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth   = 2;
+                        ctx.strokeRect(x, y, w, h);
+                        ctx.restore();
+
+                        // Label chip
+                        var label = (det.label || '').charAt(0).toUpperCase()
+                                  + (det.label || '').slice(1).replace(/_/g, ' ')
+                                  + '  ' + Math.round(det.confidence * 100) + '%';
+                        ctx.font = 'bold 11px system-ui, sans-serif';
+                        var tw   = ctx.measureText(label).width;
+                        var lx   = x;
+                        var ly   = y > 18 ? y - 18 : y + h + 2;
+
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(lx, ly, tw + 10, 16, 3);
+                        } else {
+                            ctx.rect(lx, ly, tw + 10, 16);
+                        }
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(label, lx + 5, ly + 11);
+                    });
+                }
+
+                if (img.complete && img.naturalWidth) {
+                    drawBoxes();
+                } else {
+                    img.addEventListener('load', drawBoxes);
+                }
+                window.addEventListener('resize', drawBoxes);
+                // Redraw if the image container resizes (e.g. sidebar collapse)
+                if (window.ResizeObserver) {
+                    new ResizeObserver(drawBoxes).observe(img);
+                }
                 {% endif %}
             });
         </script>
@@ -1539,10 +1673,10 @@
             }
 
             .rec-filter.active {
-                background: linear-gradient(135deg, #16a34a, #0b3b17);
+                background: linear-gradient(135deg, #0b3b17, #145a28);
                 color: #fff;
                 border-color: transparent;
-                box-shadow: 0 3px 10px rgba(22, 163, 74, .3);
+                box-shadow: 0 3px 10px rgba(11, 59, 23, .3);
             }
 
             .price-filter {
@@ -1761,7 +1895,7 @@
 
             <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
                 <button onclick="confirmAllergies()" style="flex:1;padding:13px;border-radius:50px;border:none;
-                               background:linear-gradient(135deg,#16a34a,#0b3b17);
+                               background:linear-gradient(135deg,#0b3b17,#145a28);
                                color:#fff;font-weight:700;font-size:.92rem;cursor:pointer;">
                     Continue to Analysis →
                 </button>

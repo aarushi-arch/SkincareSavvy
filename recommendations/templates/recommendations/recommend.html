@@ -15,6 +15,43 @@
     <link rel="stylesheet" href="{% static 'recommendations/css/styles.css' %}">
 
     <style>
+        /* Glassmorphic Dropdown */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(240, 248, 243, 0.80);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            min-width: 300px;
+            box-shadow: 0 12px 40px rgba(11, 59, 23, 0.18), 0 2px 8px rgba(0,0,0,0.07);
+            z-index: 1000;
+            border-radius: 18px;
+            border: 1.5px solid rgba(11, 59, 23, 0.18);
+            top: calc(100% + 10px);
+            left: 0;
+            overflow: hidden;
+            padding: 6px 0;
+        }
+
+        .dropdown-content a {
+            color: #0b3b17;
+            padding: 12px 22px;
+            text-decoration: none;
+            display: block;
+            font-weight: 400;
+            transition: background 0.22s ease, padding-left 0.2s ease;
+        }
+
+        .dropdown-content a:hover {
+            background: rgba(11, 59, 23, 0.10);
+            padding-left: 30px;
+            color: #0b3b17;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
         /* Elegant Toast System */
         #toast-container {
             position: fixed;
@@ -422,7 +459,6 @@
                             {% endif %}
                         </a>
                     </li>
-                    <li><a href="{% url 'my_cart' %}">My Cart</a></li>
                     <li><a href="{% url 'profile' %}">Profile</a></li>
                     <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}

@@ -859,60 +859,65 @@
         </button>
       </div>
 
-      <!-- Insight Cards -->
+      <!-- Insight Cards — data-driven from insight engine -->
       <div class="insight-cards">
-        <div class="insight-card">
+
+        <!-- Overall summary -->
+        <div class="insight-card" style="grid-column:1/-1;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#bbf7d0;">
           <div class="insight-card-header">
-            <div class="insight-icon">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <span class="insight-badge">+45% Growth</span>
+            <div class="insight-icon"><i class="fas fa-brain"></i></div>
           </div>
-          <h3 class="insight-title">Steady Radiance</h3>
-          <p class="insight-text">Your barrier health has stabilized significantly since adding the Ceramide Complex serum to your nightly ritual.</p>
+          <h3 class="insight-title">Overall Summary</h3>
+          <p class="insight-text">{{ insights.summary }}</p>
         </div>
 
-        <div class="insight-card">
-          <div class="insight-card-header">
-            <div class="insight-icon insight-icon-green">
-              <i class="fas fa-bullseye"></i>
-            </div>
-          </div>
-          <h3 class="insight-title">Primary Focus: Pore Clarity</h3>
-          <p class="insight-text">Recent data suggests a minor congestion pattern. Consider gentle BHA exfoliation twice this week.</p>
-          <div class="insight-tags">
-            <span class="insight-tag">BHA</span>
-            <span class="insight-tag">Weekly Reset</span>
-          </div>
-        </div>
+        {% for insight in insights.insights %}
+        <div class="insight-card"
+             style="border-left:4px solid
+               {% if insight.trend == 'improving' %}#16a34a
+               {% elif insight.trend == 'worsening' %}#ef4444
+               {% elif insight.trend == 'fluctuating' %}#f59e0b
+               {% else %}#94a3b8{% endif %};">
 
-        <div class="insight-card">
           <div class="insight-card-header">
-            <div class="insight-icon insight-icon-leaf">
-              <i class="fas fa-leaf"></i>
+            <div class="insight-icon
+              {% if insight.trend == 'improving' %}insight-icon-green
+              {% elif insight.trend == 'worsening' %}
+              {% else %}insight-icon-leaf{% endif %}">
+              <i class="fas
+                {% if insight.trend == 'improving' %}fa-arrow-trend-down
+                {% elif insight.trend == 'worsening' %}fa-arrow-trend-up
+                {% elif insight.trend == 'fluctuating' %}fa-wave-square
+                {% else %}fa-minus{% endif %}"></i>
             </div>
+            <span class="insight-badge"
+                  style="background:
+                    {% if insight.confidence == 'high' %}#dcfce7;color:#166534
+                    {% elif insight.confidence == 'medium' %}#fef9c3;color:#854d0e
+                    {% else %}#f1f5f9;color:#64748b{% endif %};">
+              {{ insight.confidence }} confidence
+            </span>
           </div>
-          <h3 class="insight-title">Ritual Consistency</h3>
-          <p class="insight-text">You've maintained an 89% adherence rate over the last 21 days. The Morning Dew phase is your most consistent window.</p>
-          <div class="insight-rating">
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="far fa-star"></i>
-          </div>
-        </div>
 
-        <div class="insight-card">
-          <div class="insight-card-header">
-            <div class="insight-icon insight-icon-bulb">
-              <i class="fas fa-lightbulb"></i>
-            </div>
-          </div>
-          <h3 class="insight-title">Botanical Insight</h3>
-          <p class="insight-text">Noting that days with your Zinc+ Niacinamide has reduced T-zone shine by 22% compared to last week.</p>
-          <a href="#" class="insight-link">Learn about Niacinamide <i class="fas fa-arrow-right"></i></a>
+          <h3 class="insight-title">{{ insight.title }}</h3>
+
+          <details style="margin-top:.4rem;">
+            <summary style="cursor:pointer;font-size:.78rem;color:#16a34a;font-weight:600;
+                            list-style:none;display:flex;align-items:center;gap:.3rem;">
+              <i class="fas fa-circle-info" style="font-size:.7rem;"></i> Why this insight?
+            </summary>
+            <p class="insight-text" style="margin-top:.5rem;padding-top:.5rem;
+                                           border-top:1px solid #eaf0ea;">
+              {{ insight.reason }}
+            </p>
+          </details>
         </div>
+        {% empty %}
+        <div class="insight-card" style="grid-column:1/-1;text-align:center;">
+          <p class="insight-text">Log more entries to unlock personalised insights.</p>
+        </div>
+        {% endfor %}
+
       </div>
 
       <button onclick="toggleChart()" class="chart-close-btn" title="Close">
