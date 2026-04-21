@@ -16,6 +16,8 @@ from .views import (
     order_detail,
     esewa_success,
     esewa_failure,
+    paypal_create_order,
+    paypal_capture_order,
 )
 
 urlpatterns = [
@@ -25,26 +27,32 @@ urlpatterns = [
     path("remove/<int:item_id>/", remove_from_cart, name="remove_from_cart"),
     path("place-order/", place_order, name="place_order"),
     path("checkout/", checkout, name="shop-checkout"),
-    path('esewa/cart/', esewa_checkout_cart, name='esewa-checkout-cart'),
-    path("checkout/esewa/", esewa_checkout_cart, name="esewa-checkout-cart"),
-    path("checkout/<int:product_id>/", esewa_checkout, name="esewa-checkout"),
+
+    # eSewa – cart-level checkout (single canonical path)
+    path("esewa/cart/", esewa_checkout_cart, name="esewa-checkout-cart"),
+
+    # eSewa – single-product checkout
+    path("esewa/<int:product_id>/", esewa_checkout, name="esewa-checkout"),
+
+    # eSewa – success / failure callbacks
+    path("esewa/success/", esewa_success, name="esewa_success"),
+    path("esewa/failure/", esewa_failure, name="esewa_failure"),
+
+    # PayPal – create & capture (called by JS SDK)
+    path("paypal/create-order/", paypal_create_order, name="paypal-create-order"),
+    path("paypal/capture-order/", paypal_capture_order, name="paypal-capture-order"),
+
     path("order-success/<int:order_id>/", order_success, name="order_success"),
 
     # Reorder / pay again
     path("order/<int:order_id>/reorder/", reorder_to_cart, name="order-reorder"),
-    # Checkout a single item from a past order (POST-only)
     path("order/<int:order_id>/item/<int:item_id>/checkout/", checkout_order_item, name="order-item-checkout"),
     path("order/<int:order_id>/reorder/esewa/", reorder_to_esewa, name="order-reorder-esewa"),
 
-    # Primary orders listing + backward-compatible alias
+    # Orders listing + backward-compatible alias
     path("my-orders/", my_orders, name="my_orders"),
     path("orders/", my_orders, name="order-history"),
 
-    # Order detail (templates expect `order-detail`)
+    # Order detail
     path("order/<int:order_id>/", order_detail, name="order-detail"),
-
-    path('esewa/<int:product_id>/', esewa_checkout, name='esewa_checkout'),
-    path('esewa/success/', esewa_success, name='esewa_success'),
-    path('esewa/failure/', esewa_failure, name='esewa_failure'),
-
 ]

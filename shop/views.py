@@ -11,17 +11,23 @@ from rest_framework import status
 from .models import Cart, CartItem, Order, OrderItem
 from .forms import CheckoutForm
 from recommendations.models import Product
-from users.models import Notification
+from users.models import Notification  # noqa: F401 – used by signals.py indirectly
 from decimal import Decimal
 
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
+from django.http import JsonResponse
+import json
 
 # eSewa integration (manual implementation)
 import uuid
+import time
 import hashlib
 import hmac
 import base64
+
+# PayPal integration (built-in urllib, no extra package)
+import urllib.request
+import urllib.parse
 
 
 def generate_esewa_signature(total_amount, transaction_uuid, product_code, secret_key):
@@ -68,11 +74,217 @@ def generate_esewa_form(amount, tax_amount, total_amount, transaction_uuid, prod
     return form_html
 
 
+
+# ---------------------------------------------------------------------------
+# PayPal helpers
+# ---------------------------------------------------------------------------
+
+def _paypal_base_url():
+    sandbox = getattr(settings, 'PAYPAL_SANDBOX', True)
+    return 'https://api-m.sandbox.paypal.com' if sandbox else 'https://api-m.paypal.com'
+
+
+def _paypal_get_access_token():
+    """Exchange client credentials for a PayPal Bearer token."""
+    client_id = getattr(settings, 'PAYPAL_CLIENT_ID', '')
+    secret = getattr(settings, 'PAYPAL_CLIENT_SECRET', '')
+    base = _paypal_base_url()
+
+    credentials = base64.b64encode(f"{client_id}:{secret}".encode()).decode()
+    data = urllib.parse.urlencode({'grant_type': 'client_credentials'}).encode()
+
+    req = urllib.request.Request(
+        f"{base}/v1/oauth2/token",
+        data=data,
+        headers={
+            'Authorization': f'Basic {credentials}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        method='POST',
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())['access_token']
+
+
+@login_required
+@csrf_exempt
+def paypal_create_order(request):
+    """
+    Called by the PayPal JS SDK (via fetch POST) to create a PayPal Order.
+    Can handle either the full cart or a single product (if product_id is in POST body).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        body = json.loads(request.body) if request.body else {}
+    except Exception:
+        body = {}
+
+    product_id = body.get('product_id')
+    amount_npr = Decimal('0')
+    description = "SkincareSavvy Order"
+
+    if product_id:
+        product = get_object_or_404(Product, id=product_id)
+        amount_npr = product.price or Decimal('0')
+        description = f"Buy Now: {product.name}"
+    else:
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        if not cart.items.exists():
+            return JsonResponse({'error': 'Cart is empty'}, status=400)
+        
+        # Compute total with shipping
+        free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+        shipping_rate  = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+        shipping = Decimal('0') if cart.total_price >= free_threshold else shipping_rate
+        amount_npr = cart.total_price + shipping
+        description = "Cart Checkout"
+
+    # Convert to USD
+    NPR_TO_USD = Decimal('133.00')
+    total_usd = round(float(amount_npr / NPR_TO_USD), 2)
+
+    try:
+        token = _paypal_get_access_token()
+        base  = _paypal_base_url()
+
+        payload = json.dumps({
+            "intent": "CAPTURE",
+            "purchase_units": [{
+                "amount": {
+                    "currency_code": "USD",
+                    "value": str(total_usd),
+                },
+                "description": description,
+            }],
+        }).encode()
+
+        req = urllib.request.Request(
+            f"{base}/v2/checkout/orders",
+            data=payload,
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
+        with urllib.request.urlopen(req) as resp:
+            order_data = json.loads(resp.read())
+
+        # Store details for capture verification
+        request.session['paypal_transaction'] = {
+            'paypal_order_id': order_data['id'],
+            'product_id': product_id, # None if cart checkout
+            'total_npr': str(amount_npr),
+        }
+        return JsonResponse({'id': order_data['id']})
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def paypal_capture_order(request):
+    """
+    Called by the JS SDK after the buyer approves the payment.
+    Captures the PayPal order, then creates the Django Order.
+    Returns JSON: { "status": "success", "order_id": <django_order_id> }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    paypal_order_id = body.get('paypal_order_id')
+    stored = request.session.get('paypal_transaction', {})
+
+    if not paypal_order_id or paypal_order_id != stored.get('paypal_order_id'):
+        return JsonResponse({'error': 'Order ID mismatch or session expired'}, status=400)
+
+    try:
+        token = _paypal_get_access_token()
+        base  = _paypal_base_url()
+
+        # Capture the approved PayPal order
+        req = urllib.request.Request(
+            f"{base}/v2/checkout/orders/{paypal_order_id}/capture",
+            data=b'{}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
+        with urllib.request.urlopen(req) as resp:
+            capture_data = json.loads(resp.read())
+
+        if capture_data.get('status') != 'COMPLETED':
+            return JsonResponse({'error': 'Payment not completed'}, status=400)
+
+        # Create the Django Order
+        product_id = stored.get('product_id')
+        
+        if product_id:
+            # Single product checkout
+            product = get_object_or_404(Product, id=product_id)
+            order = Order.objects.create(
+                user=request.user,
+                total_amount=product.price or 0,
+                shipping_charge=0, # Buy Now assumes direct pickup or free shipping for simplicity here
+                payment_method='PayPal',
+                transaction_id=paypal_order_id,
+            )
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=1,
+                price_at_order=product.price or 0,
+            )
+        else:
+            # Cart checkout
+            cart = get_object_or_404(Cart, user=request.user)
+            free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+            shipping_rate  = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+            shipping = Decimal('0') if cart.total_price >= free_threshold else shipping_rate
+
+            order = Order.objects.create(
+                user=request.user,
+                total_amount=cart.total_price,
+                shipping_charge=shipping,
+                payment_method='PayPal',
+                transaction_id=paypal_order_id,
+            )
+
+            for item in cart.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price_at_order=item.product.price or 0,
+                )
+            cart.items.all().delete()
+
+        request.session.pop('paypal_transaction', None)
+        messages.success(request, f"PayPal payment successful! Order #{order.id} placed. 🌿")
+        return JsonResponse({'status': 'success', 'order_id': order.id})
+
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ---------------------------------------------------------------------------
+# eSewa views
+# ---------------------------------------------------------------------------
+
+@login_required
 def esewa_checkout(request, product_id):
     """Start an eSewa checkout for a single product (product-level "Buy now")."""
-    product = Product.objects.get(id=product_id)
-
-    transaction_uuid = str(uuid.uuid4())
+    product = get_object_or_404(Product, id=product_id)
+    transaction_uuid = f"{uuid.uuid4()}-{int(time.time() * 1000)}"
     
     # Get eSewa configuration from settings
     product_code = getattr(settings, 'ESEWA_MERCHANT_ID', 'EPAYTEST')
@@ -119,7 +331,7 @@ def esewa_checkout_cart(request):
     shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
 
     total_amount_decimal = cart.total_price + shipping
-    transaction_uuid = str(uuid.uuid4())
+    transaction_uuid = f"{uuid.uuid4()}-{int(time.time() * 1000)}"
     
     # Get eSewa configuration from settings
     product_code = getattr(settings, 'ESEWA_MERCHANT_ID', 'EPAYTEST')
@@ -161,66 +373,55 @@ def esewa_checkout_cart(request):
 @csrf_exempt
 def esewa_success(request):
     """
-    eSewa will redirect here after a successful payment.
-    You can verify the payment server-side here.
+    eSewa redirects here (GET) after a successful payment.
+    Verifies the transaction UUID stored in the session before creating an order.
+    The post_save signal (signals.py) handles the notification — no manual
+    Notification.objects.create() needed here.
     """
-    if request.method == 'GET':
-        # eSewa sends these parameters on success
-        data = request.GET.get('data')
-        transaction_uuid = request.GET.get('transaction_uuid')
-        
-        # Get stored transaction from session
-        stored_transaction = request.session.get('esewa_transaction', {})
-        
-        if transaction_uuid and transaction_uuid == stored_transaction.get('uuid'):
-            # Transaction matches - create order
-            if request.user.is_authenticated:
-                cart = get_object_or_404(Cart, user=request.user)
-                
-                # Compute shipping
-                free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
-                shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
-                shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
-                
-                # Create order
-                order = Order.objects.create(
-                    user=request.user,
-                    total_amount=cart.total_price,
-                    shipping_charge=shipping,
-                    payment_method='eSewa',
-                    transaction_id=transaction_uuid,
+    # eSewa v2 sends a GET redirect with transaction_uuid in query params
+    transaction_uuid = request.GET.get('transaction_uuid')
+
+    # Get stored transaction from session
+    stored_transaction = request.session.get('esewa_transaction', {})
+
+    if transaction_uuid and transaction_uuid == stored_transaction.get('uuid'):
+        # Transaction matches — create order
+        if request.user.is_authenticated:
+            cart = get_object_or_404(Cart, user=request.user)
+
+            # Compute shipping
+            free_threshold = Decimal(str(getattr(settings, 'SHOP_FREE_SHIPPING_THRESHOLD', 1000)))
+            shipping_rate = Decimal(str(getattr(settings, 'SHOP_SHIPPING_RATE', '49.00')))
+            shipping = Decimal('0') if (cart.total_price >= free_threshold) else shipping_rate
+
+            # Create order (post_save signal fires the notification automatically)
+            order = Order.objects.create(
+                user=request.user,
+                total_amount=cart.total_price,
+                shipping_charge=shipping,
+                payment_method='eSewa',
+                transaction_id=transaction_uuid,
+            )
+
+            # Transfer cart items to order
+            for item in cart.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price_at_order=item.product.price or 0,
                 )
-                
-                # Transfer cart items to order
-                for item in cart.items.all():
-                    OrderItem.objects.create(
-                        order=order,
-                        product=item.product,
-                        quantity=item.quantity,
-                        price_at_order=item.product.price or 0,
-                    )
-                
-                # Clear cart
-                cart.items.all().delete()
-                
-                # Clear session
-                if 'esewa_transaction' in request.session:
-                    del request.session['esewa_transaction']
-                
-                # Create notification
-                Notification.objects.create(
-                    user=request.user,
-                    message=f"Payment successful! Your order #{order.id} has been placed. 🌿"
-                )
-                
-                messages.success(request, "Payment successful! Your order has been placed. 🌿")
-                
-                return redirect('order_success', order_id=order.id)
-        
-        messages.success(request, "Payment successful!")
-        return redirect('my_orders')
-    
-    return HttpResponse("Payment Successful!")
+
+            # Clear cart and session
+            cart.items.all().delete()
+            request.session.pop('esewa_transaction', None)
+
+            messages.success(request, "Payment successful! Your order has been placed. 🌿")
+            return redirect('order_success', order_id=order.id)
+
+    # UUID mismatch or session expired — still show a neutral success message
+    messages.success(request, "Payment successful! Check your orders for details.")
+    return redirect('my_orders')
 
 
 @csrf_exempt
@@ -482,6 +683,7 @@ def my_orders(request):
 
     # eSewa is now available with manual implementation
     esewa_available = True
+    paypal_client_id = getattr(settings, 'PAYPAL_CLIENT_ID', '')
 
     return render(
         request,
@@ -493,6 +695,7 @@ def my_orders(request):
             "selected_step_index": selected_step_index,
             "migration_needed": migration_needed,
             "esewa_available": esewa_available,
+            "paypal_client_id": paypal_client_id,
         },
     )
 

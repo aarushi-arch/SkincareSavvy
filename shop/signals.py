@@ -9,9 +9,11 @@ def create_order_notification(sender, instance, created, **kwargs):
     Automatically create a notification when a new Order is created.
     """
     if created:
-        # Check if it was an eSewa payment
+        # Check if it was an eSewa or PayPal payment
         if instance.payment_method == 'eSewa':
             message = f"Payment successful! Your order #{instance.id} has been placed. 💳✨"
+        elif instance.payment_method == 'PayPal':
+            message = f"PayPal payment successful! Your order #{instance.id} is confirmed. 💳✅"
         else:
             message = f"Your order #{instance.id} has been placed successfully! 🌿"
         

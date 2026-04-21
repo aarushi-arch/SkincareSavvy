@@ -310,6 +310,8 @@
 </style>
 
 <div class="orders-page">
+  {# Hidden CSRF token for PayPal JS fetch calls #}
+  <form id="csrf-holder" style="display:none">{% csrf_token %}</form>
   <div class="container">
     <div class="row mb-5 text-center">
       <div class="col-12">
@@ -410,8 +412,14 @@
                   </form>
 
                   {% if esewa_available %}
-                  <a href="{% url 'esewa_checkout' item.product.id %}"
-                    class="btn btn-sm btn-outline-success btn-action ml-2">Pay with eSewa</a>
+                  <a href="{% url 'esewa-checkout' item.product.id %}"
+                    class="btn btn-sm btn-outline-success btn-action ml-2" id="esewa-btn-{{ item.id }}">Pay with eSewa</a>
+
+                  <!-- PayPal button rendered by JS SDK -->
+                  <span class="paypal-btn-wrap" id="paypal-btn-{{ item.id }}"
+                        data-product-id="{{ item.product.id }}"
+                        data-item-id="{{ item.id }}">
+                  </span>
                   {% endif %}
                 </div>
               </div>
@@ -468,6 +476,7 @@
   </div>
 </div>
 
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD" data-namespace="paypal_sdk"></script>
 <script>
   function selectOrder(orderId) {
     const params = new URLSearchParams(window.location.search);
@@ -481,6 +490,74 @@
       item.style.transform = 'scale(0.98)';
       setTimeout(() => item.style.transform = 'scale(1.02)', 100);
     });
+  });
+
+  // ─── PayPal Buttons ───────────────────────────────────────────────────────
+  function getCsrf() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  document.querySelectorAll('.paypal-btn-wrap').forEach(wrap => {
+    const itemId = wrap.dataset.itemId;
+    const productId = wrap.dataset.productId;
+
+    paypal_sdk.Buttons({
+      style: {
+        layout : 'horizontal',
+        color  : 'gold',
+        shape  : 'pill',
+        label  : 'paypal',
+        height : 32,
+        tagline: false,
+      },
+
+      // Step 1: Create a PayPal order via our backend
+      createOrder: function() {
+        return fetch('/shop/paypal/create-order/', {
+          method : 'POST',
+          headers: {
+            'X-CSRFToken' : getCsrf(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ product_id: productId }),
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) { alert('PayPal error: ' + data.error); return; }
+          return data.id;
+        });
+      },
+
+      // Step 2: Buyer approved — capture on server & create Django order
+      onApprove: function(data) {
+        const container = document.getElementById('paypal-btn-' + itemId);
+        if (container) container.innerHTML = '<span style="font-size:.8rem;color:#888">Processing…</span>';
+
+        return fetch('/shop/paypal/capture-order/', {
+          method : 'POST',
+          headers: {
+            'X-CSRFToken' : getCsrf(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ paypal_order_id: data.orderID }),
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (result.status === 'success') {
+            window.location.href = '/shop/order-success/' + result.order_id + '/';
+          } else {
+            alert('Payment capture failed: ' + (result.error || 'Unknown error'));
+            window.location.reload();
+          }
+        });
+      },
+
+      onError: function(err) {
+        console.error('PayPal error', err);
+        alert('PayPal encountered an error. Please try again.');
+      },
+    }).render('#paypal-btn-' + itemId);
   });
 </script>
 {% endblock %}
