@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
@@ -250,3 +250,9 @@ def get_filtered_options(request):
             "notable_effects": [],
             "product_names": [],
         }, status=500)
+
+
+def product_detail(request, pk):
+    """Show full product details page."""
+    product = get_object_or_404(Product, pk=pk)
+    return render(request, "recommendations/product_detail.html", {"product": product})

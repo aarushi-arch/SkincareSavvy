@@ -15,7 +15,9 @@ from .models import CNNModel
 from .routine_builder import build_routine
 from .services.cnn import FaceAnalysisPipeline
 from .services.yolo_pipeline import YOLOAnalysisPipeline
+from .services.unified_pipeline import analyze as unified_analyze
 from .utils.skin_explanation import generate_skin_explanation
+from .utils.ingredient_recommender import get_advice as get_ingredient_advice
 from recommendations.recommender_engine import get_recommendations
 from recommendations.models import Product
 
@@ -50,8 +52,26 @@ def index(request):
 
                 image_bytes = uploaded_file.read()
 
-                # Run analysis
-                analysis_result = pipeline.analyze(image_bytes)
+                # Run unified pipeline: MediaPipe → YOLO → MobileNet
+                raw = unified_analyze(image_bytes)
+
+                if raw.get("status") == "no_face":
+                    error = raw.get("error", "No face detected.")
+                    analysis_result = None
+                elif raw.get("status") == "error":
+                    error = raw.get("error", "Analysis failed.")
+                    analysis_result = None
+                else:
+                    # Normalise unified result into the shape the rest of the view expects
+                    analysis_result = {
+                        "skin_type":    raw.get("mobilenet", {}).get("skin_type", {}),
+                        "skin_concerns":raw.get("mobilenet", {}).get("skin_concerns", {}),
+                        "image_base64": raw.get("image_base64"),
+                        "face_bbox":    raw.get("face_bbox"),
+                        # YOLO detections for bounding box overlay
+                        "yolo_detections": raw.get("yolo", {}).get("detections", []),
+                        "yolo_severity":   raw.get("yolo", {}).get("severity", "None"),
+                    }
 
                 # If models are missing or pipeline failed, show error only and skip results dashboard
                 if analysis_result and analysis_result.get("error"):
@@ -74,16 +94,38 @@ def index(request):
                         main_concern = None
 
                         if not concerns_preds:
-                            print("⚠ WARNING: No skin concerns predictions received! Check if skin concerns model is active.")
-                            analysis_result["flags"] = {
-                                "acne": False,
-                                "wrinkles": False,
-                                "pores": False,
-                                "darkspots": False,
-                                "blackheads": False,
-                            }
-                            analysis_result["detected_concerns"] = []
-                            analysis_result["all_detected_concerns"] = []
+                            print("⚠ WARNING: No skin concerns predictions received — falling back to YOLO detections.")
+
+                            # Build concerns from YOLO detections instead
+                            yolo_dets = analysis_result.get("yolo_detections", [])
+                            yolo_concern_map: dict[str, int] = {}
+                            for det in yolo_dets:
+                                lbl = det["label"].lower().replace("_", "").replace(" ", "")
+                                # Use highest confidence per label
+                                conf = int(det["confidence"] * 100)
+                                if lbl not in yolo_concern_map or conf > yolo_concern_map[lbl]:
+                                    yolo_concern_map[lbl] = conf
+
+                            if yolo_concern_map:
+                                sorted_concerns = sorted(
+                                    [{"name": k, "confidence": v} for k, v in yolo_concern_map.items()],
+                                    key=lambda x: x["confidence"], reverse=True
+                                )
+                                for c in sorted_concerns:
+                                    c["explanation"] = generate_skin_explanation(c["name"], c["confidence"])
+                                    c["ingredient_advice"] = get_ingredient_advice(c["name"])
+                                main_concern = sorted_concerns[0]["name"]
+                                concerns_list = [c["name"] for c in sorted_concerns]
+                                analysis_result["all_detected_concerns"] = sorted_concerns
+                                analysis_result["detected_concerns"] = concerns_list
+                                final_concerns = concerns_list
+                            else:
+                                analysis_result["flags"] = {
+                                    "acne": False, "wrinkles": False, "pores": False,
+                                    "darkspots": False, "blackheads": False,
+                                }
+                                analysis_result["detected_concerns"] = []
+                                analysis_result["all_detected_concerns"] = []
                         else:
                             detected_concerns_with_confidence = [
                                 {
@@ -105,6 +147,7 @@ def index(request):
                                     c["explanation"] = generate_skin_explanation(
                                         c["name"], c["confidence"]
                                     )
+                                    c["ingredient_advice"] = get_ingredient_advice(c["name"])
                                 analysis_result["all_detected_concerns"] = sorted_concerns
                             else:
                                 main_concern = None
@@ -133,6 +176,52 @@ def index(request):
 
                         # Use TF-IDF based recommendations with active ingredients and allergy warnings
                         recommended_products = get_recommendations(query, top_k=50)
+
+                        # Normalise scores to 0–100 relative to the top scorer in this batch
+                        raw_scores = [p.get("score", 0) for p in recommended_products]
+                        max_score  = max(raw_scores) if raw_scores else 1
+                        min_score  = min(raw_scores) if raw_scores else 0
+                        score_range = max_score - min_score if max_score != min_score else 1
+
+                        for p in recommended_products:
+                            raw = p.get("score", 0)
+                            # Scale so top product = ~95%, others spread below it
+                            normalised = 55 + round(((raw - min_score) / score_range) * 40)
+                            p["match_score"] = max(55, min(95, normalised))
+
+                            # Build specific human-readable reason
+                            concerns_matched = [c for c in (p.get("concern") or []) if c]
+                            p_type = (p.get("type") or "product").lower()
+
+                            reasons = []
+
+                            # Concern alignment
+                            if concerns_matched and final_concerns:
+                                shared = [c for c in concerns_matched
+                                          if any(fc.lower() in c.lower() or c.lower() in fc.lower()
+                                                 for fc in final_concerns)]
+                                if shared:
+                                    reasons.append(f"Addresses {', '.join(shared[:2])}")
+                                else:
+                                    reasons.append(f"Targets {', '.join(concerns_matched[:2])}")
+
+                            # Skin type alignment
+                            if skin_type and skin_type != "Normal":
+                                reasons.append(f"suited for {skin_type} skin")
+
+                            # Score tier label
+                            score_pct = p["match_score"]
+                            if score_pct >= 88:
+                                tier = "Strong match"
+                            elif score_pct >= 75:
+                                tier = "Good match"
+                            else:
+                                tier = "Relevant pick"
+
+                            if reasons:
+                                p["match_reason"] = f"{tier} — {'; '.join(reasons)}."
+                            else:
+                                p["match_reason"] = f"{tier} for your skin profile."
 
                         # Fetch Product objects from DB to get IDs and synchronized data
                         product_urls = [p.get('link') for p in recommended_products if p.get('link')]
@@ -361,12 +450,10 @@ def yolo_index(request):
 def yolo_analyze(request):
     """
     Accepts a multipart image upload OR base64 JSON body.
-    Runs YOLO detection → crops → MobileNet per crop.
-    Returns JSON results.
+    Runs the full unified pipeline: MediaPipe → YOLO → MobileNet.
     """
     print("FULL ANALYSIS CALLED")
     try:
-        # Support both multipart file upload and base64 JSON
         if request.FILES.get("image"):
             image_bytes = request.FILES["image"].read()
         else:
@@ -375,7 +462,7 @@ def yolo_analyze(request):
             _, _, data = frame_b64.partition(",")
             image_bytes = base64.b64decode(data if data else frame_b64)
 
-        result = yolo_pipeline.analyze(image_bytes)
+        result = unified_analyze(image_bytes)
         return JsonResponse(result)
 
     except Exception as e:

@@ -1,5 +1,6 @@
 Django>=5.2,<5.3
 djangorestframework>=3.14,<4.0
+python-dotenv>=1.0,<2.0
 
 Pillow>=10.0,<11.0
 
@@ -26,3 +27,6 @@ requests>=2.31,<3.0
 # YOLO Object Detection
 ultralytics>=8.3.0
 lapx>=0.5.11
+
+# Django widget tweaks
+django-widget-tweaks>=1.5,<2.0

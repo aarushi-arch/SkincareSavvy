@@ -728,7 +728,8 @@
                 </div>
 
                 <div class="upload-actions">
-                    <button type="button" class="btn primary" id="scan-button" disabled
+                    <button type="button" class="btn primary" id="scan-button"
+                        {% if not analysis_result %}disabled{% endif %}
                         onclick="openAllergyModal()">Scan Photo</button>
                     <input type="hidden" name="allergies" id="allergies-input" value="">
                     <div id="loading-indicator"
@@ -883,6 +884,18 @@
                 </div>
             </div>
             {% endwith %}
+
+            <!-- Re-analyse button -->
+            <div style="text-align:center;margin-top:1.5rem;">
+                <a href="{% url 'face_analysis:face_analysis_index' %}"
+                   style="display:inline-flex;align-items:center;gap:.5rem;
+                          padding:10px 24px;border-radius:50px;
+                          border:1.5px solid #d1fae5;background:#fff;
+                          color:#166534;font-weight:600;font-size:.85rem;
+                          text-decoration:none;transition:background .15s,border-color .15s;">
+                    &#8635; Analyse Another Photo
+                </a>
+            </div>
 
         </section>
 
@@ -1483,202 +1496,129 @@
                 margin-top: 1.5rem;">
 
                     {% for product in recommended_products %}
-                    <div class="product-card" style="
-                    border: 1px solid #eee; 
-                    border-radius: 12px; 
-                    padding: 1.5rem; 
-                    transition: transform 0.2s, box-shadow 0.2s;
-                    display: flex;
-                    flex-direction: column;
-                    background: white;" data-type="{{ product.type|default:'skincare'|lower }}"
-                        data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
+                    <div class="pc-card"
+                         data-type="{{ product.type|default:'skincare'|lower }}"
+                         data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
 
-                        <div class="card-header" style="margin-bottom: 1rem;">
+                        <!-- Image section with category pill overlay -->
+                        <div class="pc-img-wrap">
                             {% if product.image_url %}
-                            <div class="product-image-container"
-                                style="width: 100%; height: 180px; margin-bottom: 1rem; overflow: hidden; border-radius: 8px;">
-                                <img src="{{ product.image_url }}" alt="{{ product.name }}"
-                                    style="width: 100%; height: 100%; object-fit: contain;">
-                            </div>
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="pc-img">
                             {% else %}
-                            <div class="product-image-container"
-                                style="width: 100%; height: 180px; margin-bottom: 1rem; background: #f9f9f9; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                                <i class="fas fa-image" style="font-size: 2rem; color: #ddd;"></i>
+                            <div class="pc-img-placeholder">
+                                <i class="fas fa-flask" style="font-size:2rem;color:#c8dcc8;"></i>
                             </div>
                             {% endif %}
-                            <span class="badge" style="
-                            background: #f8f9fa;
-                            color: #6c757d;
-                            padding: 0.25rem 0.6rem;
-                            border-radius: 20px;
-                            font-size: 0.75rem;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;">
-                                {{ product.type|default:'Skincare' }}
-                            </span>
+                            <span class="pc-category-pill">{{ product.type|default:'Skincare' }}</span>
                         </div>
 
-                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; line-height: 1.4;">
-                            {{ product.name }}
-                        </h3>
+                        <!-- Content section -->
+                        <div class="pc-body">
 
-                        <p class="brand" style="
-                        color: #6c757d; 
-                        font-family: 'Lato', sans-serif; 
-                        margin: 0 0 1rem 0; 
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        font-size: 0.8rem;">
-                            {{ product.brand }}
-                        </p>
-
-                        {% if product.price %}
-                        <div style="margin: 0 0 1rem 0;">
-                            <span style="font-size:1.1rem;font-weight:700;color:#166534;">
-                                {{ product.price }}
-                            </span>
-                        </div>
-                        {% endif %}
-
-                        <!-- Key Benefits -->
-                        {% if product.concern %}
-                        <div
-                            style="margin-bottom: 1.2rem; padding: 0.9rem; background: linear-gradient(135deg, rgba(11, 59, 23, 0.04) 0%, rgba(11, 59, 23, 0.02) 100%); border-left: 3px solid #0b3b17; border-radius: 6px;">
-                            <p
-                                style="font-size: 0.8rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.6rem 0; letter-spacing: 0.5px; text-transform: uppercase;">
-                                Key Benefits
-                            </p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
-                                {% if product.concern is list %}
-                                {% for effect in product.concern %}
-                                {% if effect %}
-                                <span style="
-                                        background: white;
-                                        color: #0b3b17;
-                                        padding: 0.35rem 0.75rem;
-                                        border-radius: 20px;
-                                        font-size: 0.8rem;
-                                        font-weight: 500;
-                                        border: 1px solid rgba(11, 59, 23, 0.15);
-                                        box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                    {{ effect|stringformat:"s"|cut:"'"|cut:'"' }}
-                                </span>
+                            <!-- Type label + rating row -->
+                            <div class="pc-meta-row">
+                                <span class="pc-type-label">{{ product.type|default:'Skincare'|upper }}</span>
+                                {% if product.rating %}
+                                <span class="pc-rating">★ {{ product.rating|floatformat:1 }}</span>
                                 {% endif %}
-                                {% endfor %}
+                            </div>
+
+                            <!-- Name -->
+                            <h3 class="pc-name">{{ product.name }}</h3>
+
+                            <!-- Price -->
+                            {% if product.price %}
+                            <p class="pc-price">{{ product.price }}</p>
+                            {% endif %}
+
+                            <!-- Match score + reason -->
+                            {% if product.match_score %}
+                            <div class="pc-match">
+                                <div class="pc-match-header">
+                                    <span class="pc-match-label">Match Score</span>
+                                    <span class="pc-match-pct"
+                                          style="color:{% if product.match_score >= 88 %}#16a34a{% elif product.match_score >= 75 %}#f59e0b{% else %}#64748b{% endif %};">
+                                        {{ product.match_score }}%
+                                    </span>
+                                </div>
+                                <div class="pc-match-track">
+                                    <div class="pc-match-fill"
+                                         style="width:{{ product.match_score }}%;
+                                                background:{% if product.match_score >= 88 %}linear-gradient(90deg,#16a34a,#4ade80){% elif product.match_score >= 75 %}linear-gradient(90deg,#f59e0b,#fbbf24){% else %}linear-gradient(90deg,#94a3b8,#cbd5e1){% endif %};">
+                                    </div>
+                                </div>
+                                {% if product.match_reason %}
+                                <p class="pc-match-reason">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                         style="flex-shrink:0;margin-top:1px;">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="12"/>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                    </svg>
+                                    {{ product.match_reason }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <div class="pc-divider"></div>
+
+                            <!-- Key Benefits -->
+                            {% if product.concern %}
+                            <p class="pc-section-label">Key Benefits</p>
+                            <ul class="pc-benefits">
+                                {% if product.concern is list %}
+                                {% for effect in product.concern %}{% if effect %}
+                                <li>{{ effect|stringformat:"s"|cut:"'"|cut:'"' }}</li>
+                                {% endif %}{% endfor %}
                                 {% else %}
                                 {% if product.concern|stringformat:"s"|slice:":1" == "[" %}
-                                <!-- Handle stringified list - parse and display each item separately -->
                                 {% with effect_str=product.concern|stringformat:"s"|slice:"1:-1" %}
                                 {% for item in effect_str|split:"," %}
-                                <span style="
-                                            background: white;
-                                            color: #0b3b17;
-                                            padding: 0.35rem 0.75rem;
-                                            border-radius: 20px;
-                                            font-size: 0.8rem;
-                                            font-weight: 500;
-                                            border: 1px solid rgba(11, 59, 23, 0.15);
-                                            box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                    {{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}
-                                </span>
-                                {% endfor %}
-                                {% endwith %}
+                                <li>{{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}</li>
+                                {% endfor %}{% endwith %}
                                 {% else %}
-                                <span style="
-                                        background: white;
-                                        color: #0b3b17;
-                                        padding: 0.35rem 0.75rem;
-                                        border-radius: 20px;
-                                        font-size: 0.8rem;
-                                        font-weight: 500;
-                                        border: 1px solid rgba(11, 59, 23, 0.15);
-                                        box-shadow: 0 1px 3px rgba(11, 59, 23, 0.08);">
-                                    {{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}
-                                </span>
+                                <li>{{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}</li>
                                 {% endif %}
                                 {% endif %}
-                            </div>
-                        </div>
-                        {% endif %}
+                            </ul>
+                            {% endif %}
 
-                        <!-- Active Ingredients -->
-                        {% if product.active_ingredients %}
-                        <div style="margin-bottom: 1rem;">
-                            <p style="font-size: 0.85rem; font-weight: 600; color: #0b3b17; margin-bottom: 0.5rem;">
-                                Active Ingredients:
-                            </p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
-                                {% for ingredient in product.active_ingredients %}
-                                <span style="
-                                background: #e8f5e8;
-                                color: #2e7d32;
-                                padding: 0.2rem 0.5rem;
-                                border-radius: 12px;
-                                font-size: 0.75rem;
-                                font-weight: 500;">
-                                    {{ ingredient }}
-                                </span>
+                            <!-- Active ingredients as pills -->
+                            {% if product.active_ingredients %}
+                            <div class="pc-pills">
+                                {% for ing in product.active_ingredients|slice:":4" %}
+                                <span class="pc-pill">{{ ing|title }}</span>
                                 {% endfor %}
                             </div>
-                        </div>
-                        {% endif %}
+                            {% endif %}
 
-                        <!-- Allergy Warning -->
-                        {% if product.allergy_warning %}
-                        <div style="
-                        background: #ffebee;
-                        border: 1px solid #ffcdd2;
-                        border-radius: 8px;
-                        padding: 0.75rem;
-                        margin-bottom: 1rem;">
-                            <p style="
-                            font-size: 0.85rem;
-                            color: #c62828;
-                            margin: 0 0 0.5rem 0;
-                            font-weight: 600;
-                            display: flex;
-                            align-items: center;
-                            gap: 0.5rem;">
-                                ⚠️ Allergy Alert
-                            </p>
-                            <p style="font-size: 0.8rem; color: #c62828; margin: 0;">
+                            <!-- Allergy warning -->
+                            {% if product.allergy_warning %}
+                            <div class="pc-allergy">
                                 Contains: {{ product.matched_allergens|join:", " }}
-                            </p>
-                        </div>
-                        {% endif %}
-
-                        <!-- Product Description -->
-                        {% if product.description %}
-                        <p style="font-size: 0.85rem; color: #666; margin: 0 0 1rem 0; line-height: 1.4;">
-                            {{ product.description|truncatechars:120 }}
-                        </p>
-                        {% endif %}
-
-                        <div
-                            style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid rgba(11, 59, 23, 0.08);">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                {% if product.rating %}
-                                <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
-                                    ★ {{ product.rating|floatformat:1 }}
-                                </span>
-                                <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
-                                    ({{ product.rating|floatformat:1 }}/5)
-                                </span>
-                                {% else %}
-                                <span style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">
-                                    ★ {{ product.score|floatformat:1 }}
-                                </span>
-                                <span style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
-                                    ({{ product.score|floatformat:1 }}/5)
-                                </span>
-                                {% endif %}
                             </div>
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                            {% endif %}
+
+                            <!-- CTA buttons -->
+                            <div class="pc-actions">
                                 {% if product.id %}
-                                <button class="btn primary small add-to-shelf-btn" data-product-id="{{ product.id }}"
-                                    style="padding: 0.5rem 1rem;">Add to Shelf</button>
+                                <button class="pc-cta add-to-shelf-btn"
+                                        data-product-id="{{ product.id }}">
+                                    ADD TO SHELF &nbsp;→
+                                </button>
+                                {% endif %}
+
+                                <!-- View Description button -->
+                                {% if product.id %}
+                                <a href="{% url 'recommendations:product_detail' product.id %}"
+                                   class="pc-view-btn">
+                                    View Description
+                                </a>
                                 {% endif %}
                             </div>
+
                         </div>
                     </div>
                     {% endfor %}
@@ -2030,6 +1970,12 @@
         }
 
         function openAllergyModal() {
+            var fi = document.getElementById('face_image_input');
+            if (!fi || !fi.files || fi.files.length === 0) {
+                // No file chosen — trigger the file picker instead
+                fi && fi.click();
+                return;
+            }
             document.getElementById('allergy-modal').style.display = 'flex';
         }
 
@@ -2055,27 +2001,37 @@
     </script>
 
     <!-- ── Analysis Loading Modal ── -->
-    <div id="analysis-loader" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+    <div id="analysis-loader" style="display:none;position:fixed;inset:0;
+                background:rgba(240,253,244,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
                 z-index:10000;align-items:center;justify-content:center;padding:1rem;">
-        <div style="background:#fff;border-radius:24px;padding:2.5rem 2rem;
+        <div style="background:rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(180%);
+                    -webkit-backdrop-filter:blur(24px) saturate(180%);
+                    border:1px solid rgba(255,255,255,.9);
+                    border-radius:28px;padding:2.75rem 2.25rem;
                     max-width:380px;width:100%;text-align:center;
-                    box-shadow:0 30px 60px rgba(0,0,0,.2);">
+                    box-shadow:0 8px 40px rgba(11,59,23,.12),inset 0 1px 0 rgba(255,255,255,.9);">
 
-            <!-- Animated ring -->
-            <div style="position:relative;width:72px;height:72px;margin:0 auto 1.5rem;">
-                <svg viewBox="0 0 72 72" style="width:72px;height:72px;animation:loaderSpin 1.2s linear infinite;">
-                    <circle cx="36" cy="36" r="30" fill="none" stroke="#e2e8f0" stroke-width="5" />
-                    <circle cx="36" cy="36" r="30" fill="none" stroke="#16a34a" stroke-width="5"
-                        stroke-dasharray="60 130" stroke-linecap="round" />
+            <!-- Animated ring + icon -->
+            <div style="position:relative;width:80px;height:80px;margin:0 auto 1.75rem;">
+                <svg viewBox="0 0 80 80" style="width:80px;height:80px;animation:loaderSpin 1.2s linear infinite;">
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="#16a34a" stroke-width="5"
+                            stroke-dasharray="68 146" stroke-linecap="round"/>
                 </svg>
-                <span style="position:absolute;inset:0;display:flex;align-items:center;
-                             justify-content:center;font-size:1.5rem;" id="loader-icon">🔍</span>
+                <div id="loader-icon" style="position:absolute;inset:0;display:flex;align-items:center;
+                     justify-content:center;">
+                    <svg id="loader-svg" viewBox="0 0 24 24" width="26" height="26" fill="none"
+                         stroke="#0b3b17" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </div>
             </div>
 
-            <h3 style="margin:0 0 .4rem;color:#0f172a;font-size:1.15rem;font-weight:700;" id="loader-title">Analysing
-                your photo…</h3>
-            <p style="margin:0 0 1.5rem;color:#64748b;font-size:.85rem;line-height:1.5;" id="loader-msg">Detecting face
-                in image</p>
+            <h3 style="margin:0 0 .4rem;color:#0b3b17;font-size:1.2rem;font-weight:700;" id="loader-title">
+                Analysing your photo…
+            </h3>
+            <p style="margin:0 0 1.75rem;color:#64748b;font-size:.85rem;line-height:1.5;"
+               id="loader-msg">Detecting face in image</p>
 
             <!-- Step progress dots -->
             <div style="display:flex;justify-content:center;gap:.5rem;" id="loader-dots">
@@ -2089,32 +2045,26 @@
     </div>
 
     <style>
-        @keyframes loaderSpin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
+        @keyframes loaderSpin { to { transform:rotate(360deg); } }
         .ldot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            transition: background .3s;
+            width:8px; height:8px; border-radius:50%;
+            background:#e2e8f0; transition:background .3s;
         }
-
-        .ldot.active {
-            background: #16a34a;
-        }
+        .ldot.active { background:#16a34a; }
     </style>
 
     <script>
         var LOADER_STEPS = [
-            { icon: "🔍", title: "Detecting face…", msg: "Locating your face in the image" },
-            { icon: "✂️", title: "Cropping face region…", msg: "Isolating skin area for analysis" },
-            { icon: "🧠", title: "Running CNN model…", msg: "Classifying skin type" },
-            { icon: "🔬", title: "Extracting concerns…", msg: "Identifying skin concerns" },
-            { icon: "💊", title: "Matching products…", msg: "Finding the best recommendations for you" },
+            { svg: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+              title: "Detecting face…",        msg: "Locating your face in the image" },
+            { svg: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+              title: "Cropping face region…",  msg: "Isolating skin area for analysis" },
+            { svg: '<path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/>',
+              title: "Running CNN model…",     msg: "Classifying skin type" },
+            { svg: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+              title: "Extracting concerns…",   msg: "Identifying skin concerns" },
+            { svg: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+              title: "Matching products…",     msg: "Finding the best recommendations for you" },
         ];
 
         function showAnalysisLoader() {
@@ -2132,8 +2082,10 @@
                 if (step >= LOADER_STEPS.length) return;
                 var s = LOADER_STEPS[step];
                 titleEl.textContent = s.title;
-                msgEl.textContent = s.msg;
-                iconEl.textContent = s.icon;
+                msgEl.textContent   = s.msg;
+                // Swap SVG icon
+                var svgEl = document.getElementById('loader-svg');
+                if (svgEl) svgEl.innerHTML = s.svg;
                 dots.forEach(function (d, i) {
                     d.classList.toggle('active', i <= step);
                 });
@@ -2293,6 +2245,12 @@
                 }
             });
 
+            // Re-analyse: just scroll back up — uploader is already reset on page load
+            window.resetUploader = function () {
+                // Nothing to reset — the uploader is already clean after POST
+                // The href="#uploader" on the button handles the scroll
+            };
+
             // Drag and drop handlers
             uploadDrop.addEventListener('dragover', function (e) {
                 e.preventDefault();
@@ -2355,28 +2313,29 @@
 
             // Restore button state if page reloads with results or error
             {% if analysis_result or error %}
-            // If we have results or error, re-enable the button
+            // Re-enable the scan button and reset to clean upload state
             scanButton.disabled = false;
             scanButton.style.opacity = '1';
             scanButton.textContent = originalButtonText || 'Scan Photo';
             loadingIndicator.style.display = 'none';
 
-            // Keep the image preview visible if file input has a file
-            if (fileInput && fileInput.files.length > 0) {
-                // Image should already be visible from previous selection
-                const file = fileInput.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        previewImg.src = e.target.result;
-                        fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
-                        uploadPlaceholder.style.display = 'none';
-                        imagePreview.style.display = 'block';
-                        uploadDrop.classList.add('has-image');
-                    };
-                    reader.readAsDataURL(file);
+            // After a POST the file input is always empty (browser security).
+            // Reset the uploader so the user can pick a new file immediately.
+            uploadPlaceholder.style.display = 'block';
+            imagePreview.style.display = 'none';
+            uploadDrop.classList.remove('has-image');
+
+            // Restore two-column camera/upload grid
+            (function () {
+                const cameraPaneWrapper = document.getElementById('start-camera')
+                    ? document.getElementById('start-camera').closest('[onclick]') : null;
+                if (cameraPaneWrapper) cameraPaneWrapper.style.display = '';
+                const grid = uploadDrop.closest('[style*="grid-template-columns"]')
+                    || uploadDrop.parentElement;
+                if (grid && grid.style.gridTemplateColumns !== undefined) {
+                    grid.style.gridTemplateColumns = '1fr 1fr';
                 }
-            }
+            })();
 
             // Scroll to results if they exist
             {% if analysis_result %}
@@ -2717,6 +2676,14 @@
             }, 'image/jpeg', 0.95);
         });
 
+        // Toggle product description
+        function toggleDesc(btn) {
+            var desc = btn.nextElementSibling;
+            var open = desc.style.display !== 'none';
+            desc.style.display = open ? 'none' : 'block';
+            btn.textContent    = open ? 'View Description' : 'Hide Description';
+        }
+
         // --- Shelf Logic ---
         const buttons = document.querySelectorAll('.add-to-shelf-btn');
         const csrfTokenElem = document.getElementById('csrf-token');
@@ -2822,4 +2789,132 @@
 .rc-cta{display:block;text-align:center;padding:14px 24px;border-radius:10px;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;font-weight:700;font-size:.92rem;text-decoration:none;letter-spacing:.3px;transition:opacity .2s,transform .15s;box-shadow:0 4px 14px rgba(11,59,23,.25);}
 .rc-cta:hover{opacity:.92;transform:translateY(-1px);color:#fff;}
 .rc-no-concerns{padding:.5rem 0;}
+</style>
+
+<style>
+/* ── Product Card (pc-*) ── */
+.product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.25rem; margin-top:1.5rem; }
+.pc-card {
+  display:flex; flex-direction:column;
+  background:#fff; border-radius:16px; overflow:hidden;
+  border:1px solid #eaf0ea;
+  box-shadow:0 1px 4px rgba(0,0,0,.04),0 4px 16px rgba(11,59,23,.05);
+  transition:transform .2s, box-shadow .2s;
+}
+.pc-card:hover { transform:translateY(-3px); box-shadow:0 6px 24px rgba(11,59,23,.1); }
+
+/* Image */
+.pc-img-wrap { position:relative; width:100%; height:200px; background:#f4f7f4; overflow:hidden; }
+.pc-img { width:100%; height:100%; object-fit:cover; display:block; }
+.pc-img-placeholder {
+  width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#f0fdf4,#e8f5e9);
+}
+.pc-category-pill {
+  position:absolute; top:10px; left:10px;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+  color:#0b3b17; font-size:.62rem; font-weight:700;
+  letter-spacing:.8px; text-transform:uppercase;
+  padding:4px 12px; border-radius:50px;
+  border:1px solid rgba(11,59,23,.1);
+  box-shadow:0 1px 6px rgba(0,0,0,.07);
+}
+
+/* Body — uniform padding, consistent vertical rhythm */
+.pc-body {
+  padding:1rem 1.1rem 1.1rem;
+  display:flex; flex-direction:column;
+  flex:1; gap:0;
+}
+.pc-meta-row {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:.5rem;
+}
+.pc-type-label { font-size:.6rem; font-weight:700; letter-spacing:1.4px; color:#94a3b8; text-transform:uppercase; }
+.pc-rating { font-size:.78rem; font-weight:700; color:#0b3b17; }
+
+/* Smaller, tighter product name */
+.pc-name {
+  font-size:.9rem; font-weight:700; color:#0f172a;
+  line-height:1.35; margin:0 0 .4rem;
+}
+.pc-price { font-size:.92rem; font-weight:700; color:#166534; margin:0 0 .75rem; }
+
+/* Thin divider */
+.pc-divider { height:1px; background:#f1f5f1; margin-bottom:.75rem; }
+
+/* Benefits */
+.pc-section-label {
+  font-size:.58rem; font-weight:700; letter-spacing:1.4px;
+  text-transform:uppercase; color:#94a3b8; margin:0 0 .4rem;
+}
+.pc-benefits { margin:0 0 .75rem; padding:0; list-style:none; display:flex; flex-direction:column; gap:.3rem; }
+.pc-benefits li {
+  display:flex; align-items:flex-start; gap:.45rem;
+  font-size:.78rem; color:#374151; line-height:1.4;
+}
+.pc-benefits li::before {
+  content:''; flex-shrink:0; width:15px; height:15px; margin-top:1px;
+  background:#0b3b17; border-radius:50%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size:9px; background-repeat:no-repeat; background-position:center;
+}
+
+/* Ingredient pills */
+.pc-pills { display:flex; flex-wrap:wrap; gap:.3rem; margin-bottom:.75rem; }
+.pc-pill {
+  padding:3px 10px; border-radius:20px;
+  background:#f0fdf4; color:#166534;
+  font-size:.68rem; font-weight:600;
+  border:1px solid #bbf7d0;
+}
+
+/* Allergy */
+.pc-allergy {
+  font-size:.72rem; color:#c62828;
+  background:#fff5f5; border:1px solid #fecaca;
+  border-radius:7px; padding:.45rem .7rem; margin-bottom:.75rem;
+}
+
+/* Action buttons — stacked, equal width, push to bottom */
+.pc-actions {
+  margin-top:auto;
+  display:flex; flex-direction:column; gap:.5rem;
+  padding-top:.75rem;
+}
+.pc-cta {
+  width:100%; padding:11px;
+  border-radius:8px; border:none;
+  background:#0b3b17; color:#fff;
+  font-size:.72rem; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase;
+  cursor:pointer; transition:background .15s, transform .1s;
+}
+.pc-cta:hover { background:#166534; transform:translateY(-1px); }
+.pc-view-btn {
+  display:block; width:100%; padding:10px;
+  border-radius:8px; border:1.5px solid #d1fae5;
+  background:transparent; color:#166534;
+  font-size:.72rem; font-weight:600;
+  letter-spacing:.5px; text-transform:uppercase;
+  text-align:center; text-decoration:none;
+  transition:background .15s, border-color .15s;
+}
+.pc-view-btn:hover { background:#f0fdf4; border-color:#16a34a; color:#0b3b17; }
+
+/* Match score */
+.pc-match { background:#f8fafc; border-radius:8px; padding:.65rem .8rem; border:1px solid #eaf0ea; }
+.pc-match-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.35rem; }
+.pc-match-label { font-size:.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#94a3b8; }
+.pc-match-pct   { font-size:.8rem; font-weight:700; color:#0b3b17; }
+.pc-match-track { height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden; margin-bottom:.4rem; }
+.pc-match-fill  { height:100%; border-radius:2px; background:linear-gradient(90deg,#16a34a,#4ade80); }
+.pc-match-reason { margin:0; font-size:.72rem; color:#64748b; line-height:1.45;
+                   display:flex; align-items:flex-start; gap:.3rem; }
+.pc-desc {
+  background:#f8fafc; border-radius:8px; padding:.75rem;
+  border:1px solid #eaf0ea; margin-top:-.25rem;
+}
+.pc-desc p { margin:0 0 .4rem; font-size:.78rem; color:#475569; line-height:1.55; }
+.pc-desc a { display:inline-block; margin-top:.1rem; }
 </style>
