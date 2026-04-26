@@ -370,7 +370,7 @@ def analyze(image_input: bytes | np.ndarray, yolo_conf: float = 0.20) -> dict[st
         return {"status": "error", "error": "Face crop failed"}
 
     # ── Step 3: YOLO on face crop ─────────────────────────────────────────────
-    yolo_detections = _run_yolo(face_crop, fx1, fy1, img_w, img_h, conf=0.30)
+    yolo_detections = _run_yolo(face_crop, fx1, fy1, img_w, img_h, conf=0.15)
     concern_counts: dict[str, int] = {}
     for d in yolo_detections:
         lbl = d["label"].lower()
@@ -381,7 +381,7 @@ def analyze(image_input: bytes | np.ndarray, yolo_conf: float = 0.20) -> dict[st
     print(f"[Pipeline] YOLO: {len(yolo_detections)} detections, severity={severity}")
 
     # ── Step 4: MobileNet — only if YOLO found at least one detection ≥ 70% ──
-    YOLO_MOBILENET_GATE = 0.30
+    YOLO_MOBILENET_GATE = 0.15
     high_conf_detections = [d for d in yolo_detections if d["confidence"] >= YOLO_MOBILENET_GATE]
 
     if high_conf_detections:

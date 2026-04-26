@@ -63,15 +63,21 @@ def index(request):
                     analysis_result = None
                 else:
                     # Normalise unified result into the shape the rest of the view expects
+                    raw_dets = raw.get("yolo", {}).get("detections", [])
+                    for d in raw_dets:
+                        d["confidence_pct"] = round(d.get("confidence", 0) * 100)
+
                     analysis_result = {
                         "skin_type":    raw.get("mobilenet", {}).get("skin_type", {}),
                         "skin_concerns":raw.get("mobilenet", {}).get("skin_concerns", {}),
                         "image_base64": raw.get("image_base64"),
                         "face_bbox":    raw.get("face_bbox"),
-                        # YOLO detections for bounding box overlay
-                        "yolo_detections": raw.get("yolo", {}).get("detections", []),
+                        "yolo_detections": [d for d in raw_dets if d["confidence_pct"] >= 10],
                         "yolo_severity":   raw.get("yolo", {}).get("severity", "None"),
                     }
+                    # Store image in session for the Try-On feature
+                    if raw.get("image_base64"):
+                        request.session["last_analysis_image"] = raw["image_base64"]
 
                 # If models are missing or pipeline failed, show error only and skip results dashboard
                 if analysis_result and analysis_result.get("error"):
@@ -85,7 +91,7 @@ def index(request):
                         analysis_result["skin_type_label"] = skin_type
                         print(f"✓ Skin Type: {skin_type}")
 
-                        CONFIDENCE_THRESHOLD = 0.8  # 80% — only show high-confidence MobileNet concerns
+                        CONFIDENCE_THRESHOLD = 0.35  # 35% — balanced threshold for subtle concerns like wrinkles
 
                         concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
                         no_concerns_flag = analysis_result.get("skin_concerns", {}).get("no_concerns", False)
@@ -94,8 +100,11 @@ def index(request):
                         final_concerns = []
                         main_concern = None
 
+                        # Filter MobileNet predictions above threshold
+                        high_conf_preds = [p for p in concerns_preds if p["confidence"] >= CONFIDENCE_THRESHOLD]
+
                         if no_concerns_flag:
-                            # YOLO found nothing above 70% — explicitly no concerns
+                            # YOLO found nothing above gate — explicitly no concerns
                             analysis_result["all_detected_concerns"] = []
                             analysis_result["detected_concerns"] = []
                             analysis_result["flags"] = {
@@ -103,20 +112,17 @@ def index(request):
                                 "darkspots": False, "blackheads": False,
                             }
 
-                        elif not concerns_preds:
-                            print("⚠ WARNING: No skin concerns predictions received — falling back to YOLO detections.")
+                        elif not high_conf_preds:
+                            # MobileNet has no high-confidence predictions — fall back to YOLO
+                            print("⚠ MobileNet below threshold — falling back to YOLO detections.")
 
-                            # Build concerns from YOLO detections instead
                             yolo_dets = analysis_result.get("yolo_detections", [])
                             yolo_concern_map: dict[str, int] = {}
                             for det in yolo_dets:
                                 lbl = det["label"].lower().replace("_", "").replace(" ", "")
-                                # Use highest confidence per label
-                                conf = int(det["confidence"] * 100)
+                                conf = det.get("confidence_pct", int(det.get("confidence", 0) * 100))
                                 if lbl not in yolo_concern_map or conf > yolo_concern_map[lbl]:
                                     yolo_concern_map[lbl] = conf
-
-                            if yolo_concern_map:
                                 sorted_concerns = sorted(
                                     [{"name": k, "confidence": v} for k, v in yolo_concern_map.items()],
                                     key=lambda x: x["confidence"], reverse=True

@@ -60,6 +60,136 @@
   }
   .pd-price { font-size:1rem; font-weight:700; color:#166634; margin:0; }
 
+  /* Try-On Button */
+  .pd-tryon-btn {
+    padding:12px 24px; border-radius:10px;
+    border:none; background:linear-gradient(135deg,#0b3b17,#16a34a);
+    color:#fff; font-weight:700; font-size:.85rem;
+    cursor:pointer; display:inline-flex; align-items:center; gap:.5rem;
+    transition:transform .15s, box-shadow .15s;
+    box-shadow:0 3px 10px rgba(11,59,23,.2);
+  }
+  .pd-tryon-btn:hover { transform:translateY(-1px); box-shadow:0 5px 15px rgba(11,59,23,.3); }
+  .pd-tryon-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* Modal Overlay */
+  .tryon-modal {
+    display:none; position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background:rgba(11,59,23,.85); backdrop-filter:blur(8px);
+    z-index:9999; align-items:center; justify-content:center;
+    padding:1rem; overflow-y:auto;
+  }
+  .tryon-modal.active { display:flex; }
+  
+  /* Modal Content Container */
+  .tryon-modal-content {
+    background:linear-gradient(135deg,#f0fdf4,#ffffff);
+    border-radius:24px; 
+    width:100%; max-width:900px;
+    max-height:95vh;
+    position:relative; 
+    padding:2rem 1.5rem 1.5rem;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+    animation:modalSlideIn .3s ease-out;
+    display:flex; flex-direction:column;
+  }
+  
+  @keyframes modalSlideIn {
+    from { opacity:0; transform:translateY(-20px) scale(.95); }
+    to { opacity:1; transform:translateY(0) scale(1); }
+  }
+  
+  /* Close Button */
+  .tryon-close {
+    position:absolute; top:1rem; right:1rem; 
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; cursor:pointer; 
+    color:#64748b; background:#fff;
+    border:2px solid #e2e8f0;
+    transition:all .2s;
+    z-index:10;
+  }
+  .tryon-close:hover { 
+    color:#fff; background:#0b3b17; 
+    border-color:#0b3b17; transform:rotate(90deg);
+  }
+  
+  /* Modal Header */
+  .tryon-modal-header {
+    text-align:center; margin-bottom:1.5rem;
+  }
+  .tryon-modal-title {
+    font-size:1.75rem; font-weight:800; color:#0b3b17;
+    margin:0 0 .5rem; letter-spacing:-.5px;
+  }
+  .tryon-modal-subtitle {
+    font-size:.9rem; color:#64748b; margin:0;
+    font-weight:500;
+  }
+  
+  /* Canvas Wrapper */
+  .tryon-canvas-wrap { 
+    position:relative; 
+    width:100%;
+    display:flex; 
+    align-items:center; 
+    justify-content:center;
+    background:#fff;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 4px 20px rgba(0,0,0,.1);
+    margin-bottom:1rem;
+  }
+  
+  #tryonCanvas { 
+    width:100%; 
+    height:auto; 
+    display:block;
+    max-height:calc(95vh - 200px);
+    object-fit:contain;
+  }
+  
+  /* Loading State */
+  .tryon-loading {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; color:#0b3b17;
+  }
+  .tryon-spinner {
+    width:50px; height:50px; border:4px solid #d1fae5;
+    border-top-color:#0b3b17; border-radius:50%;
+    animation:spin 1s linear infinite; margin:0 auto 1rem;
+  }
+  @keyframes spin {
+    to { transform:rotate(360deg); }
+  }
+  
+  /* Modal Footer */
+  .tryon-modal-footer {
+    text-align:center; padding-top:1rem;
+    border-top:1px solid #e2e8f0;
+  }
+  .tryon-footer-text {
+    font-size:.85rem; color:#64748b; margin:0;
+    display:flex; align-items:center; justify-content:center; gap:.5rem;
+  }
+  .tryon-footer-icon {
+    font-size:1.2rem;
+  }
+  
+  /* Responsive */
+  @media(max-width:768px){
+    .tryon-modal-content { 
+      padding:1.5rem 1rem 1rem; 
+      max-width:100%; 
+      margin:.5rem;
+      border-radius:20px;
+    }
+    .tryon-modal-title { font-size:1.4rem; }
+    .tryon-close { width:36px; height:36px; top:.75rem; right:.75rem; }
+    #tryonCanvas { max-height:calc(95vh - 180px); }
+  }
+
   /* ── Content cards ── */
   .pd-card {
     background:#fff; border-radius:14px; padding:1.5rem;
@@ -151,9 +281,31 @@
         <p class="pd-brand">{{ product.brand }}</p>
         {% endif %}
         <h1 class="pd-name">{{ product.name }}</h1>
-        {% if product.price %}
-        <p class="pd-price">NPR {{ product.price }}</p>
-        {% endif %}
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-top:.5rem;">
+          {% if product.price %}
+          <p class="pd-price" style="margin:0;">NPR {{ product.price }}</p>
+          {% endif %}
+
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+            {% if product.id %}
+            <button class="add-to-shelf-btn"
+                    data-product-id="{{ product.id }}"
+                    style="padding:11px 24px;border-radius:8px;border:none;
+                           background:linear-gradient(135deg,#0b3b17,#16a34a);
+                           color:#fff;font-weight:700;font-size:.85rem;
+                           cursor:pointer;letter-spacing:.3px;
+                           box-shadow:0 3px 10px rgba(11,59,23,.2);
+                           transition:opacity .2s,transform .15s;">
+              Add to Shelf
+            </button>
+            {% endif %}
+
+            <button class="pd-tryon-btn" id="tryonBtn">
+              <span>👁️</span> Try On
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Description -->
@@ -175,6 +327,23 @@
         <div class="pd-how-to">
           {{ product.how_to_use|linebreaks }}
         </div>
+      </div>
+      {% endif %}
+
+      <!-- Key Benefits (notable effects) -->
+      {% if product.skin_concerns %}
+      <div class="pd-card">
+        <p class="pd-section-label">Key Benefits</p>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.5rem;">
+          {% for effect in product.skin_concerns %}
+          <li style="display:flex;align-items:flex-start;gap:.5rem;font-size:.88rem;color:#374151;line-height:1.5;">
+            <span style="width:16px;height:16px;border-radius:50%;background:#0b3b17;flex-shrink:0;margin-top:2px;
+                         background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");
+                         background-size:9px;background-repeat:no-repeat;background-position:center;"></span>
+            {{ effect }}
+          </li>
+          {% endfor %}
+        </ul>
       </div>
       {% endif %}
 
@@ -216,24 +385,215 @@
       </div>
       {% endif %}
 
-      <!-- External link -->
-      {% if product.product_url %}
-      <div class="pd-cta-row">
-        <a href="{{ product.product_url }}" target="_blank" rel="noopener"
-           class="pd-cta-outline">
-          View on store
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
-      </div>
-      {% endif %}
-
     </div>
   </div>
 
 </div>
 </div>
+
+<!-- Try-On Modal -->
+<div class="tryon-modal" id="tryonModal">
+  <div class="tryon-modal-content">
+    <button class="tryon-close" id="tryonClose" aria-label="Close">&times;</button>
+    
+    <div class="tryon-modal-header">
+      <h2 class="tryon-modal-title">✨ Virtual Try-On</h2>
+      <p class="tryon-modal-subtitle">See where to apply {{ product.category|default:"this product" }}</p>
+    </div>
+    
+    <div class="tryon-canvas-wrap" id="canvasWrap">
+      <div class="tryon-loading" id="tryonLoading">
+        <div class="tryon-spinner"></div>
+        <p style="margin:0;font-weight:600;">Analyzing your face...</p>
+      </div>
+      <canvas id="tryonCanvas" style="display:none;"></canvas>
+    </div>
+    
+    <div class="tryon-modal-footer">
+      <p class="tryon-footer-text">
+        <span class="tryon-footer-icon">🟢</span>
+        Green areas indicate application zones
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Add to Shelf
+document.querySelectorAll('.add-to-shelf-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.productId;
+        if (!id) return;
+        btn.textContent = 'Adding…';
+        btn.disabled = true;
+        fetch('/add-to-shelf/' + id + '/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Accept': 'application/json',
+            },
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            window.location.href = '/my-shelf/';
+        })
+        .catch(function() {
+            btn.textContent = 'Error — try again';
+            btn.disabled = false;
+        });
+    });
+});
+
+// Try-On Feature
+(function() {
+    const tryonBtn = document.getElementById('tryonBtn');
+    const modal = document.getElementById('tryonModal');
+    const closeBtn = document.getElementById('tryonClose');
+    const canvas = document.getElementById('tryonCanvas');
+    const canvasWrap = document.getElementById('canvasWrap');
+    const loading = document.getElementById('tryonLoading');
+    const ctx = canvas.getContext('2d');
+    const productCategory = '{{ product.category|lower|default:"" }}';
+
+    tryonBtn.addEventListener('click', function() {
+        // Show modal immediately with loading state
+        modal.classList.add('active');
+        loading.style.display = 'block';
+        canvas.style.display = 'none';
+        
+        // Disable button
+        tryonBtn.disabled = true;
+        const originalHTML = tryonBtn.innerHTML;
+        tryonBtn.innerHTML = '<span>⏳</span> Loading...';
+
+        fetch('/recommendations/tryon-zones/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ category: productCategory })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                modal.classList.remove('active');
+                return;
+            }
+
+            const img = new Image();
+            img.onload = function() {
+                // Set canvas size to match image
+                const maxWidth = canvasWrap.offsetWidth - 40; // Account for padding
+                const maxHeight = window.innerHeight * 0.6; // Max 60% of viewport height
+                
+                let width = img.width;
+                let height = img.height;
+                
+                // Scale down if needed
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = (maxHeight / height) * width;
+                    height = maxHeight;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw image
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Draw zones
+                if (data.zones && data.zones.length > 0) {
+                    const scaleX = width / img.width;
+                    const scaleY = height / img.height;
+                    
+                    data.zones.forEach(zone => {
+                        // Draw semi-transparent green overlay
+                        ctx.fillStyle = 'rgba(34, 197, 94, 0.35)';
+                        ctx.beginPath();
+                        zone.points.forEach((pt, i) => {
+                            const x = pt[0] * scaleX;
+                            const y = pt[1] * scaleY;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        });
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // Draw label with better styling
+                        if (zone.points.length > 0) {
+                            const x = zone.points[0][0] * scaleX;
+                            const y = zone.points[0][1] * scaleY;
+                            
+                            // Label background
+                            ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+                            const textMetrics = ctx.measureText(zone.label);
+                            const padding = 8;
+                            const bgX = x - padding;
+                            const bgY = y - 24;
+                            const bgWidth = textMetrics.width + padding * 2;
+                            const bgHeight = 24;
+                            
+                            // Rounded rectangle background
+                            ctx.fillStyle = 'rgba(11, 59, 23, 0.9)';
+                            ctx.beginPath();
+                            ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 6);
+                            ctx.fill();
+                            
+                            // Label text
+                            ctx.fillStyle = '#fff';
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(zone.label, x, y - 12);
+                        }
+                    });
+                }
+
+                // Hide loading, show canvas
+                loading.style.display = 'none';
+                canvas.style.display = 'block';
+            };
+            
+            img.onerror = function() {
+                alert('Failed to load image');
+                modal.classList.remove('active');
+            };
+            
+            img.src = 'data:image/jpeg;base64,' + data.image_base64;
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Failed to load try-on visualization. Please try again.');
+            modal.classList.remove('active');
+        })
+        .finally(() => {
+            tryonBtn.disabled = false;
+            tryonBtn.innerHTML = originalHTML;
+        });
+    });
+
+    closeBtn.addEventListener('click', function() {
+        modal.classList.remove('active');
+    });
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    });
+})();
+</script>
+
 {% endblock %}

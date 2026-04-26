@@ -877,9 +877,70 @@
                     </div>
 
                     <!-- CTA -->
-                    <a href="#recommendations-section" class="rc-cta">
+                    <button type="button" class="rc-cta" onclick="openAllergyModalForRec()">
                         View Personalised Recommendations
-                    </a>
+                    </button>
+
+                    {% if analysis_result.yolo_detections %}
+                    <!-- Detection map toggle button -->
+                    <button id="btn-show-detections"
+                            style="width:100%;padding:10px 16px;border-radius:8px;
+                                   border:1.5px solid #d1fae5;background:transparent;
+                                   color:#166534;font-size:.78rem;font-weight:600;
+                                   cursor:pointer;letter-spacing:.3px;margin-top:.6rem;
+                                   transition:background .15s,color .15s,border-color .15s;">
+                        Show Detection Map
+                    </button>
+
+                    <!-- Explanation panel — hidden until button clicked -->
+                    <div id="detection-explanation"
+                         style="display:none;margin-top:.75rem;background:#f8fafc;
+                                border:1px solid #eaf0ea;border-radius:10px;padding:1rem;">
+                        <p style="font-size:.62rem;font-weight:700;letter-spacing:1.4px;
+                                  text-transform:uppercase;color:#94a3b8;margin:0 0 .6rem;">
+                            What do the boxes mean?
+                        </p>
+                        <p style="font-size:.78rem;color:#475569;line-height:1.6;margin:0 0 .6rem;">
+                            Each coloured box marks a region where our YOLO model detected a
+                            potential skin concern. The percentage is the model's raw detection
+                            confidence for that specific region.
+                        </p>
+                        <p style="font-size:.78rem;color:#475569;line-height:1.6;margin:0 0 .75rem;">
+                            The concern card scores are <strong>fused scores</strong> — combining
+                            YOLO's spatial detection (30%) with MobileNet's classification (70%),
+                            then calibrated to prevent overconfidence.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:.5rem;">
+                            {% for det in analysis_result.yolo_detections %}
+                            <div style="display:flex;align-items:flex-start;gap:.6rem;
+                                        font-size:.76rem;color:#374151;line-height:1.5;">
+                                <span style="width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px;
+                                             background:{% if det.label == 'acne' %}#ef5350{% elif det.label == 'wrinkles' %}#42a5f5{% elif 'dark' in det.label %}#ab47bc{% elif 'black' in det.label %}#ffa726{% else %}#26a69a{% endif %};"></span>
+                                <span>
+                                    <strong>{{ det.label|title }}</strong>
+                                    — {{ det.confidence_pct }}% detection confidence.
+                                    {% if det.label == 'acne' %}
+                                    This region shows signs of localised inflammation or clogged pores.
+                                    {% elif det.label == 'wrinkles' %}
+                                    Fine lines or reduced skin elasticity detected in this area.
+                                    {% elif 'dark' in det.label %}
+                                    Hyperpigmentation or post-inflammatory marks visible here.
+                                    {% elif 'black' in det.label %}
+                                    Oxidised sebum in open pores detected in this region.
+                                    {% elif det.label == 'pores' %}
+                                    Enlarged or visible pores identified in this area.
+                                    {% else %}
+                                    A skin concern was identified in this region.
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <p style="font-size:.7rem;color:#94a3b8;margin:.75rem 0 0;font-style:italic;line-height:1.5;">
+                            AI-generated detections. Always consult a dermatologist for clinical advice.
+                        </p>
+                    </div>
+                    {% endif %}
 
                 </div>
             </div>
@@ -1356,94 +1417,91 @@
                 {% endif %}
             });
 
-            // Draw YOLO bounding boxes on the result image canvas
+            // YOLO bounding boxes — drawn only when user clicks "Show Detection Map"
             window.addEventListener('DOMContentLoaded', function () {
                 {% if analysis_result.yolo_detections %}
                 var detections = {{ analysis_result.yolo_detections|safe }};
-                if (!detections || detections.length === 0) return;
+                var boxesVisible = false;
 
                 var img    = document.getElementById('result-face-image');
                 var canvas = document.getElementById('sa-bbox-canvas');
+                var btn    = document.getElementById('btn-show-detections');
+                var panel  = document.getElementById('detection-explanation');
+
                 if (!img || !canvas) return;
 
-                // Colour map per concern label
                 var COLORS = {
-                    acne:        '#ef5350',
-                    blackheads:  '#ffa726',
-                    blackheades: '#ffa726',
-                    dark_spots:  '#ab47bc',
-                    darkspots:   '#ab47bc',
-                    wrinkles:    '#42a5f5',
-                    pores:       '#26a69a',
+                    acne:'#ef5350', blackheads:'#ffa726', blackheades:'#ffa726',
+                    dark_spots:'#ab47bc', darkspots:'#ab47bc',
+                    wrinkles:'#42a5f5', pores:'#26a69a',
                 };
-                function getColor(label) {
-                    return COLORS[(label || '').toLowerCase()] || '#ef5350';
-                }
+                function getColor(l) { return COLORS[(l||'').toLowerCase()] || '#ef5350'; }
 
                 function drawBoxes() {
-                    // Set canvas pixel dimensions to match the DISPLAYED image size
-                    // so coordinates map 1:1 without any scaling math
                     canvas.width  = img.offsetWidth;
                     canvas.height = img.offsetHeight;
-
-                    // Boxes from backend are in original image pixel space.
-                    // Scale them down to displayed size.
                     var natW = img.naturalWidth  || img.offsetWidth;
                     var natH = img.naturalHeight || img.offsetHeight;
                     var scaleX = img.offsetWidth  / natW;
                     var scaleY = img.offsetHeight / natH;
-
                     var ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                     detections.forEach(function (det) {
-                        var b     = det.box;   // [x1, y1, x2, y2] in original pixel space
+                        var b = det.box;
                         var color = getColor(det.label);
-                        var x     = b[0] * scaleX;
-                        var y     = b[1] * scaleY;
-                        var w     = (b[2] - b[0]) * scaleX;
-                        var h     = (b[3] - b[1]) * scaleY;
+                        var x = b[0]*scaleX, y = b[1]*scaleY;
+                        var w = (b[2]-b[0])*scaleX, h = (b[3]-b[1])*scaleY;
 
-                        // Glow effect
                         ctx.save();
-                        ctx.shadowColor = color;
-                        ctx.shadowBlur  = 6;
-                        ctx.strokeStyle = color;
-                        ctx.lineWidth   = 2;
+                        ctx.shadowColor = color; ctx.shadowBlur = 6;
+                        ctx.strokeStyle = color; ctx.lineWidth = 2;
                         ctx.strokeRect(x, y, w, h);
                         ctx.restore();
 
-                        // Label chip
-                        var label = (det.label || '').charAt(0).toUpperCase()
-                                  + (det.label || '').slice(1).replace(/_/g, ' ')
-                                  + '  ' + Math.round(det.confidence * 100) + '%';
-                        ctx.font = 'bold 11px system-ui, sans-serif';
-                        var tw   = ctx.measureText(label).width;
-                        var lx   = x;
-                        var ly   = y > 18 ? y - 18 : y + h + 2;
-
+                        var label = (det.label||'').charAt(0).toUpperCase()
+                                  + (det.label||'').slice(1).replace(/_/g,' ')
+                                  + '  ' + Math.round(det.confidence*100) + '%';
+                        ctx.font = 'bold 11px system-ui,sans-serif';
+                        var tw = ctx.measureText(label).width;
+                        var lx = x, ly = y > 18 ? y-18 : y+h+2;
                         ctx.fillStyle = color;
                         ctx.beginPath();
-                        if (ctx.roundRect) {
-                            ctx.roundRect(lx, ly, tw + 10, 16, 3);
-                        } else {
-                            ctx.rect(lx, ly, tw + 10, 16);
-                        }
+                        ctx.roundRect ? ctx.roundRect(lx,ly,tw+10,16,3) : ctx.rect(lx,ly,tw+10,16);
                         ctx.fill();
                         ctx.fillStyle = '#fff';
-                        ctx.fillText(label, lx + 5, ly + 11);
+                        ctx.fillText(label, lx+5, ly+11);
                     });
                 }
 
-                if (img.complete && img.naturalWidth) {
-                    drawBoxes();
-                } else {
-                    img.addEventListener('load', drawBoxes);
+                function clearBoxes() {
+                    var ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                 }
-                window.addEventListener('resize', drawBoxes);
-                // Redraw if the image container resizes (e.g. sidebar collapse)
+
+                if (btn) {
+                    btn.addEventListener('click', function () {
+                        boxesVisible = !boxesVisible;
+                        if (boxesVisible) {
+                            if (img.complete && img.naturalWidth) drawBoxes();
+                            else img.addEventListener('load', drawBoxes);
+                            btn.textContent = 'Hide Detection Map';
+                            btn.style.background = '#0b3b17';
+                            if (panel) panel.style.display = 'block';
+                        } else {
+                            clearBoxes();
+                            btn.textContent = 'Show Detection Map';
+                            btn.style.background = 'transparent';
+                            if (panel) panel.style.display = 'none';
+                        }
+                    });
+                }
+
+                window.addEventListener('resize', function () {
+                    if (boxesVisible) drawBoxes();
+                });
                 if (window.ResizeObserver) {
-                    new ResizeObserver(drawBoxes).observe(img);
+                    new ResizeObserver(function () { if (boxesVisible) drawBoxes(); }).observe(img);
                 }
                 {% endif %}
             });
@@ -1563,36 +1621,6 @@
                             {% endif %}
 
                             <div class="pc-divider"></div>
-
-                            <!-- Key Benefits -->
-                            {% if product.concern %}
-                            <p class="pc-section-label">Key Benefits</p>
-                            <ul class="pc-benefits">
-                                {% if product.concern is list %}
-                                {% for effect in product.concern %}{% if effect %}
-                                <li>{{ effect|stringformat:"s"|cut:"'"|cut:'"' }}</li>
-                                {% endif %}{% endfor %}
-                                {% else %}
-                                {% if product.concern|stringformat:"s"|slice:":1" == "[" %}
-                                {% with effect_str=product.concern|stringformat:"s"|slice:"1:-1" %}
-                                {% for item in effect_str|split:"," %}
-                                <li>{{ item|stringformat:"s"|cut:"'"|cut:'"'|strip }}</li>
-                                {% endfor %}{% endwith %}
-                                {% else %}
-                                <li>{{ product.concern|stringformat:"s"|cut:"'"|cut:'"' }}</li>
-                                {% endif %}
-                                {% endif %}
-                            </ul>
-                            {% endif %}
-
-                            <!-- Active ingredients as pills -->
-                            {% if product.active_ingredients %}
-                            <div class="pc-pills">
-                                {% for ing in product.active_ingredients|slice:":4" %}
-                                <span class="pc-pill">{{ ing|title }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
 
                             <!-- Allergy warning -->
                             {% if product.allergy_warning %}
@@ -1993,6 +2021,60 @@
             showAnalysisLoader();
             document.getElementById('allergies-input').closest('form').submit();
         }
+
+        // ── Rec-mode: open allergy modal from result card ─────────────────────
+        var _recMode = false;
+
+        function openAllergyModalForRec() {
+            _recMode = true;
+            // Reset chips so user starts fresh
+            document.querySelectorAll('.ag-chip.selected').forEach(function(c) {
+                c.classList.remove('selected');
+            });
+            updateSummary();
+            document.getElementById('allergy-modal').style.display = 'flex';
+        }
+
+        function _confirmRec() {
+            var selected = getSelected();
+            document.getElementById('allergy-modal').style.display = 'none';
+            _recMode = false;
+
+            // Store selected allergies so the recommendations section can use them
+            // (they were already applied server-side on the initial analysis;
+            //  here we just scroll and optionally highlight filtered products)
+            var recSection = document.getElementById('recommendations-section');
+            if (recSection) {
+                recSection.style.display = 'block';
+                setTimeout(function() {
+                    recSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+            }
+        }
+
+        // Override confirm/skip to handle rec-mode
+        var _origConfirm = confirmAllergies;
+        var _origSkip    = skipAllergies;
+
+        confirmAllergies = function() {
+            if (_recMode) { _confirmRec(); return; }
+            _origConfirm();
+        };
+        skipAllergies = function() {
+            if (_recMode) {
+                document.getElementById('allergy-modal').style.display = 'none';
+                _recMode = false;
+                var recSection = document.getElementById('recommendations-section');
+                if (recSection) {
+                    recSection.style.display = 'block';
+                    setTimeout(function() {
+                        recSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 150);
+                }
+                return;
+            }
+            _origSkip();
+        };
 
         // Close on backdrop click
         document.getElementById('allergy-modal').addEventListener('click', function (e) {

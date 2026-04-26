@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 import json
 import pandas as pd
+import base64
 
 from .forms import RecommendationForm
 from .models import Product
@@ -14,6 +16,7 @@ from .recommender_engine import (
     get_filtered_products,
 )
 from .utils import normalize_product_url
+from .skincare_zones import apply_skincare_zones
 
 
 def home(request):
@@ -256,3 +259,36 @@ def product_detail(request, pk):
     """Show full product details page."""
     product = get_object_or_404(Product, pk=pk)
     return render(request, "recommendations/product_detail.html", {"product": product})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def tryon_zones(request):
+    """
+    Generate try-on visualization with skincare zones.
+    Uses the last analyzed image from session.
+    """
+    try:
+        data = json.loads(request.body)
+        category = data.get("category", "")
+        
+        # Get the last analyzed image from session
+        image_base64 = request.session.get("last_analysis_image")
+        
+        if not image_base64:
+            return JsonResponse({
+                "error": "No face image found. Please complete a face analysis first."
+            }, status=400)
+        
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_base64)
+        
+        # Apply zones
+        result = apply_skincare_zones(image_bytes, category)
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
