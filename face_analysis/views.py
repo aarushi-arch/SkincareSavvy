@@ -85,15 +85,25 @@ def index(request):
                         analysis_result["skin_type_label"] = skin_type
                         print(f"✓ Skin Type: {skin_type}")
 
-                        CONFIDENCE_THRESHOLD = 0.3  # 30% (better chance for valid concerns to appear)
+                        CONFIDENCE_THRESHOLD = 0.8  # 80% — only show high-confidence MobileNet concerns
 
                         concerns_preds = analysis_result.get("skin_concerns", {}).get("predictions", [])
-                        print(f"✓ Skin Concerns Predictions: {len(concerns_preds)} predictions received")
+                        no_concerns_flag = analysis_result.get("skin_concerns", {}).get("no_concerns", False)
+                        print(f"✓ Skin Concerns Predictions: {len(concerns_preds)} received | no_concerns={no_concerns_flag}")
 
-                        final_concerns = []  # Initialize default value
+                        final_concerns = []
                         main_concern = None
 
-                        if not concerns_preds:
+                        if no_concerns_flag:
+                            # YOLO found nothing above 70% — explicitly no concerns
+                            analysis_result["all_detected_concerns"] = []
+                            analysis_result["detected_concerns"] = []
+                            analysis_result["flags"] = {
+                                "acne": False, "wrinkles": False, "pores": False,
+                                "darkspots": False, "blackheads": False,
+                            }
+
+                        elif not concerns_preds:
                             print("⚠ WARNING: No skin concerns predictions received — falling back to YOLO detections.")
 
                             # Build concerns from YOLO detections instead
@@ -130,7 +140,7 @@ def index(request):
                             detected_concerns_with_confidence = [
                                 {
                                     "name": p["class"].lower().replace("_", ""),
-                                    "confidence": int(p["confidence"] * 100)  # Convert to 0-100 scale
+                                    "confidence": p.get("final_pct", int(p["confidence"] * 100))
                                 }
                                 for p in concerns_preds
                                 if p["confidence"] >= CONFIDENCE_THRESHOLD

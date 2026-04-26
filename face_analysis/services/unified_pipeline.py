@@ -370,7 +370,7 @@ def analyze(image_input: bytes | np.ndarray, yolo_conf: float = 0.20) -> dict[st
         return {"status": "error", "error": "Face crop failed"}
 
     # ── Step 3: YOLO on face crop ─────────────────────────────────────────────
-    yolo_detections = _run_yolo(face_crop, fx1, fy1, img_w, img_h, conf=yolo_conf)
+    yolo_detections = _run_yolo(face_crop, fx1, fy1, img_w, img_h, conf=0.30)
     concern_counts: dict[str, int] = {}
     for d in yolo_detections:
         lbl = d["label"].lower()
@@ -380,9 +380,29 @@ def analyze(image_input: bytes | np.ndarray, yolo_conf: float = 0.20) -> dict[st
     severity    = _severity_from_count(len(yolo_detections))
     print(f"[Pipeline] YOLO: {len(yolo_detections)} detections, severity={severity}")
 
-    # ── Step 4: MobileNet on face crop ────────────────────────────────────────
-    mobilenet_result = _run_mobilenet(face_crop)
-    print(f"[Pipeline] MobileNet done")
+    # ── Step 4: MobileNet — only if YOLO found at least one detection ≥ 70% ──
+    YOLO_MOBILENET_GATE = 0.30
+    high_conf_detections = [d for d in yolo_detections if d["confidence"] >= YOLO_MOBILENET_GATE]
+
+    if high_conf_detections:
+        print(f"[Pipeline] {len(high_conf_detections)} YOLO detection(s) ≥ {YOLO_MOBILENET_GATE:.0%} — running MobileNet")
+        mobilenet_result = _run_mobilenet(face_crop)
+
+        # ── Fuse MobileNet + YOLO scores ──────────────────────────────────────
+        from face_analysis.utils.fusion import fuse_all
+        raw_preds = mobilenet_result.get("skin_concerns", {}).get("predictions", [])
+        if raw_preds:
+            fused_preds = fuse_all(raw_preds, yolo_detections)
+            mobilenet_result["skin_concerns"]["predictions"] = fused_preds
+            print(f"[Pipeline] Fusion done — top: {fused_preds[0]['class']} {fused_preds[0]['final_pct']}% ({fused_preds[0]['tier']})")
+
+        print("[Pipeline] MobileNet + fusion done")
+    else:
+        print(f"[Pipeline] No YOLO detection ≥ {YOLO_MOBILENET_GATE:.0%} — skipping MobileNet, no concerns")
+        mobilenet_result = {
+            "skin_type":     {},
+            "skin_concerns": {"predictions": [], "no_concerns": True},
+        }
 
     # ── Step 5: Encode original image for display ─────────────────────────────
     _, buf = cv2.imencode(".jpg", image_bgr)
