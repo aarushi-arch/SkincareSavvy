@@ -15,4 +15,5 @@ urlpatterns = [
     path("realtime/yolo/", views.realtime_yolo_analyze, name="realtime_yolo_analyze"),
     path("yolo/", views.yolo_index, name="yolo_index"),
     path("yolo/analyze/", views.yolo_analyze, name="yolo_analyze"),
+    path("recommendations-for-concern/", views.get_recommendations_for_concern, name="recommendations_for_concern"),
 ]

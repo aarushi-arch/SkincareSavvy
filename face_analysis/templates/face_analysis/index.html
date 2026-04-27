@@ -825,7 +825,16 @@
                             </div>
                         </div>
                         <div class="rc-conf-score">
-                            <span class="rc-conf-num">{{ top.confidence|floatformat:0 }}%</span>
+                            <div style="display:flex;align-items:center;gap:.4rem;justify-content:flex-end;">
+                                <span class="rc-conf-num">{{ top.confidence|floatformat:0 }}%</span>
+                                <button type="button" class="conf-info-btn" id="confInfoBtn" aria-label="Confidence score information">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                </button>
+                            </div>
                             <span class="rc-conf-lbl">Confidence</span>
                         </div>
                     </div>
@@ -835,20 +844,202 @@
                     <p class="rc-ai-msg">{{ top.explanation.message }}</p>
                     {% endif %}
 
-                    <!-- Additional concerns (if any) -->
-                    {% if analysis_result.all_detected_concerns|length > 1 %}
-                    <div class="rc-other-concerns">
-                        {% for c in analysis_result.all_detected_concerns %}
-                        {% if not forloop.first %}
-                        <div class="rc-other-row">
-                            <span class="rc-other-dot rc-dot-{{ c.name|lower|cut:' ' }}"></span>
-                            <span class="rc-other-name">{{ c.name|title }}</span>
-                            <span class="rc-other-conf">{{ c.confidence|floatformat:0 }}%</span>
+                    <!-- All Detected Concerns Selection -->
+                    {% if analysis_result.all_detected_concerns|length > 0 %}
+                    <div class="rc-concern-selection">
+                        <p class="rc-section-label">
+                            {% if analysis_result.all_detected_concerns|length > 1 %}
+                            All Detected Concerns - Select to View Recommendations
+                            {% else %}
+                            Detected Concern
+                            {% endif %}
+                        </p>
+                        <div class="concern-cards">
+                            {% for concern in analysis_result.all_detected_concerns %}
+                            <div class="concern-card {% if forloop.first %}active{% endif %}" 
+                                 data-concern="{{ concern.name }}"
+                                 data-confidence="{{ concern.confidence }}"
+                                 onclick="handleConcernClick(this); return false;"
+                                 style="cursor:pointer !important; user-select: none; -webkit-user-select: none;">
+                                <div class="concern-card-header" style="pointer-events: none;">
+                                    <div class="concern-card-icon">
+                                        {% if concern.name == 'acne' %}🔴
+                                        {% elif concern.name == 'wrinkles' %}📏
+                                        {% elif concern.name == 'darkspots' or concern.name == 'dark_spots' %}⚫
+                                        {% elif concern.name == 'blackheads' or concern.name == 'blackheades' %}⚪
+                                        {% elif concern.name == 'pores' %}🔵
+                                        {% else %}🟢
+                                        {% endif %}
+                                    </div>
+                                    <div class="concern-card-info">
+                                        <h4 class="concern-card-title">{{ concern.name|title }}</h4>
+                                        <div class="concern-card-confidence">
+                                            <div class="conf-bar-mini">
+                                                <div class="conf-bar-fill" style="width:{{ concern.confidence }}%"></div>
+                                            </div>
+                                            <span class="conf-text-mini">{{ concern.confidence|floatformat:0 }}% confidence</span>
+                                        </div>
+                                    </div>
+                                    <div class="concern-card-check">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </div>
+                                </div>
+                                {% if concern.explanation %}
+                                <p class="concern-card-desc" style="pointer-events: none;">{{ concern.explanation.message|truncatewords:20 }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endif %}
-                        {% endfor %}
+                        
+                        <script>
+                            // Define handleConcernClick immediately after the cards HTML
+                            function handleConcernClick(cardElement) {
+                                console.log('=== handleConcernClick called ===');
+                                
+                                try {
+                                    const concern = cardElement.dataset.concern;
+                                    const confidence = cardElement.dataset.confidence;
+                                    
+                                    console.log('Concern:', concern, 'Confidence:', confidence);
+                                    
+                                    if (!concern) {
+                                        console.error('No concern data found!');
+                                        return;
+                                    }
+                                    
+                                    // Remove active class from all cards
+                                    const allCards = document.querySelectorAll('.concern-card');
+                                    allCards.forEach(c => c.classList.remove('active'));
+                                    
+                                    // Add active class to clicked card
+                                    cardElement.classList.add('active');
+                                    
+                                    // Get products section
+                                    const productsSection = document.querySelector('.rec-products');
+                                    
+                                    if (!productsSection) {
+                                        console.error('Products section not found!');
+                                        return;
+                                    }
+                                    
+                                    // Show loading state
+                                    productsSection.innerHTML = '<div style="text-align:center;padding:3rem;"><div style="margin:0 auto 1rem;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #16a34a;border-radius:50%;animation:spin 1s linear infinite;"></div><p style="color:#64748b;">Loading recommendations for ' + concern + '...</p></div>';
+                                    
+                                    setTimeout(function() {
+                                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    }, 100);
+                                    
+                                    // Fetch recommendations
+                                    fetch('{% url "face_analysis:recommendations_for_concern" %}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRFToken': '{{ csrf_token }}'
+                                        },
+                                        body: JSON.stringify({
+                                            concern: concern,
+                                            allergies: []
+                                        })
+                                    })
+                                    .then(function(response) {
+                                        if (!response.ok) {
+                                            throw new Error('HTTP error ' + response.status);
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(function(data) {
+                                        console.log('Response:', data);
+                                        if (data.success) {
+                                            updateProductsDisplay(data.products, data.concern, productsSection);
+                                        } else {
+                                            productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">Error: ' + (data.error || 'Failed to load') + '</div>';
+                                        }
+                                    })
+                                    .catch(function(error) {
+                                        console.error('Error:', error);
+                                        productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">Failed to load recommendations</div>';
+                                    });
+                                    
+                                } catch (error) {
+                                    console.error('Exception:', error);
+                                }
+                            }
+                            
+                            function updateProductsDisplay(products, concern, productsSection) {
+                                if (!productsSection) return;
+                                
+                                if (products.length === 0) {
+                                    productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#64748b;">No products found for ' + concern + '</div>';
+                                    return;
+                                }
+                                
+                                let html = '<div style="margin-bottom:1.5rem;padding:1.5rem;background:#fff;border-radius:12px;"><h3 style="font-size:1.25rem;font-weight:700;color:#0b3b17;margin:0 0 .5rem;">Recommended Products for ' + concern.charAt(0).toUpperCase() + concern.slice(1) + '</h3><p style="font-size:.85rem;color:#64748b;margin:0;">Found ' + products.length + ' products tailored to your needs</p></div>';
+                                
+                                html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;padding:1rem;">';
+                                
+                                products.slice(0, 12).forEach(function(product) {
+                                    const imageUrl = product.image_url || 'https://via.placeholder.com/200x200?text=No+Image';
+                                    const brand = product.brand || 'Skincare';
+                                    const name = product.name || 'Product';
+                                    const price = product.price || 'N/A';
+                                    const matchScore = product.match_score || 0;
+                                    const matchReason = product.match_reason || '';
+                                    const productId = product.id || '';
+                                    const link = product.link || '#';
+                                    
+                                    html += '<div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:transform .2s,box-shadow .2s;cursor:pointer;" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.08)\'">';
+                                    
+                                    // Image
+                                    html += '<div style="position:relative;width:100%;padding-top:100%;background:#f8fafc;overflow:hidden;">';
+                                    html += '<img src="' + imageUrl + '" alt="' + name + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/200x200?text=No+Image\'">';
+                                    html += '<div style="position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;box-shadow:0 2px 8px rgba(22,163,74,.3);">' + matchScore + '% Match</div>';
+                                    html += '</div>';
+                                    
+                                    // Info
+                                    html += '<div style="padding:1rem;">';
+                                    html += '<p style="font-size:.75rem;color:#64748b;font-weight:600;margin:0 0 .25rem;text-transform:uppercase;letter-spacing:.5px;">' + brand + '</p>';
+                                    html += '<h4 style="font-size:.95rem;font-weight:700;color:#0f172a;margin:0 0 .5rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + name + '</h4>';
+                                    html += '<p style="font-size:1.1rem;font-weight:700;color:#16a34a;margin:0 0 .5rem;">' + price + '</p>';
+                                    html += '<p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + matchReason + '</p>';
+                                    
+                                    // Actions
+                                    html += '<div style="display:flex;gap:.5rem;">';
+                                    if (productId) {
+                                        html += '<a href="/recommendations/product/' + productId + '/" style="flex:1;text-align:center;padding:.6rem 1rem;background:linear-gradient(135deg,#0b3b17,#145a28);color:#fff;text-decoration:none;border-radius:8px;font-size:.85rem;font-weight:600;transition:opacity .2s;" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">View Details</a>';
+                                    } else {
+                                        html += '<a href="' + link + '" target="_blank" style="flex:1;text-align:center;padding:.6rem 1rem;background:linear-gradient(135deg,#0b3b17,#145a28);color:#fff;text-decoration:none;border-radius:8px;font-size:.85rem;font-weight:600;transition:opacity .2s;" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">View Product</a>';
+                                    }
+                                    html += '</div>';
+                                    
+                                    html += '</div>';
+                                    html += '</div>';
+                                });
+                                
+                                html += '</div>';
+                                productsSection.innerHTML = html;
+                            }
+                        </script>
+                        
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                        <p class="concern-selection-hint">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Click on a concern card to see personalized product recommendations for that specific issue
+                        </p>
                     </div>
                     {% endif %}
+
+                    <!-- Additional concerns (if any) - REMOVED, now shown in selection cards above -->
 
                     <!-- Bio-actives / ingredients -->
                     {% if top.ingredient_advice %}
@@ -864,8 +1055,51 @@
                     <!-- No concerns -->
                     <div class="rc-no-concerns">
                         <p class="rc-detected-label">Result</p>
-                        <h2 class="rc-concern-title" style="color:#16a34a;">No Concerns Detected</h2>
-                        <p class="rc-ai-msg">Your skin looks healthy. Keep up your current routine.</p>
+                        <h2 class="rc-concern-title" style="color:#16a34a;">✓ No Concerns Detected</h2>
+                        <p class="rc-ai-msg" style="margin-bottom:1rem;">Great news! Our AI analysis didn't detect any significant skin concerns in your image.</p>
+                        
+                        <div class="rc-explanation-box">
+                            <h4 class="rc-explanation-title">🔍 Why No Concerns Were Detected:</h4>
+                            <ul class="rc-explanation-list">
+                                <li><strong>Dual AI Analysis:</strong> Your image was analyzed by two advanced AI models:
+                                    <ul style="margin-top:.4rem;padding-left:1.2rem;">
+                                        <li><strong>YOLO Detection:</strong> Scanned for visible skin issues (acne, dark spots, texture problems)</li>
+                                        <li><strong>MobileNet Classification:</strong> Analyzed overall skin condition and patterns</li>
+                                    </ul>
+                                </li>
+                                <li><strong>No Visible Signs Found:</strong> Neither model detected significant indicators of common skin concerns such as:
+                                    <ul style="margin-top:.4rem;padding-left:1.2rem;">
+                                        <li>Acne or breakouts</li>
+                                        <li>Wrinkles or fine lines</li>
+                                        <li>Dark spots or hyperpigmentation</li>
+                                        <li>Blackheads or enlarged pores</li>
+                                        <li>Uneven texture or redness</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Confidence Threshold (35%):</strong> We use a scientifically calibrated threshold to filter out uncertain detections. Only concerns with 35% or higher confidence are reported, ensuring you receive reliable results and avoiding false alarms.</li>
+                                <li><strong>Image Quality Matters:</strong> Clear, well-lit photos help our AI make accurate assessments. Your image quality was sufficient for comprehensive analysis.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="rc-healthy-tips">
+                            <h4 class="rc-tips-title">💚 Keep Your Skin Healthy:</h4>
+                            <ul class="rc-tips-list">
+                                <li><strong>Daily Sunscreen:</strong> Use SPF 30+ every day, even indoors</li>
+                                <li><strong>Consistent Routine:</strong> Maintain your current skincare regimen</li>
+                                <li><strong>Hydration:</strong> Drink plenty of water and use a moisturizer</li>
+                                <li><strong>Healthy Lifestyle:</strong> Balanced diet, 7-9 hours sleep, stress management</li>
+                                <li><strong>Regular Check-ups:</strong> Visit a dermatologist annually for professional assessment</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="rc-disclaimer-box">
+                            <div class="rc-disclaimer-icon">⚕️</div>
+                            <div>
+                                <p class="rc-disclaimer-text">
+                                    <strong>Medical Disclaimer:</strong> This AI analysis is for informational and educational purposes only. It does not constitute medical advice, diagnosis, or treatment. Even with no detected concerns, we strongly recommend regular consultations with a licensed dermatologist for comprehensive skin health monitoring and professional evaluation.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                     {% endif %}
 
@@ -873,13 +1107,8 @@
                     <div class="rc-note">
                         <span class="rc-note-icon">ℹ</span>
                         <p><strong>Note:</strong> This assessment is AI-generated for informational purposes.
-                           If you believe this detection is correct, proceed to your personalised ritual.</p>
+                           Select a concern above to view personalized product recommendations.</p>
                     </div>
-
-                    <!-- CTA -->
-                    <button type="button" class="rc-cta" onclick="openAllergyModalForRec()">
-                        View Personalised Recommendations
-                    </button>
 
                     {% if analysis_result.yolo_detections %}
                     <!-- Detection map toggle button -->
@@ -959,6 +1188,52 @@
             </div>
 
         </section>
+
+        <!-- Confidence Score Info Modal -->
+        <div class="conf-modal" id="confModal">
+            <div class="conf-modal-content">
+                <button type="button" class="conf-modal-close" id="confModalClose" aria-label="Close">&times;</button>
+                
+                <div class="conf-modal-header">
+                    <div class="conf-modal-icon">ℹ️</div>
+                    <h3 class="conf-modal-title">Understanding Confidence Scores</h3>
+                </div>
+                
+                <div class="conf-modal-body">
+                    <p class="conf-modal-text">
+                        The <strong>confidence score</strong> represents how certain our AI model is about detecting a particular skin concern in your image. It's calculated using advanced machine learning algorithms that analyze facial features and patterns.
+                    </p>
+                    
+                    <div class="conf-modal-scale">
+                        <div class="conf-scale-item">
+                            <div class="conf-scale-bar" style="width:90%;background:#22c55e;"></div>
+                            <span class="conf-scale-label">80-100%: High Confidence</span>
+                        </div>
+                        <div class="conf-scale-item">
+                            <div class="conf-scale-bar" style="width:65%;background:#f59e0b;"></div>
+                            <span class="conf-scale-label">60-79%: Moderate Confidence</span>
+                        </div>
+                        <div class="conf-scale-item">
+                            <div class="conf-scale-bar" style="width:40%;background:#ef4444;"></div>
+                            <span class="conf-scale-label">Below 60%: Lower Confidence</span>
+                        </div>
+                    </div>
+                    
+                    <div class="conf-modal-note">
+                        <div class="conf-note-icon">⚕️</div>
+                        <div>
+                            <p class="conf-note-title">Important Medical Disclaimer</p>
+                            <p class="conf-note-text">
+                                This analysis is <strong>not a medical diagnosis</strong> and should not replace professional dermatological consultation. Our AI provides general skincare insights based on visual analysis, but only a qualified dermatologist can provide accurate diagnosis and treatment recommendations.
+                            </p>
+                            <p class="conf-note-text" style="margin-top:.75rem;">
+                                If you have concerns about your skin health, please consult a licensed dermatologist or healthcare provider.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <style>
             /* ── Page header ── */
@@ -1507,156 +1782,44 @@
             });
         </script>
 
-        {% endif %}
-
-        {% if recommended_products %}
+        <!-- Products Section - Initially shows selection prompt -->
         <div id="recommendations-section">
-            <section class="panel result-panel" style="margin-top: 2rem;">
-                <div class="panel-head">
-                    <div>
-                        <p class="eyebrow">Recommendations</p>
-                        <h2>Expert Picks for You</h2>
-                        <p class="muted">Based on your {{ analysis_result.skin_type_label|title }} skin and
-                            detected concerns.</p>
-                    </div>
-                </div>
-
-                <!-- ── Category filter bar ── -->
-                <div id="rec-filter-bar" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem;">
-                    <button class="rec-filter active" data-filter="all">All</button>
-                    <button class="rec-filter" data-filter="moisturiser">Moisturiser</button>
-                    <button class="rec-filter" data-filter="serum">Serum</button>
-                    <button class="rec-filter" data-filter="sunscreen">Sunscreen</button>
-                    <button class="rec-filter" data-filter="cleanser">Cleanser</button>
-                    <button class="rec-filter" data-filter="eye care">Eye Care</button>
-                </div>
-
-                <!-- ── Price range filter ── -->
-                <div id="price-filter-bar"
-                    style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.75rem;">
-                    <span
-                        style="font-size:.78rem;font-weight:600;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase;">Price:</span>
-                    <button class="price-filter active" data-min="0" data-max="99999">All</button>
-                    <button class="price-filter" data-min="0" data-max="500">Under NPR 500</button>
-                    <button class="price-filter" data-min="500" data-max="1000">NPR 500–1,000</button>
-                    <button class="price-filter" data-min="1000" data-max="2000">NPR 1,000–2,000</button>
-                    <button class="price-filter" data-min="2000" data-max="99999">NPR 2,000+</button>
-                </div>
-
-                <p id="rec-no-results" style="display:none;color:#94a3b8;font-size:.9rem;margin-top:1rem;">
-                    No products found in this category.
-                </p>
-
-                <div class="product-grid" style="
-                display: grid; 
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-                gap: 1.5rem; 
-                margin-top: 1.5rem;">
-
-                    {% for product in recommended_products %}
-                    <div class="pc-card"
-                         data-type="{{ product.type|default:'skincare'|lower }}"
-                         data-price="{{ product.price|default:'0'|cut:'NPR '|cut:','|cut:' ' }}">
-
-                        <!-- Image section with category pill overlay -->
-                        <div class="pc-img-wrap">
-                            {% if product.image_url %}
-                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="pc-img">
-                            {% else %}
-                            <div class="pc-img-placeholder">
-                                <i class="fas fa-flask" style="font-size:2rem;color:#c8dcc8;"></i>
-                            </div>
-                            {% endif %}
-                            <span class="pc-category-pill">{{ product.type|default:'Skincare' }}</span>
+            <section class="panel result-panel rec-products" style="margin-top: 2rem;">
+                {% if analysis_result.all_detected_concerns|length > 0 %}
+                <!-- Placeholder: waiting for concern selection -->
+                <div class="rec-selection-prompt">
+                    <h3 class="prompt-title">Select a Concern to View Recommendations</h3>
+                    <p class="prompt-text">
+                        Click on any concern card above to see personalized product recommendations tailored to address that specific skin issue.
+                    </p>
+                    <div class="prompt-features">
+                        <div class="prompt-feature">
+                            <span class="feature-icon">✓</span>
+                            <span>Personalized matches</span>
                         </div>
-
-                        <!-- Content section -->
-                        <div class="pc-body">
-
-                            <!-- Type label + rating row -->
-                            <div class="pc-meta-row">
-                                <span class="pc-type-label">{{ product.type|default:'Skincare'|upper }}</span>
-                                {% if product.rating %}
-                                <span class="pc-rating">★ {{ product.rating|floatformat:1 }}</span>
-                                {% endif %}
-                            </div>
-
-                            <!-- Name -->
-                            <h3 class="pc-name">{{ product.name }}</h3>
-
-                            <!-- Price -->
-                            {% if product.price %}
-                            <p class="pc-price">{{ product.price }}</p>
-                            {% endif %}
-
-                            <!-- Match score + reason -->
-                            {% if product.match_score %}
-                            <div class="pc-match">
-                                <div class="pc-match-header">
-                                    <span class="pc-match-label">Match Score</span>
-                                    <span class="pc-match-pct"
-                                          style="color:{% if product.match_score >= 88 %}#16a34a{% elif product.match_score >= 75 %}#f59e0b{% else %}#64748b{% endif %};">
-                                        {{ product.match_score }}%
-                                    </span>
-                                </div>
-                                <div class="pc-match-track">
-                                    <div class="pc-match-fill"
-                                         style="width:{{ product.match_score }}%;
-                                                background:{% if product.match_score >= 88 %}linear-gradient(90deg,#16a34a,#4ade80){% elif product.match_score >= 75 %}linear-gradient(90deg,#f59e0b,#fbbf24){% else %}linear-gradient(90deg,#94a3b8,#cbd5e1){% endif %};">
-                                    </div>
-                                </div>
-                                {% if product.match_reason %}
-                                <p class="pc-match-reason">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                         style="flex-shrink:0;margin-top:1px;">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="12"/>
-                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                    </svg>
-                                    {{ product.match_reason }}
-                                </p>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-
-                            <div class="pc-divider"></div>
-
-                            <!-- Allergy warning -->
-                            {% if product.allergy_warning %}
-                            <div class="pc-allergy">
-                                Contains: {{ product.matched_allergens|join:", " }}
-                            </div>
-                            {% endif %}
-
-                            <!-- CTA buttons -->
-                            <div class="pc-actions">
-                                {% if product.id %}
-                                <button class="pc-cta add-to-shelf-btn"
-                                        data-product-id="{{ product.id }}">
-                                    ADD TO SHELF &nbsp;→
-                                </button>
-                                {% endif %}
-
-                                <!-- View Description button -->
-                                {% if product.id %}
-                                <a href="{% url 'recommendations:product_detail' product.id %}"
-                                   class="pc-view-btn">
-                                    View Description
-                                </a>
-                                {% endif %}
-                            </div>
-
+                        <div class="prompt-feature">
+                            <span class="feature-icon">✓</span>
+                            <span>Expert-curated products</span>
+                        </div>
+                        <div class="prompt-feature">
+                            <span class="feature-icon">✓</span>
+                            <span>Targeted solutions</span>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-
-                <div style="margin-top: 2rem; text-align: center;">
-                    <a href="{% url 'recommendations:home' %}" class="btn ghost">See All Products</a>
+                {% else %}
+                <!-- No concerns detected -->
+                <div class="rec-selection-prompt">
+                    <h3 class="prompt-title">No Concerns Detected</h3>
+                    <p class="prompt-text">
+                        Great news! Our AI didn't detect any significant skin concerns. Check out our general skincare recommendations to maintain your healthy skin.
+                    </p>
                 </div>
+                {% endif %}
             </section>
-        </div>{# /recommendations-section #}
+        </div>
+
+        {% endif %}
 
         <style>
             .rec-filter {
@@ -1779,7 +1942,6 @@
                 }
             })();
         </script>
-        {% endif %}
 
         <!-- HOW IT WORKS -->
         <section id="how-it-works" class="panel steps-panel">
@@ -2462,7 +2624,7 @@
                 }
             })();
         {% endif %}
-
+        {% endif %}
         {% endif %}
 
         // Scroll to error if it exists
@@ -2473,7 +2635,6 @@
                 errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, 300);
-        {% endif %}
         {% endif %}
 
 
@@ -2766,6 +2927,266 @@
             btn.textContent    = open ? 'View Description' : 'Hide Description';
         }
 
+        // Handle concern card click (inline onclick handler)
+        function handleConcernClick(cardElement) {
+            console.log('=== handleConcernClick called ===');
+            console.log('Card element:', cardElement);
+            
+            try {
+                const concern = cardElement.dataset.concern;
+                const confidence = cardElement.dataset.confidence;
+                
+                console.log('Concern:', concern, 'Confidence:', confidence);
+                
+                if (!concern) {
+                    console.error('No concern data found on card!');
+                    alert('Error: No concern data found');
+                    return;
+                }
+                
+                // Remove active class from all cards
+                const allCards = document.querySelectorAll('.concern-card');
+                console.log('Found', allCards.length, 'cards');
+                allCards.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked card
+                cardElement.classList.add('active');
+                console.log('Active class added to card');
+                
+                // Get products section
+                const productsSection = document.querySelector('.rec-products');
+                console.log('Products section:', productsSection);
+                
+                if (!productsSection) {
+                    console.error('Products section not found!');
+                    alert('Error: Products section not found in page');
+                    return;
+                }
+                
+                // Show loading state
+                console.log('Showing loading state...');
+                productsSection.innerHTML = '<div style="text-align:center;padding:3rem;"><div style="margin:0 auto 1rem;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #16a34a;border-radius:50%;animation:spin 1s linear infinite;"></div><p style="color:#64748b;">Loading recommendations for ' + concern + '...</p></div>';
+                
+                // Scroll to products section
+                setTimeout(function() {
+                    productsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+                
+                console.log('Fetching recommendations for:', concern);
+                
+                // Fetch recommendations
+                fetch('{% url "face_analysis:recommendations_for_concern" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        concern: concern,
+                        allergies: []
+                    })
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error('HTTP error ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        console.log('Success! Received', data.count, 'products');
+                        updateProductsDisplay(data.products, data.concern, productsSection);
+                    } else {
+                        console.error('Error in response:', data.error);
+                        productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;"><strong>Error:</strong> ' + (data.error || 'Failed to load recommendations') + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;"><strong>Error:</strong> Failed to load recommendations. ' + error.message + '</div>';
+                });
+                
+            } catch (error) {
+                console.error('Exception in handleConcernClick:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // --- Concern Selection Logic ---
+        // Wrap in DOMContentLoaded to ensure concern cards are rendered
+        window.addEventListener('load', function() {
+            console.log('=== Page fully loaded, initializing concern selection ===');
+            
+            const concernCards = document.querySelectorAll('.concern-card');
+            const productsSection = document.querySelector('.rec-products');
+            
+            console.log('Concern cards found:', concernCards.length);
+            console.log('Products section found:', productsSection ? 'YES' : 'NO');
+            
+            if (concernCards.length > 0) {
+                console.log('Attaching click listeners to', concernCards.length, 'cards');
+                
+                concernCards.forEach((card, index) => {
+                    console.log('Card', index, ':', card.dataset.concern);
+                    
+                    // Add visual feedback
+                    card.style.cursor = 'pointer';
+                    
+                    card.addEventListener('click', function(e) {
+                        console.log('=== CARD CLICKED ===');
+                        console.log('Event:', e);
+                        console.log('Target:', e.target);
+                        console.log('Current target:', e.currentTarget);
+                        
+                        // Remove active class from all cards
+                        concernCards.forEach(c => c.classList.remove('active'));
+                        // Add active class to clicked card
+                        this.classList.add('active');
+                        
+                        const concern = this.dataset.concern;
+                        const confidence = this.dataset.confidence;
+                        
+                        console.log('Selected concern:', concern, 'with confidence:', confidence);
+                        
+                        // Show loading state
+                        if (productsSection) {
+                            productsSection.innerHTML = '<div style="text-align:center;padding:3rem;"><div class="spinner" style="margin:0 auto 1rem;"></div><p style="color:#64748b;">Loading recommendations for ' + concern + '...</p></div>';
+                            productsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                        
+                        // Fetch recommendations for selected concern
+                        fetch('{% url "face_analysis:recommendations_for_concern" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                concern: concern,
+                                allergies: []
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Response received:', data);
+                            if (data.success) {
+                                console.log('Received', data.count, 'products for', data.concern);
+                                updateProductsDisplay(data.products, data.concern, productsSection);
+                            } else {
+                                console.error('Error in response:', data.error);
+                                showToast(data.error || 'Failed to load recommendations', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                            showToast('Failed to load recommendations', 'error');
+                            if (productsSection) {
+                                productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">Failed to load recommendations. Please try again.</div>';
+                            }
+                        });
+                    }, true); // Use capture phase
+                });
+                
+                console.log('=== Click listeners attached successfully ===');
+            } else {
+                console.error('=== NO CONCERN CARDS FOUND IN DOM ===');
+            }
+        });
+        
+        function updateProductsDisplay(products, concern, productsSection) {
+            if (!productsSection) return;
+            
+            if (products.length === 0) {
+                productsSection.innerHTML = '<div style="text-align:center;padding:2rem;color:#64748b;">No products found for ' + concern + '</div>';
+                return;
+            }
+            
+            let html = '<div class="rec-header" style="margin-bottom:1.5rem;"><h3 style="font-size:1.25rem;font-weight:700;color:#0b3b17;margin:0;">Recommended Products for ' + concern.charAt(0).toUpperCase() + concern.slice(1) + '</h3><p style="font-size:.85rem;color:#64748b;margin:.25rem 0 0;">Found ' + products.length + ' products tailored to your needs</p></div><div class="product-grid">';
+            
+            products.slice(0, 12).forEach(product => {
+                const imageUrl = product.image_url || 'https://via.placeholder.com/200x200?text=No+Image';
+                const brand = product.brand || 'Skincare';
+                const name = product.name || 'Product';
+                const price = product.price || 'N/A';
+                const matchScore = product.match_score || 0;
+                const matchReason = product.match_reason || '';
+                const productId = product.id || '';
+                const link = product.link || '#';
+                
+                html += `
+                    <div class="product-card">
+                        <div class="product-image-wrap">
+                            <img src="${imageUrl}" alt="${name}" class="product-image" onerror="this.src='https://via.placeholder.com/200x200?text=No+Image'">
+                            <div class="product-match-badge">${matchScore}% Match</div>
+                        </div>
+                        <div class="product-info">
+                            <p class="product-brand">${brand}</p>
+                            <h4 class="product-name">${name}</h4>
+                            <p class="product-price">${price}</p>
+                            <p class="product-match-reason">${matchReason}</p>
+                            <div class="product-actions">
+                                ${productId ? `<button class="add-to-shelf-btn" data-product-id="${productId}">Add to Shelf</button>` : ''}
+                                ${productId ? `<a href="/recommendations/product/${productId}/" class="product-view-btn">View Details</a>` : `<a href="${link}" target="_blank" class="product-view-btn">View Product</a>`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            productsSection.innerHTML = html;
+            
+            // Re-attach event listeners to new "Add to Shelf" buttons
+            attachShelfButtonListeners();
+        }
+        
+        function attachShelfButtonListeners() {
+            const newButtons = document.querySelectorAll('.add-to-shelf-btn');
+            newButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const productId = this.dataset.productId;
+                    const btn = this;
+                    const originalText = btn.textContent;
+                    if ('{{ user.is_authenticated|yesno:"true,false" }}' === 'false') {
+                        showToast('Please login to add products to your shelf', 'error');
+                        return;
+                    }
+                    btn.textContent = 'Adding...';
+                    btn.disabled = true;
+
+                    fetch("{% url 'add_to_cart' %}", {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ product_id: productId })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Added to cart!', 'success');
+                            setTimeout(() => { window.location.href = "{% url 'my_cart' %}"; }, 800);
+                        } else {
+                            showToast(data.error || 'Error adding to shelf', 'error');
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error connecting to shop', 'error');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    });
+                });
+            });
+        }
+
         // --- Shelf Logic ---
         const buttons = document.querySelectorAll('.add-to-shelf-btn');
         const csrfTokenElem = document.getElementById('csrf-token');
@@ -2817,14 +3238,56 @@
             });
         });
 
-        // Notification dropdown toggle
+    // Notification dropdown toggle (outside DOMContentLoaded since it's in the base template)
+    document.addEventListener('DOMContentLoaded', function() {
         const notificationBtn = document.getElementById('notificationBtn');
         const notificationContent = document.getElementById('notificationContent');
         if (notificationBtn && notificationContent) {
             notificationBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationContent.classList.toggle('show'); });
             document.addEventListener('click', (e) => { if (!notificationBtn.contains(e.target) && !notificationContent.contains(e.target)) notificationContent.classList.remove('show'); });
         }
-        });
+
+        // Confidence Score Info Modal
+        const confInfoBtn = document.getElementById('confInfoBtn');
+        const confModal = document.getElementById('confModal');
+        const confModalClose = document.getElementById('confModalClose');
+
+        if (confInfoBtn && confModal && confModalClose) {
+            console.log('Confidence modal elements found'); // Debug log
+            
+            confInfoBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Info button clicked'); // Debug log
+                confModal.classList.add('active');
+            });
+
+            confModalClose.addEventListener('click', function() {
+                console.log('Close button clicked'); // Debug log
+                confModal.classList.remove('active');
+            });
+
+            confModal.addEventListener('click', function(e) {
+                if (e.target === confModal) {
+                    confModal.classList.remove('active');
+                }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && confModal.classList.contains('active')) {
+                    confModal.classList.remove('active');
+                }
+            });
+        } else {
+            console.log('Confidence modal elements NOT found:', {
+                confInfoBtn: !!confInfoBtn,
+                confModal: !!confModal,
+                confModalClose: !!confModalClose
+            }); // Debug log
+        }
+    });
+    });
     </script>
 
 </body>
@@ -2856,7 +3319,79 @@
 .rc-conf-score{text-align:right;flex-shrink:0;}
 .rc-conf-num{display:block;font-size:1.6rem;font-weight:800;color:#0b3b17;line-height:1;}
 .rc-conf-lbl{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;}
+
+/* Confidence Info Button */
+.conf-info-btn{background:none;border:none;padding:0;cursor:pointer;color:#94a3b8;transition:color .2s,transform .2s;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;}
+.conf-info-btn:hover{color:#0b3b17;transform:scale(1.1);background:#f0fdf4;}
+.conf-info-btn svg{display:block;}
+
+/* Confidence Modal */
+.conf-modal{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(11,59,23,.85);backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;}
+.conf-modal.active{display:flex;}
+.conf-modal-content{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;position:relative;padding:2rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);animation:confModalSlideIn .3s ease-out;}
+@keyframes confModalSlideIn{from{opacity:0;transform:translateY(-20px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+.conf-modal-close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;color:#64748b;background:#f8fafc;border:none;transition:all .2s;}
+.conf-modal-close:hover{color:#fff;background:#0b3b17;transform:rotate(90deg);}
+.conf-modal-header{text-align:center;margin-bottom:1.5rem;}
+.conf-modal-icon{font-size:3rem;margin-bottom:.5rem;}
+.conf-modal-title{font-size:1.5rem;font-weight:800;color:#0b3b17;margin:0;letter-spacing:-.3px;}
+.conf-modal-body{display:flex;flex-direction:column;gap:1.5rem;}
+.conf-modal-text{font-size:.9rem;color:#475569;line-height:1.7;margin:0;}
+.conf-modal-scale{display:flex;flex-direction:column;gap:.75rem;padding:1rem;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;}
+.conf-scale-item{display:flex;flex-direction:column;gap:.4rem;}
+.conf-scale-bar{height:8px;border-radius:4px;transition:width .3s;}
+.conf-scale-label{font-size:.8rem;color:#64748b;font-weight:600;}
+.conf-modal-note{display:flex;gap:1rem;padding:1.25rem;background:linear-gradient(135deg,#fef3c7,#fef9c3);border-radius:12px;border:2px solid #fbbf24;}
+.conf-note-icon{font-size:2rem;flex-shrink:0;}
+.conf-note-title{font-size:.95rem;font-weight:700;color:#92400e;margin:0 0 .5rem;}
+.conf-note-text{font-size:.85rem;color:#78350f;line-height:1.6;margin:0;}
+
+@media(max-width:768px){
+.conf-modal-content{padding:1.5rem;max-width:100%;margin:.5rem;}
+.conf-modal-title{font-size:1.25rem;}
+.conf-modal-icon{font-size:2.5rem;}
+.conf-note-icon{font-size:1.5rem;}
+}
 .rc-ai-msg{font-size:.88rem;color:#475569;line-height:1.65;margin:0;}
+
+/* Concern Selection Cards */
+.rc-concern-selection{margin:1rem 0;}
+.concern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.75rem;margin-bottom:.75rem;}
+.concern-card{background:#fff;border:2px solid #e2e8f0;border-radius:12px;padding:1rem;cursor:pointer;transition:all .2s;position:relative;}
+.concern-card:hover{border-color:#16a34a;transform:translateY(-2px);box-shadow:0 4px 12px rgba(22,163,74,.15);}
+.concern-card.active{border-color:#16a34a;background:linear-gradient(135deg,#f0fdf4,#ffffff);box-shadow:0 4px 12px rgba(22,163,74,.2);}
+.concern-card-header{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.5rem;}
+.concern-card-icon{font-size:1.5rem;flex-shrink:0;}
+.concern-card-info{flex:1;}
+.concern-card-title{font-size:.95rem;font-weight:700;color:#0b3b17;margin:0 0 .4rem;letter-spacing:-.2px;}
+.concern-card-confidence{display:flex;flex-direction:column;gap:.25rem;}
+.conf-bar-mini{height:4px;background:#e8f5e9;border-radius:2px;overflow:hidden;width:100%;}
+.conf-bar-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:2px;transition:width .3s;}
+.conf-text-mini{font-size:.72rem;color:#64748b;font-weight:600;}
+.concern-card-check{width:24px;height:24px;border-radius:50%;background:#16a34a;display:none;align-items:center;justify-content:center;flex-shrink:0;}
+.concern-card-check svg{stroke:#fff;}
+.concern-card.active .concern-card-check{display:flex;}
+.concern-card-desc{font-size:.8rem;color:#64748b;line-height:1.5;margin:0;}
+.concern-selection-hint{font-size:.75rem;color:#94a3b8;margin:0;display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;}
+.concern-selection-hint svg{flex-shrink:0;stroke:#94a3b8;}
+
+/* Recommendation Selection Prompt */
+.rec-selection-prompt{text-align:center;padding:4rem 2rem;background:linear-gradient(135deg,#f0fdf4,#ffffff);border-radius:16px;border:2px dashed #bbf7d0;}
+.prompt-icon{font-size:4rem;margin-bottom:1rem;animation:bounce 2s infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.prompt-title{font-size:1.5rem;font-weight:800;color:#0b3b17;margin:0 0 .75rem;letter-spacing:-.3px;}
+.prompt-text{font-size:.95rem;color:#64748b;line-height:1.7;margin:0 auto 1.5rem;max-width:500px;}
+.prompt-features{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;}
+.prompt-feature{display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:#166534;font-weight:600;}
+.feature-icon{width:20px;height:20px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;}
+
+@media(max-width:768px){
+.rec-selection-prompt{padding:3rem 1.5rem;}
+.prompt-icon{font-size:3rem;}
+.prompt-title{font-size:1.25rem;}
+.prompt-features{gap:1rem;}
+}
+
 .rc-other-concerns{display:flex;flex-direction:column;gap:.4rem;padding:.75rem;background:#f8fafc;border-radius:10px;border:1px solid #eaf0ea;}
 .rc-other-row{display:flex;align-items:center;gap:.5rem;font-size:.82rem;}
 .rc-other-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -2871,6 +3406,31 @@
 .rc-cta{display:block;text-align:center;padding:14px 24px;border-radius:10px;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;font-weight:700;font-size:.92rem;text-decoration:none;letter-spacing:.3px;transition:opacity .2s,transform .15s;box-shadow:0 4px 14px rgba(11,59,23,.25);}
 .rc-cta:hover{opacity:.92;transform:translateY(-1px);color:#fff;}
 .rc-no-concerns{padding:.5rem 0;}
+
+/* No Concerns Explanation Boxes */
+.rc-explanation-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.rc-explanation-title{font-size:.95rem;font-weight:700;color:#0b3b17;margin:0 0 .75rem;letter-spacing:-.2px;}
+.rc-explanation-list{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:.6rem;}
+.rc-explanation-list li{font-size:.85rem;color:#166534;line-height:1.6;}
+.rc-explanation-list li strong{color:#0b3b17;font-weight:600;}
+
+.rc-healthy-tips{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.rc-tips-title{font-size:.95rem;font-weight:700;color:#0b3b17;margin:0 0 .75rem;letter-spacing:-.2px;}
+.rc-tips-list{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:.5rem;}
+.rc-tips-list li{font-size:.85rem;color:#166534;line-height:1.5;}
+
+.rc-disclaimer-box{display:flex;gap:1rem;padding:1.25rem;background:linear-gradient(135deg,#fef3c7,#fef9c3);border:2px solid #fbbf24;border-radius:12px;}
+.rc-disclaimer-icon{font-size:2rem;flex-shrink:0;}
+.rc-disclaimer-text{font-size:.85rem;color:#78350f;line-height:1.6;margin:0;}
+.rc-disclaimer-text strong{color:#92400e;}
+
+@media(max-width:768px){
+.rc-explanation-box,.rc-healthy-tips,.rc-disclaimer-box{padding:1rem;}
+.rc-explanation-title,.rc-tips-title{font-size:.9rem;}
+.rc-explanation-list li,.rc-tips-list li,.rc-disclaimer-text{font-size:.8rem;}
+.rc-disclaimer-icon{font-size:1.5rem;}
+}
+
 </style>
 
 <style>

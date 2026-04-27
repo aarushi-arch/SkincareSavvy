@@ -78,6 +78,11 @@ def index(request):
                     # Store image in session for the Try-On feature
                     if raw.get("image_base64"):
                         request.session["last_analysis_image"] = raw["image_base64"]
+                    
+                    # Store skin type in session for concern-based recommendations
+                    skin_type_preds = analysis_result.get("skin_type", {}).get("predictions", [])
+                    skin_type = skin_type_preds[0]["class"] if skin_type_preds else "Normal"
+                    request.session["detected_skin_type"] = skin_type
 
                 # If models are missing or pipeline failed, show error only and skip results dashboard
                 if analysis_result and analysis_result.get("error"):
@@ -99,6 +104,7 @@ def index(request):
 
                         final_concerns = []
                         main_concern = None
+                        all_concerns_for_selection = []  # NEW: Store all concerns for user selection
 
                         # Filter MobileNet predictions above threshold
                         high_conf_preds = [p for p in concerns_preds if p["confidence"] >= CONFIDENCE_THRESHOLD]
@@ -123,6 +129,8 @@ def index(request):
                                 conf = det.get("confidence_pct", int(det.get("confidence", 0) * 100))
                                 if lbl not in yolo_concern_map or conf > yolo_concern_map[lbl]:
                                     yolo_concern_map[lbl] = conf
+                            
+                            if yolo_concern_map:
                                 sorted_concerns = sorted(
                                     [{"name": k, "confidence": v} for k, v in yolo_concern_map.items()],
                                     key=lambda x: x["confidence"], reverse=True
@@ -130,11 +138,13 @@ def index(request):
                                 for c in sorted_concerns:
                                     c["explanation"] = generate_skin_explanation(c["name"], c["confidence"])
                                     c["ingredient_advice"] = get_ingredient_advice(c["name"])
+                                
                                 main_concern = sorted_concerns[0]["name"]
                                 concerns_list = [c["name"] for c in sorted_concerns]
                                 analysis_result["all_detected_concerns"] = sorted_concerns
                                 analysis_result["detected_concerns"] = concerns_list
                                 final_concerns = concerns_list
+                                all_concerns_for_selection = sorted_concerns  # NEW
                             else:
                                 analysis_result["flags"] = {
                                     "acne": False, "wrinkles": False, "pores": False,
@@ -154,6 +164,24 @@ def index(request):
 
                             concerns_list = [c["name"] for c in detected_concerns_with_confidence]
                             print(f"✓ Detected Concerns (>{CONFIDENCE_THRESHOLD}): {concerns_list}")
+                            print(f"✓ Total MobileNet predictions: {len(concerns_preds)}")
+                            print(f"✓ Predictions above threshold: {len(detected_concerns_with_confidence)}")
+
+                            # If only one or no concerns above threshold, include top 3 predictions anyway
+                            if len(detected_concerns_with_confidence) <= 1 and len(concerns_preds) > 1:
+                                print(f"⚠ Only {len(detected_concerns_with_confidence)} concern(s) above threshold. Including top 3 predictions.")
+                                all_predictions = [
+                                    {
+                                        "name": p["class"].lower().replace("_", ""),
+                                        "confidence": p.get("final_pct", int(p["confidence"] * 100))
+                                    }
+                                    for p in concerns_preds
+                                ]
+                                # Sort by confidence and take top 3
+                                sorted_all = sorted(all_predictions, key=lambda x: x["confidence"], reverse=True)
+                                detected_concerns_with_confidence = sorted_all[:3]
+                                concerns_list = [c["name"] for c in detected_concerns_with_confidence]
+                                print(f"✓ Expanded to show top 3: {concerns_list}")
 
                             if detected_concerns_with_confidence:
                                 sorted_concerns = sorted(detected_concerns_with_confidence, key=lambda x: x["confidence"], reverse=True)
@@ -165,11 +193,12 @@ def index(request):
                                     )
                                     c["ingredient_advice"] = get_ingredient_advice(c["name"])
                                 analysis_result["all_detected_concerns"] = sorted_concerns
+                                all_concerns_for_selection = sorted_concerns  # NEW
                             else:
                                 main_concern = None
                                 analysis_result["all_detected_concerns"] = []
 
-                            analysis_result["detected_concerns"] = [main_concern] if main_concern else []
+                            analysis_result["detected_concerns"] = concerns_list if concerns_list else []
 
                             # Create flags for the template to handle dynamic icons/badges (visual feedback for all)
                             analysis_result["flags"] = {
@@ -182,98 +211,24 @@ def index(request):
 
                             # Use all detected concerns for recommendations
                             final_concerns = concerns_list if concerns_list else []
-                            analysis_result["detected_concerns"] = final_concerns
-
-                        query = {
-                            "skin_type": skin_type,
-                            "concerns": final_concerns,
-                            "allergies": [a.strip() for a in request.POST.get("allergies", "").split(",") if a.strip()],
-                        }
-
-                        # Use TF-IDF based recommendations with active ingredients and allergy warnings
-                        recommended_products = get_recommendations(query, top_k=50)
-
-                        # Normalise scores to 0–100 relative to the top scorer in this batch
-                        raw_scores = [p.get("score", 0) for p in recommended_products]
-                        max_score  = max(raw_scores) if raw_scores else 1
-                        min_score  = min(raw_scores) if raw_scores else 0
-                        score_range = max_score - min_score if max_score != min_score else 1
-
-                        for p in recommended_products:
-                            raw = p.get("score", 0)
-                            # Scale so top product = ~95%, others spread below it
-                            normalised = 55 + round(((raw - min_score) / score_range) * 40)
-                            p["match_score"] = max(55, min(95, normalised))
-
-                            # Build specific human-readable reason
-                            concerns_matched = [c for c in (p.get("concern") or []) if c]
-                            p_type = (p.get("type") or "product").lower()
-
-                            reasons = []
-
-                            # Concern alignment
-                            if concerns_matched and final_concerns:
-                                shared = [c for c in concerns_matched
-                                          if any(fc.lower() in c.lower() or c.lower() in fc.lower()
-                                                 for fc in final_concerns)]
-                                if shared:
-                                    reasons.append(f"Addresses {', '.join(shared[:2])}")
-                                else:
-                                    reasons.append(f"Targets {', '.join(concerns_matched[:2])}")
-
-                            # Skin type alignment
-                            if skin_type and skin_type != "Normal":
-                                reasons.append(f"suited for {skin_type} skin")
-
-                            # Score tier label
-                            score_pct = p["match_score"]
-                            if score_pct >= 88:
-                                tier = "Strong match"
-                            elif score_pct >= 75:
-                                tier = "Good match"
-                            else:
-                                tier = "Relevant pick"
-
-                            if reasons:
-                                p["match_reason"] = f"{tier} — {'; '.join(reasons)}."
-                            else:
-                                p["match_reason"] = f"{tier} for your skin profile."
-
-                        # Fetch Product objects from DB to get IDs and synchronized data
-                        product_urls = [p.get('link') for p in recommended_products if p.get('link')]
-                        product_names = [p.get('name') for p in recommended_products if p.get('name')]
                         
-                        db_products_by_url = {p.product_url: p for p in Product.objects.filter(product_url__in=product_urls)}
-                        db_products_by_name = {p.name: p for p in Product.objects.filter(name__in=product_names)}
+                        # Store all concerns in session for later selection
+                        request.session["all_detected_concerns"] = all_concerns_for_selection
+                        request.session["default_concern"] = main_concern if main_concern else None
 
-                        # Update recommended products with database info
-                        for p in recommended_products:
-                            url = p.get('link')
-                            name = p.get('name')
-                            db_prod = db_products_by_url.get(url) or db_products_by_name.get(name)
-                            
-                            if db_prod:
-                                p['id'] = db_prod.id
-                                # Prefer DB image and brand if available
-                                if db_prod.image_url:
-                                    p['image_url'] = db_prod.image_url
-                                if db_prod.brand:
-                                    p['brand'] = db_prod.brand
+                        # DON'T generate recommendations here - wait for user to select a concern
+                        # Recommendations will be loaded via AJAX when user clicks on a concern card
+                        recommended_products = []
+                        routine = None
 
-                        # Build a personalized routine based on detected skin type and concerns
-                        try:
-                            routine = build_routine({
-                                "skin_type": skin_type,
-                                "skin_concerns": final_concerns or [],
-                            })
-                        except Exception as e:
-                            routine = None
-                            print(f"⚠ Warning: Routine generation failed: {e}")
-
-                        print(f"Main concern: {main_concern}. Found {len(recommended_products)} products for {skin_type}.")
+                        print(f"✓ Analysis complete. Detected {len(all_concerns_for_selection)} concerns. Skin type: {skin_type}")
+                        print(f"✓ All detected concerns: {[c['name'] for c in all_concerns_for_selection]}")
+                        print(f"✓ analysis_result['all_detected_concerns']: {analysis_result.get('all_detected_concerns', [])}")
 
                 # DEBUG OUTPUT 
-                print("ANALYSIS RESULT:", analysis_result)
+                if analysis_result:
+                    print(f"✓ Final analysis_result keys: {analysis_result.keys()}")
+                    print(f"✓ Number of concerns in template data: {len(analysis_result.get('all_detected_concerns', []))}")
 
             except UnidentifiedImageError:
                 error = "The uploaded file is not a valid image."
@@ -481,6 +436,117 @@ def yolo_analyze(request):
         result = unified_analyze(image_bytes)
         return JsonResponse(result)
 
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def get_recommendations_for_concern(request):
+    """
+    Get product recommendations for a specific selected concern.
+    """
+    try:
+        data = json.loads(request.body)
+        selected_concern = data.get("concern")
+        
+        if not selected_concern:
+            return JsonResponse({"error": "No concern specified"}, status=400)
+        
+        # Get stored data from session
+        skin_type = request.session.get("detected_skin_type", "Normal")
+        all_concerns = request.session.get("all_detected_concerns", [])
+        
+        # Verify the selected concern is valid
+        valid_concerns = [c["name"] for c in all_concerns]
+        if selected_concern not in valid_concerns:
+            return JsonResponse({"error": "Invalid concern selected"}, status=400)
+        
+        # Get allergies if provided
+        allergies = data.get("allergies", [])
+        if isinstance(allergies, str):
+            allergies = [a.strip() for a in allergies.split(",") if a.strip()]
+        
+        # Build query for recommendations
+        query = {
+            "skin_type": skin_type,
+            "concerns": [selected_concern],  # Only the selected concern
+            "allergies": allergies,
+        }
+        
+        # Get recommendations
+        recommended_products = get_recommendations(query, top_k=50)
+        
+        # Normalize scores
+        raw_scores = [p.get("score", 0) for p in recommended_products]
+        max_score = max(raw_scores) if raw_scores else 1
+        min_score = min(raw_scores) if raw_scores else 0
+        score_range = max_score - min_score if max_score != min_score else 1
+        
+        for p in recommended_products:
+            raw = p.get("score", 0)
+            normalised = 55 + round(((raw - min_score) / score_range) * 40)
+            p["match_score"] = max(55, min(95, normalised))
+            
+            # Build match reason
+            concerns_matched = [c for c in (p.get("concern") or []) if c]
+            reasons = []
+            
+            if concerns_matched:
+                if selected_concern.lower() in [c.lower() for c in concerns_matched]:
+                    reasons.append(f"Targets {selected_concern}")
+                else:
+                    reasons.append(f"Addresses {', '.join(concerns_matched[:2])}")
+            
+            if skin_type and skin_type != "Normal":
+                reasons.append(f"suited for {skin_type} skin")
+            
+            score_pct = p["match_score"]
+            if score_pct >= 88:
+                tier = "Strong match"
+            elif score_pct >= 75:
+                tier = "Good match"
+            else:
+                tier = "Relevant pick"
+            
+            if reasons:
+                p["match_reason"] = f"{tier} — {'; '.join(reasons)}."
+            else:
+                p["match_reason"] = f"{tier} for your skin profile."
+        
+        # Fetch Product objects from DB
+        product_urls = [p.get('link') for p in recommended_products if p.get('link')]
+        product_names = [p.get('name') for p in recommended_products if p.get('name')]
+        
+        db_products_by_url = {p.product_url: p for p in Product.objects.filter(product_url__in=product_urls)}
+        db_products_by_name = {p.name: p for p in Product.objects.filter(name__in=product_names)}
+        
+        # Update with database info
+        for p in recommended_products:
+            url = p.get('link')
+            name = p.get('name')
+            db_prod = db_products_by_url.get(url) or db_products_by_name.get(name)
+            
+            if db_prod:
+                p['id'] = db_prod.id
+                if db_prod.image_url:
+                    p['image_url'] = db_prod.image_url
+                if db_prod.brand:
+                    p['brand'] = db_prod.brand
+        
+        # Limit to top 50
+        recommended_products = recommended_products[:50]
+        
+        return JsonResponse({
+            "success": True,
+            "concern": selected_concern,
+            "skin_type": skin_type,
+            "products": recommended_products,
+            "count": len(recommended_products)
+        })
+        
     except Exception as e:
         import traceback
         traceback.print_exc()

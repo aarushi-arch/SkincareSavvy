@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Confidence Modal</title>
+    <style>
+        /* Confidence Info Button */
+        .conf-info-btn{background:none;border:none;padding:0;cursor:pointer;color:#94a3b8;transition:color .2s,transform .2s;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;}
+        .conf-info-btn:hover{color:#0b3b17;transform:scale(1.1);background:#f0fdf4;}
+        .conf-info-btn svg{display:block;}
+
+        /* Confidence Modal */
+        .conf-modal{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(11,59,23,.85);backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;}
+        .conf-modal.active{display:flex;}
+        .conf-modal-content{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;position:relative;padding:2rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);}
+        .conf-modal-close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;color:#64748b;background:#f8fafc;border:none;transition:all .2s;}
+        .conf-modal-close:hover{color:#fff;background:#0b3b17;}
+        .conf-modal-header{text-align:center;margin-bottom:1.5rem;}
+        .conf-modal-title{font-size:1.5rem;font-weight:800;color:#0b3b17;margin:0;}
+    </style>
+</head>
+<body>
+    <div style="padding:50px;">
+        <h1>Test Confidence Modal</h1>
+        <p>Confidence: 85% 
+            <button type="button" class="conf-info-btn" id="confInfoBtn" aria-label="Confidence score information">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
+        </p>
+    </div>
+
+    <!-- Modal -->
+    <div class="conf-modal" id="confModal">
+        <div class="conf-modal-content">
+            <button type="button" class="conf-modal-close" id="confModalClose">&times;</button>
+            <div class="conf-modal-header">
+                <h3 class="conf-modal-title">Understanding Confidence Scores</h3>
+            </div>
+            <p>This is a test modal. If you can see this, the modal is working!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const confInfoBtn = document.getElementById('confInfoBtn');
+            const confModal = document.getElementById('confModal');
+            const confModalClose = document.getElementById('confModalClose');
+
+            console.log('Elements:', {
+                confInfoBtn: confInfoBtn,
+                confModal: confModal,
+                confModalClose: confModalClose
+            });
+
+            if (confInfoBtn && confModal && confModalClose) {
+                console.log('All elements found!');
+                
+                confInfoBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Button clicked!');
+                    confModal.classList.add('active');
+                });
+
+                confModalClose.addEventListener('click', function() {
+                    console.log('Close clicked!');
+                    confModal.classList.remove('active');
+                });
+
+                confModal.addEventListener('click', function(e) {
+                    if (e.target === confModal) {
+                        confModal.classList.remove('active');
+                    }
+                });
+            } else {
+                console.error('Some elements not found!');
+            }
+        });
+    </script>
+</body>
+</html>
