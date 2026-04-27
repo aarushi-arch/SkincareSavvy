@@ -977,10 +977,10 @@
                                 
                                 let html = '<div style="margin-bottom:1.5rem;padding:1.5rem;background:#fff;border-radius:12px;"><h3 style="font-size:1.25rem;font-weight:700;color:#0b3b17;margin:0 0 .5rem;">Recommended Products for ' + concern.charAt(0).toUpperCase() + concern.slice(1) + '</h3><p style="font-size:.85rem;color:#64748b;margin:0;">Found ' + products.length + ' products tailored to your needs</p></div>';
                                 
-                                html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;padding:1rem;">';
+                                html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:1rem;">';
                                 
                                 products.slice(0, 12).forEach(function(product) {
-                                    const imageUrl = product.image_url || 'https://via.placeholder.com/200x200?text=No+Image';
+                                    const imageUrl = product.image_url || 'https://via.placeholder.com/300x300?text=No+Image';
                                     const brand = product.brand || 'Skincare';
                                     const name = product.name || 'Product';
                                     const price = product.price || 'N/A';
@@ -988,36 +988,39 @@
                                     const matchReason = product.match_reason || '';
                                     const productId = product.id || '';
                                     const link = product.link || '#';
+                                    const category = product.category || 'Skincare';
+                                    const rating = product.rating || product.rate || 0;
                                     
-                                    html += '<div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:transform .2s,box-shadow .2s;cursor:pointer;" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 16px rgba(0,0,0,.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.08)\'">';
+                                    html += '<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.06);transition:all .3s;cursor:pointer;border:1px solid #f1f5f9;" onmouseover="this.style.transform=\'translateY(-8px)\';this.style.boxShadow=\'0 12px 24px rgba(0,0,0,.12)\';this.style.borderColor=\'#16a34a\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.06)\';this.style.borderColor=\'#f1f5f9\'">';
                                     
                                     // Image
-                                    html += '<div style="position:relative;width:100%;padding-top:100%;background:#f8fafc;overflow:hidden;">';
-                                    html += '<img src="' + imageUrl + '" alt="' + name + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/200x200?text=No+Image\'">';
-                                    html += '<div style="position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;box-shadow:0 2px 8px rgba(22,163,74,.3);">' + matchScore + '% Match</div>';
+                                    html += '<div style="position:relative;width:100%;padding-top:85%;background:linear-gradient(135deg,#f8fafc,#f1f5f9);overflow:hidden;">';
+                                    html += '<img src="' + imageUrl + '" alt="' + name + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/300x300?text=No+Image\'">';
+                                    html += '<div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;padding:6px 12px;border-radius:20px;font-size:.8rem;font-weight:700;box-shadow:0 4px 12px rgba(22,163,74,.4);">' + matchScore + '%</div>';
+                                    html += '<div style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.98);color:#0f172a;padding:6px 12px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:capitalize;box-shadow:0 4px 12px rgba(0,0,0,.15);">' + category + '</div>';
                                     html += '</div>';
                                     
                                     // Info
-                                    html += '<div style="padding:1rem;">';
-                                    html += '<p style="font-size:.75rem;color:#64748b;font-weight:600;margin:0 0 .25rem;text-transform:uppercase;letter-spacing:.5px;">' + brand + '</p>';
-                                    html += '<h4 style="font-size:.95rem;font-weight:700;color:#0f172a;margin:0 0 .5rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + name + '</h4>';
-                                    html += '<p style="font-size:1.1rem;font-weight:700;color:#16a34a;margin:0 0 .5rem;">' + price + '</p>';
-                                    html += '<p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + matchReason + '</p>';
-                                    
-                                    // Actions
-                                    html += '<div style="display:flex;gap:.5rem;">';
-                                    if (productId) {
-                                        html += '<a href="/recommendations/product/' + productId + '/" style="flex:1;text-align:center;padding:.6rem 1rem;background:linear-gradient(135deg,#0b3b17,#145a28);color:#fff;text-decoration:none;border-radius:8px;font-size:.85rem;font-weight:600;transition:opacity .2s;" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">View Details</a>';
-                                    } else {
-                                        html += '<a href="' + link + '" target="_blank" style="flex:1;text-align:center;padding:.6rem 1rem;background:linear-gradient(135deg,#0b3b17,#145a28);color:#fff;text-decoration:none;border-radius:8px;font-size:.85rem;font-weight:600;transition:opacity .2s;" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">View Product</a>';
+                                    html += '<div style="padding:1.25rem;">';
+                                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">';
+                                    html += '<p style="font-size:.75rem;color:#64748b;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:1px;">' + brand + '</p>';
+                                    if (rating > 0) {
+                                        html += '<div style="display:flex;align-items:center;gap:.3rem;background:#fffbeb;padding:4px 8px;border-radius:12px;"><span style="color:#f59e0b;font-size:.9rem;">★</span><span style="font-size:.8rem;font-weight:700;color:#92400e;">' + rating.toFixed(1) + '</span></div>';
                                     }
                                     html += '</div>';
-                                    
-                                    html += '</div>';
-                                    html += '</div>';
+                                    html += '<h4 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 .5rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em;">' + name + '</h4>';
+                                    html += '<p style="font-size:1.25rem;font-weight:800;color:#16a34a;margin:0 0 .75rem;">' + price + '</p>';
+                                    html += '<p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;background:#f8fafc;padding:.75rem;border-radius:8px;border-left:3px solid #16a34a;">' + matchReason + '</p>';
+                                    html += '<div>';
+                                    if (productId) {
+                                        html += '<a href="/recommendations/product/' + productId + '/" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Details →</a>';
+                                    } else {
+                                        html += '<a href="' + link + '" target="_blank" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Product →</a>';
+                                    }
+                                    html += '</div></div></div>';
                                 });
                                 
-                                html += '</div>';
+                                html += '</div><style>@media(max-width:1200px){[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr!important;}}</style>';
                                 productsSection.innerHTML = html;
                             }
                         </script>

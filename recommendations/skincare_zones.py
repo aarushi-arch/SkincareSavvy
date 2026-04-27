@@ -10,8 +10,23 @@ import base64
 mp_face_mesh = mp.solutions.face_mesh
 
 # ---------- FACE ZONES ----------
-LEFT_EYE = [33, 133, 160, 159, 158, 157]
-RIGHT_EYE = [362, 385, 387, 263, 373, 380]
+# Under-eye and around eye area (not the eye itself)
+LEFT_EYE_AREA = [
+    # Lower eyelid and under-eye area
+    33, 7, 163, 144, 145, 153, 154, 155, 133,
+    # Outer corner area
+    173, 157, 158, 159, 160, 161, 246,
+    # Inner corner area  
+    130, 25, 110, 24, 23, 22, 26, 112, 243
+]
+RIGHT_EYE_AREA = [
+    # Lower eyelid and under-eye area
+    263, 249, 390, 373, 374, 380, 381, 382, 362,
+    # Outer corner area
+    398, 384, 385, 386, 387, 388, 466,
+    # Inner corner area
+    359, 255, 339, 254, 253, 252, 256, 341, 463
+]
 LEFT_CHEEK = [50, 123, 117, 111, 187]
 RIGHT_CHEEK = [280, 352, 345, 340, 411]
 FOREHEAD = [10, 151, 9, 8, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162]
@@ -21,8 +36,8 @@ FULL_FACE = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365
 
 # Category to zone mapping
 CATEGORY_ZONE_MAP = {
-    "eye care": [("LEFT_EYE", LEFT_EYE), ("RIGHT_EYE", RIGHT_EYE)],
-    "eye cream": [("LEFT_EYE", LEFT_EYE), ("RIGHT_EYE", RIGHT_EYE)],
+    "eye care": [("LEFT_EYE_AREA", LEFT_EYE_AREA), ("RIGHT_EYE_AREA", RIGHT_EYE_AREA)],
+    "eye cream": [("LEFT_EYE_AREA", LEFT_EYE_AREA), ("RIGHT_EYE_AREA", RIGHT_EYE_AREA)],
     "moisturizer": [("FULL_FACE", FULL_FACE)],
     "moisturiser": [("FULL_FACE", FULL_FACE)],
     "sunscreen": [("FULL_FACE", FULL_FACE)],

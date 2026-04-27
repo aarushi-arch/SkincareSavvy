@@ -535,6 +535,10 @@ def get_recommendations_for_concern(request):
                     p['image_url'] = db_prod.image_url
                 if db_prod.brand:
                     p['brand'] = db_prod.brand
+                if db_prod.category:
+                    p['category'] = db_prod.category
+                if db_prod.rating:
+                    p['rating'] = float(db_prod.rating)
         
         # Limit to top 50
         recommended_products = recommended_products[:50]
