@@ -13,7 +13,7 @@ import numpy as np
 
 # ── Temperature scaling ───────────────────────────────────────────────────────
 
-def calibrate(prob: float, temperature: float = 2.0) -> float:
+def calibrate(prob: float, temperature: float = 1.5) -> float:
     """
     Soften overconfident probabilities via temperature scaling.
     MobileNet often outputs values close to 1.0 — this brings them
@@ -26,7 +26,7 @@ def calibrate(prob: float, temperature: float = 2.0) -> float:
 
 # ── YOLO aggregation ──────────────────────────────────────────────────────────
 
-def aggregate_yolo(detections: list[dict], label: str, conf_threshold: float = 0.30) -> float:
+def aggregate_yolo(detections: list[dict], label: str, conf_threshold: float = 0.15) -> float:
     """
     Aggregate YOLO detection confidences for a specific concern label.
 
@@ -66,7 +66,7 @@ def fuse(
     mobilenet_weight: float = 0.70,
     yolo_weight: float      = 0.30,
     temperature: float      = 2.0,
-    conf_threshold: float   = 0.30,
+    conf_threshold: float   = 0.15,
 ) -> dict:
     """
     Fuse MobileNet + YOLO scores for a single concern.
@@ -77,8 +77,8 @@ def fuse(
         concern_label:    concern name (e.g. "acne", "wrinkles")
         mobilenet_weight: weight for MobileNet in fusion (default 0.70)
         yolo_weight:      weight for YOLO in fusion (default 0.30)
-        temperature:      calibration temperature (default 2.0)
-        conf_threshold:   minimum YOLO confidence to include (default 0.30)
+        temperature:      calibration temperature (default 1.5)
+        conf_threshold:   minimum YOLO confidence to include (default 0.15)
 
     Returns:
         {

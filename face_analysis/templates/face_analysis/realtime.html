@@ -1,61 +1,469 @@
 {% extends "base.html" %}
 {% block title %}Real-Time Skin Detection{% endblock %}
 
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Force cache refresh - v2.0 */
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <h2 class="mb-1">Real-Time Skin Concern Detection</h2>
-  <p class="text-muted mb-3">YOLO detects skin concern regions live on your webcam.</p>
+<div class="premium-analysis-container">
+  <div class="analysis-header">
+    <h2 class="analysis-title">Real-Time Skin Analysis</h2>
+    <p class="analysis-subtitle">AI-powered detection of skin concerns in real-time</p>
+  </div>
 
-  <div class="row">
-
-    <!-- Webcam canvas -->
-    <div class="col-md-8">
-      <div style="position:relative;background:#111;border-radius:10px;overflow:hidden;">
-        <!-- video is hidden — canvas shows the feed + boxes -->
+  <div class="analysis-grid">
+    <!-- Webcam Section -->
+    <div class="video-section">
+      <div class="image-container">
         <video id="video" autoplay playsinline muted style="display:none;"></video>
-        <canvas id="canvas" style="width:100%;border-radius:10px;display:block;"></canvas>
-
-        <span id="status-badge"
-              style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.7);
-                     color:#fff;padding:4px 14px;border-radius:20px;font-size:.78rem;">
+        <canvas id="canvas"></canvas>
+        
+        <span id="status-badge" class="status-badge">
           Starting camera…
         </span>
       </div>
-      <div class="mt-2">
-        <button id="btn-stop" class="btn btn-secondary btn-sm" disabled>Stop</button>
+      <div class="controls-section">
+        <button id="btn-stop" class="btn-stop" disabled>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="4" y="4" width="8" height="8" rx="1" fill="currentColor"/>
+          </svg>
+          Stop Camera
+        </button>
       </div>
     </div>
 
-    <!-- Results panel -->
-    <div class="col-md-4 mt-3 mt-md-0">
-      <div class="card" style="min-height:280px;">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Detections</strong>
-          <span id="region-badge" class="badge badge-info" style="display:none;"></span>
+    <!-- Results Panel -->
+    <div class="results-section">
+      <div class="results-card">
+        <div class="card-header-premium">
+          <div class="header-content">
+            <h3 class="card-title">AI Concerns Detected</h3>
+            <span id="region-badge" class="region-badge" style="display:none;"></span>
+          </div>
         </div>
-        <div class="card-body p-2" id="results-panel">
-          <p class="text-muted small mb-0">Waiting for camera…</p>
+        <div class="card-body-premium" id="results-panel">
+          <div class="waiting-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+            <p>Initializing camera...</p>
+          </div>
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
 <style>
-  .det-row {
-    display:flex;align-items:center;gap:8px;padding:5px 8px;
-    margin-bottom:5px;border-radius:5px;background:#f8f9fa;
-    border-left:4px solid #ccc;font-size:.83rem;
+  /* Premium Color System */
+  :root {
+    --primary-green: #16A34A;
+    --light-bg: #F0FDF4;
+    --card-bg: #FFFFFF;
+    --border-color: #E5E7EB;
+    --accent-warning: #F59E0B;
+    --heading-text: #111827;
+    --body-text: #4B5563;
+    --success-light: #ECFDF5;
+    --shadow-sm: 0 6px 18px rgba(0,0,0,0.06);
+    --shadow-md: 0 10px 25px rgba(0,0,0,0.08);
+    --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
   }
-  .det-dot  { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
-  .det-name { font-weight:600;flex:1; }
-  .det-conf { color:#888;font-size:.75rem; }
-  .err-box  { background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;
-              border-radius:6px;padding:8px;font-size:.82rem; }
+
+  /* Container & Layout */
+  .premium-analysis-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    min-height: calc(100vh - 200px);
+    font-family: 'Inter', 'Lato', sans-serif;
+  }
+
+  .analysis-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.6s ease;
+  }
+
+  .analysis-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--heading-text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .analysis-subtitle {
+    font-size: 16px;
+    color: var(--body-text);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* 2-Column Grid Layout */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 32px;
+    animation: fadeIn 0.8s ease;
+  }
+
+  /* Video Section */
+  .video-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .image-container {
+    position: relative;
+    background: #111;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .image-container:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  #canvas {
+    width: 100%;
+    display: block;
+    border-radius: 20px;
+  }
+
+  .status-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .controls-section {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-stop {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--body-text);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-stop:hover:not(:disabled) {
+    background: #F9FAFB;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-stop:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Results Card */
+  .results-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .results-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .results-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header-premium {
+    background: linear-gradient(135deg, var(--success-light), var(--light-bg));
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--heading-text);
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  .region-badge {
+    background: var(--primary-green);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+  }
+
+  .card-body-premium {
+    padding: 24px 28px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 600px;
+  }
+
+  /* Waiting State */
+  .waiting-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--body-text);
+    text-align: center;
+  }
+
+  .waiting-state svg {
+    color: var(--primary-green);
+    margin-bottom: 16px;
+    opacity: 0.6;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .waiting-state p {
+    font-size: 15px;
+    margin: 0;
+  }
+
+  /* Detection Row */
+  .det-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: var(--light-bg);
+    border-left: 4px solid var(--primary-green);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    animation: slideInRight 0.3s ease;
+  }
+
+  .det-row:hover {
+    background: #E8F8F0;
+    transform: translateX(4px);
+  }
+
+  .det-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .det-name {
+    font-weight: 600;
+    flex: 1;
+    color: var(--heading-text);
+  }
+
+  .det-conf {
+    color: var(--body-text);
+    font-size: 13px;
+    font-weight: 500;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 8px;
+  }
+
+  /* Summary Pills */
+  .summary-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
   .summary-pill {
-    display:inline-block;padding:2px 10px;border-radius:12px;
-    background:#fff3cd;color:#856404;font-size:.78rem;margin:2px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--heading-text);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: all 0.2s ease;
+  }
+
+  .summary-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  /* Success State */
+  .success-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--success-light), white);
+    border-radius: 16px;
+    border: 2px dashed var(--primary-green);
+  }
+
+  .success-state svg {
+    color: var(--primary-green);
+    margin-bottom: 16px;
+  }
+
+  .success-state p {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--primary-green);
+    margin: 0;
+  }
+
+  /* Error Box */
+  .err-box {
+    background: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #FEE2E2;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    line-height: 1.6;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 992px) {
+    .analysis-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .premium-analysis-container {
+      padding: 24px 16px;
+    }
+
+    .analysis-title {
+      font-size: 28px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .analysis-title {
+      font-size: 24px;
+    }
+
+    .card-header-premium,
+    .card-body-premium {
+      padding: 20px;
+    }
+
+    .det-row {
+      padding: 12px;
+      font-size: 13px;
+    }
+  }
+
+  /* Custom Scrollbar */
+  .card-body-premium::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .card-body-premium::-webkit-scrollbar-track {
+    background: var(--light-bg);
+    border-radius: 10px;
+  }
+
+  .card-body-premium::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 10px;
+  }
+
+  .card-body-premium::-webkit-scrollbar-thumb:hover {
+    background: #15803d;
   }
 </style>
 
@@ -91,7 +499,7 @@ const COLORS = {
   dark_spots:"#cc5de8", darkspots:"#cc5de8",
   wrinkles:"#74c0fc", pores:"#63e6be",
 };
-function getColor(l) { return COLORS[(l||"").toLowerCase()] || "#00e676"; }
+function getColor(l) { return COLORS[(l||"").toLowerCase()] || "#16A34A"; }
 function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1).replace(/_/g," ") : ""; }
 
 // Last known state — persisted between frames
@@ -112,11 +520,19 @@ navigator.mediaDevices.getUserMedia({ video: true })
       running = true;
       requestAnimationFrame(renderLoop);   // continuous video draw
       detectionTimer = setInterval(sendFrame, 400);  // YOLO every 400ms
-      badge.textContent = "YOLO active";
+      badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#16A34A;border-radius:50%;margin-right:6px;"></span>AI Active';
       btnStop.disabled  = false;
     });
   })
-  .catch(err => { badge.textContent = "Camera error: " + err.message; });
+  .catch(err => { 
+    badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#DC2626;border-radius:50%;margin-right:6px;"></span>Camera Error';
+    panel.innerHTML = `<div class="err-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      ${err.message}
+    </div>`;
+  });
 
 // ── Continuous render loop (smooth video + overlay) ───────────────────────────
 function renderLoop() {
@@ -141,25 +557,25 @@ function renderLoop() {
     const fw = fx2 - fx1, fh = fy2 - fy1;
 
     ctx.save();
-    ctx.strokeStyle = "#00e5ff";
+    ctx.strokeStyle = "#16A34A";
     ctx.lineWidth   = 3;
     ctx.setLineDash([8, 4]);
-    ctx.shadowColor = "rgba(0,229,255,0.6)";
+    ctx.shadowColor = "rgba(22, 163, 74, 0.6)";
     ctx.shadowBlur  = 6;
     ctx.strokeRect(fx1, fy1, fw, fh);
     ctx.restore();
 
     // "Face detected" label chip
     const label = "Face detected";
-    ctx.font = "bold 12px sans-serif";
+    ctx.font = "bold 12px Inter, sans-serif";
     const tw = ctx.measureText(label).width;
     const lx = fx1;
     const ly = fy1 > 20 ? fy1 - 20 : fy2 + 4;
-    ctx.fillStyle = "rgba(0,229,255,0.9)";
+    ctx.fillStyle = "rgba(22, 163, 74, 0.95)";
     ctx.beginPath();
     ctx.roundRect(lx, ly, tw + 12, 18, 4);
     ctx.fill();
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#fff";
     ctx.fillText(label, lx + 6, ly + 13);
   }
 
@@ -177,12 +593,12 @@ function renderLoop() {
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.restore();
 
-    ctx.font = "bold 12px sans-serif";
+    ctx.font = "bold 12px Inter, sans-serif";
     const tw = ctx.measureText(text).width;
     const ly = y1 > 20 ? y1 - 18 : y2 + 2;
     ctx.fillStyle = color;
     ctx.fillRect(x1, ly, tw + 10, 18);
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#fff";
     ctx.fillText(text, x1 + 5, ly + 13);
   });
 }
@@ -207,14 +623,25 @@ function sendFrame() {
   .then(r => r.json())
   .then(data => {
     if (data.status === "no_face") {
-      badge.textContent      = "❌ No face detected";
+      badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#F59E0B;border-radius:50%;margin-right:6px;"></span>No Face Detected';
       lastDetections         = [];
       lastFaceBbox           = null;
-      panel.innerHTML        = '<p class="text-muted small mb-0">Point your face at the camera.</p>';
+      panel.innerHTML        = `<div class="waiting-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+          <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+        </svg>
+        <p>Position your face in the camera view</p>
+      </div>`;
       regBadge.style.display = "none";
     } else if (data.error) {
-      badge.textContent = "Error";
-      panel.innerHTML   = `<div class="err-box">${data.error}</div>`;
+      badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#DC2626;border-radius:50%;margin-right:6px;"></span>Error';
+      panel.innerHTML   = `<div class="err-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        ${data.error}
+      </div>`;
       lastDetections    = [];
       lastFaceBbox      = null;
     } else {
@@ -222,13 +649,15 @@ function sendFrame() {
       lastDetections = data.detections || [];
       const n = lastDetections.length;
       console.log("[DEBUG] face_bbox:", lastFaceBbox, "detections:", n);
-      badge.textContent = n > 0
-        ? `✅ Face · ${n} region${n !== 1 ? "s" : ""} detected`
-        : "✅ Face detected · No concerns";
+      badge.innerHTML = n > 0
+        ? `<span style="display:inline-block;width:8px;height:8px;background:#16A34A;border-radius:50%;margin-right:6px;"></span>Face Detected · ${n} Region${n !== 1 ? "s" : ""}`
+        : '<span style="display:inline-block;width:8px;height:8px;background:#16A34A;border-radius:50%;margin-right:6px;"></span>Face Detected · Clear';
       renderPanel(data);
     }
   })
-  .catch(() => { badge.textContent = "Network error"; })
+  .catch(() => { 
+    badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#DC2626;border-radius:50%;margin-right:6px;"></span>Network Error';
+  })
   .finally(() => { isProcessing = false; });
 }
 
@@ -239,7 +668,13 @@ function renderPanel(data) {
 
   if (dets.length === 0) {
     regBadge.style.display = "none";
-    panel.innerHTML = '<p class="text-success small mb-0"><i class="fas fa-check-circle"></i> No concerns detected</p>';
+    panel.innerHTML = `<div class="success-state">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <p>No skin concerns detected</p>
+    </div>`;
     return;
   }
 
@@ -247,11 +682,18 @@ function renderPanel(data) {
   regBadge.style.display = "inline-block";
 
   let html = "";
-  Object.entries(summary.concern_counts || {}).forEach(([k, v]) => {
-    html += `<span class="summary-pill">${capitalize(k)}: ${v}</span>`;
-  });
-  if (html) html = `<div class="mb-2">${html}</div>`;
+  
+  // Summary pills
+  const concernCounts = summary.concern_counts || {};
+  if (Object.keys(concernCounts).length > 0) {
+    html += '<div class="summary-section">';
+    Object.entries(concernCounts).forEach(([k, v]) => {
+      html += `<span class="summary-pill">${capitalize(k)}: ${v}</span>`;
+    });
+    html += '</div>';
+  }
 
+  // Detection rows
   dets.forEach(det => {
     const col = getColor(det.label);
     html += `
@@ -274,9 +716,14 @@ btnStop.addEventListener("click", () => {
   lastDetections         = [];
   lastFaceBbox           = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  badge.textContent      = "Stopped";
+  badge.innerHTML        = '<span style="display:inline-block;width:8px;height:8px;background:#6B7280;border-radius:50%;margin-right:6px;"></span>Camera Stopped';
   btnStop.disabled       = true;
-  panel.innerHTML        = '<p class="text-muted small mb-0">Camera stopped.</p>';
+  panel.innerHTML        = `<div class="waiting-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="6" y="6" width="12" height="12" rx="2"/>
+    </svg>
+    <p>Camera has been stopped</p>
+  </div>`;
   regBadge.style.display = "none";
 });
 </script>
