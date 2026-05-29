@@ -11,11 +11,11 @@ def create_order_notification(sender, instance, created, **kwargs):
     if created:
         # Check if it was an eSewa or PayPal payment
         if instance.payment_method == 'eSewa':
-            message = f"Payment successful! Your order #{instance.id} has been placed. 💳✨"
+            message = f"Payment successful! Your order #{instance.id} has been placed. "
         elif instance.payment_method == 'PayPal':
-            message = f"PayPal payment successful! Your order #{instance.id} is confirmed. 💳✅"
+            message = f"PayPal payment successful! Your order #{instance.id} is confirmed. "
         else:
-            message = f"Your order #{instance.id} has been placed successfully! 🌿"
+            message = f"Your order #{instance.id} has been placed successfully! "
         
         Notification.objects.create(
             user=instance.user,

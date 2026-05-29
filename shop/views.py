@@ -269,7 +269,7 @@ def paypal_capture_order(request):
             cart.items.all().delete()
 
         request.session.pop('paypal_transaction', None)
-        messages.success(request, f"PayPal payment successful! Order #{order.id} placed. 🌿")
+        messages.success(request, f"PayPal payment successful! Order #{order.id} placed. ")
         return JsonResponse({'status': 'success', 'order_id': order.id})
 
     except Exception as exc:
@@ -416,7 +416,7 @@ def esewa_success(request):
             cart.items.all().delete()
             request.session.pop('esewa_transaction', None)
 
-            messages.success(request, "Payment successful! Your order has been placed. 🌿")
+            messages.success(request, "Payment successful! Your order has been placed. ")
             return redirect('order_success', order_id=order.id)
 
     # UUID mismatch or session expired — still show a neutral success message
@@ -628,19 +628,31 @@ def my_orders(request):
     Supports `?order=<id>` to preselect an order. Prefetches related
     products/items to avoid N+1 queries and computes a simple
     progress index for the timeline displayed in the template.
+    
+    Also displays shelf items (products added to shelf) at the top of the list.
     """
     # Try to load orders normally. If the DB schema hasn't been migrated
     # (missing column), catch the OperationalError and render a helpful
     # migration-required message instead of raising a 500.
     from django.db.utils import OperationalError
+    from users.models import ShelfItem
 
     migration_needed = False
     orders = []
+    shelf_items = []
     selected_order = None
     timeline_steps = ['Placed', 'Processing', 'Shipped', 'Delivered']
     selected_step_index = 0
 
     try:
+        # Get shelf items (most recent first)
+        shelf_items = (
+            ShelfItem.objects
+            .filter(user=request.user)
+            .select_related('product')
+            .order_by('-added_at')
+        )
+        
         orders = (
             Order.objects
             .filter(user=request.user)
@@ -676,6 +688,7 @@ def my_orders(request):
         # and avoid touching model fields that cause the DB to error.
         migration_needed = True
         orders = []
+        shelf_items = []
         selected_order = None
         # log for debugging (keeps behavior similar to previous errors)
         import logging
@@ -690,6 +703,7 @@ def my_orders(request):
         "shop/my_orders.html",
         {
             "orders": orders,
+            "shelf_items": shelf_items,
             "selected_order": selected_order,
             "timeline_steps": timeline_steps,
             "selected_step_index": selected_step_index,

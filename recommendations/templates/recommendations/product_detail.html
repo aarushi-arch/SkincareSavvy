@@ -85,13 +85,14 @@
   .tryon-modal-content {
     background:linear-gradient(135deg,#f0fdf4,#ffffff);
     border-radius:24px; 
-    width:100%; max-width:900px;
+    width:100%; max-width:1200px;
     max-height:95vh;
     position:relative; 
     padding:2rem 1.5rem 1.5rem;
     box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
     animation:modalSlideIn .3s ease-out;
     display:flex; flex-direction:column;
+    overflow-y:auto;
   }
   
   @keyframes modalSlideIn {
@@ -320,6 +321,25 @@
         {% endif %}
       </div>
 
+      <!-- Expected Results Section -->
+      <div class="pd-card" style="background: linear-gradient(135deg, #f0fdf4, #ffffff); border: 1px solid #d1fae5;">
+        <p class="pd-section-label" style="color: #0b3b17;">Expected Results</p>
+        
+        <div id="productExpectedResults" style="margin-bottom: 1rem;">
+          <!-- Content will be dynamically inserted by JavaScript -->
+        </div>
+        
+        <!-- Strong Disclaimer -->
+        <div style="margin-top: 1.25rem; padding: 1rem; background: #fff8e6; border-left: 4px solid #f59e0b; border-radius: 8px;">
+          <p style="margin: 0 0 0.5rem; font-size: 0.9rem; color: #92400e; font-weight: 700;">
+             Important: Individual Results May Vary
+          </p>
+          <p style="margin: 0; font-size: 0.85rem; color: #78350f; line-height: 1.6;">
+            <strong>This product is bound to act differently for each individual.</strong> Results depend on multiple factors including your unique skin type, current skin condition, age, genetics, lifestyle habits, diet, stress levels, sleep quality, environmental conditions, and how consistently you use the product. What works exceptionally well for one person may produce different results for another. Always perform a patch test before full application and consult a dermatologist for personalized skincare advice tailored to your specific needs.
+          </p>
+        </div>
+      </div>
+
       <!-- How to use -->
       {% if product.how_to_use %}
       <div class="pd-card">
@@ -401,17 +421,41 @@
       <p class="tryon-modal-subtitle">See where to apply {{ product.category|default:"this product" }}</p>
     </div>
     
-    <div class="tryon-canvas-wrap" id="canvasWrap">
-      <div class="tryon-loading" id="tryonLoading">
-        <div class="tryon-spinner"></div>
-        <p style="margin:0;font-weight:600;">Analyzing your face...</p>
+    <!-- Two Column Layout: Image + Expected Results -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+      
+      <!-- Left: Canvas -->
+      <div class="tryon-canvas-wrap" id="canvasWrap">
+        <div class="tryon-loading" id="tryonLoading">
+          <div class="tryon-spinner"></div>
+          <p style="margin:0;font-weight:600;">Analyzing your face...</p>
+        </div>
+        <canvas id="tryonCanvas" style="display:none;"></canvas>
       </div>
-      <canvas id="tryonCanvas" style="display:none;"></canvas>
+      
+      <!-- Right: Expected Results -->
+      <div id="tryonExpectedResults" style="display:none; padding: 1.5rem; background: #f0fdf4; border-radius: 12px; border: 1px solid #d1fae5; max-height: 600px; overflow-y: auto;">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.75rem;">Expected Results</h4>
+        <div id="tryonExpectedResultsContent" style="font-size: 0.9rem; color: #166534; line-height: 1.6;">
+          <!-- Content will be dynamically inserted -->
+        </div>
+        
+        <!-- Important Disclaimer -->
+        <div style="margin-top: 1rem; padding: 0.75rem; background: #fff8e6; border-left: 3px solid #f59e0b; border-radius: 8px;">
+          <p style="margin: 0; font-size: 0.85rem; color: #92400e; font-weight: 600;">
+            <strong>Important Disclaimer:</strong>
+          </p>
+          <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #78350f; line-height: 1.5;">
+            Results may vary significantly from person to person due to individual skin type, condition, genetics, lifestyle, and environmental factors. This product may not work as expected for everyone. Always perform a patch test before full application and consult a dermatologist for personalized skincare advice.
+          </p>
+        </div>
+      </div>
+      
     </div>
     
     <div class="tryon-modal-footer">
       <p class="tryon-footer-text">
-        <span class="tryon-footer-icon">🟢</span>
+        <span class="tryon-footer-icon" style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 50%;"></span>
         Green areas indicate application zones
       </p>
     </div>
@@ -419,6 +463,188 @@
 </div>
 
 <script>
+// Generate Expected Results on Page Load
+(function() {
+    const productCategory = '{{ product.category|lower|default:"" }}';
+    const productName = '{{ product.name|escapejs }}';
+    
+    // Expected results database by category
+    const expectedResultsByCategory = {
+        'moisturizer': {
+            title: 'Hydration & Nourishment',
+            results: [
+                'Deep hydration that penetrates multiple skin layers',
+                'Improved moisture retention throughout the day',
+                'Softer, smoother, and more supple skin texture',
+                'Reduced appearance of dry patches and flakiness',
+                'Enhanced skin barrier function and protection',
+                'Plumper, more youthful-looking skin',
+                'Reduced appearance of fine lines caused by dehydration'
+            ],
+            timeframe: 'Initial hydration: Immediate | Visible texture improvement: 1-2 weeks | Optimal results: 4-6 weeks of consistent use'
+        },
+        'serum': {
+            title: 'Targeted Treatment & Correction',
+            results: [
+                'Concentrated delivery of active ingredients to skin',
+                'Targeted treatment of specific skin concerns',
+                'Improved overall skin tone and texture',
+                'Enhanced absorption of subsequent skincare products',
+                'Brighter, more radiant, and even complexion',
+                'Reduced appearance of fine lines, wrinkles, or dark spots',
+                'Visible improvement in skin clarity and luminosity'
+            ],
+            timeframe: 'Initial effects: 1-2 weeks | Noticeable improvement: 4-6 weeks | Optimal results: 8-12 weeks of consistent use'
+        },
+        'sunscreen': {
+            title: 'Protection & Prevention',
+            results: [
+                'Broad-spectrum protection against harmful UVA and UVB rays',
+                'Prevention of sunburn, sun damage, and photoaging',
+                'Reduced risk of hyperpigmentation and dark spots',
+                'Protection against premature aging signs (wrinkles, fine lines)',
+                'Lower risk of skin cancer with consistent daily use',
+                'Maintained even skin tone and prevented discoloration',
+                'Protected skin barrier from environmental damage'
+            ],
+            timeframe: 'Protection: Immediate upon application | Long-term benefits: Accumulate with daily use over months and years'
+        },
+        'cleanser': {
+            title: 'Cleansing & Purification',
+            results: [
+                'Thorough removal of dirt, oil, makeup, and impurities',
+                'Clearer, fresher, and more refreshed-looking skin',
+                'Unclogged pores and reduced blackheads',
+                'Reduced frequency of breakouts and blemishes',
+                'Balanced skin pH levels after cleansing',
+                'Prepared, clean canvas for better product absorption',
+                'Improved overall skin clarity and radiance'
+            ],
+            timeframe: 'Immediate cleansing effect | Skin clarity improvement: 1-2 weeks | Reduced breakouts: 2-4 weeks of regular use'
+        },
+        'toner': {
+            title: 'Balance & Preparation',
+            results: [
+                'Restored and balanced skin pH after cleansing',
+                'Minimized appearance of enlarged pores',
+                'Refreshed, hydrated, and revitalized skin',
+                'Enhanced absorption of serums and moisturizers',
+                'Improved skin texture and smoothness',
+                'Removed residual impurities and traces of cleanser',
+                'Calmed and soothed skin irritation'
+            ],
+            timeframe: 'Immediate refreshing effect | Visible pore refinement: 1-3 weeks | Optimal skin balance: 4-6 weeks'
+        },
+        'mask': {
+            title: 'Intensive Treatment & Boost',
+            results: [
+                'Deep cleansing or intensive hydration boost',
+                'Instantly brighter and more radiant complexion',
+                'Refined and smoothed skin texture',
+                'Reduced appearance of pores and imperfections',
+                'Revitalized, refreshed, and rejuvenated skin',
+                'Enhanced glow and luminosity',
+                'Targeted treatment for specific concerns'
+            ],
+            timeframe: 'Immediate glow after single use | Best results: 1-2 applications per week | Cumulative benefits over 4-8 weeks'
+        },
+        'eye cream': {
+            title: 'Eye Area Care & Rejuvenation',
+            results: [
+                'Reduced appearance of dark circles and under-eye shadows',
+                'Diminished puffiness and bags around eyes',
+                'Smoother, more hydrated under-eye area',
+                'Reduced appearance of fine lines and crow\'s feet',
+                'Brighter, more awake, and youthful appearance',
+                'Firmer, more elastic skin around eyes',
+                'Protected delicate eye area from environmental stress'
+            ],
+            timeframe: 'Initial hydration: Immediate | Visible improvement: 2-4 weeks | Optimal results: 6-8 weeks of consistent use'
+        },
+        'exfoliator': {
+            title: 'Renewal & Resurfacing',
+            results: [
+                'Effective removal of dead skin cells and buildup',
+                'Smoother, more refined, and polished skin texture',
+                'Brighter, more even, and radiant complexion',
+                'Unclogged pores and reduced blackheads',
+                'Reduced appearance of rough patches and bumps',
+                'Enhanced penetration of other skincare products',
+                'Improved skin cell turnover and renewal'
+            ],
+            timeframe: 'Immediate smoothness after use | Optimal results: 1-3 uses per week over 4-6 weeks | Avoid over-exfoliation'
+        },
+        'face oil': {
+            title: 'Nourishment & Glow',
+            results: [
+                'Deep nourishment with essential fatty acids',
+                'Enhanced skin radiance and natural glow',
+                'Improved skin elasticity and suppleness',
+                'Balanced oil production (even for oily skin)',
+                'Strengthened skin barrier function',
+                'Reduced appearance of fine lines',
+                'Soft, smooth, and luminous complexion'
+            ],
+            timeframe: 'Immediate glow | Texture improvement: 2-3 weeks | Optimal nourishment: 4-6 weeks'
+        },
+        'essence': {
+            title: 'Hydration & Preparation',
+            results: [
+                'Lightweight hydration that absorbs quickly',
+                'Enhanced skin\'s ability to absorb subsequent products',
+                'Improved skin texture and smoothness',
+                'Brighter, more luminous complexion',
+                'Balanced and refreshed skin',
+                'Strengthened skin barrier',
+                'Plumper, more hydrated appearance'
+            ],
+            timeframe: 'Immediate hydration | Visible glow: 1-2 weeks | Optimal results: 4-6 weeks'
+        },
+        'default': {
+            title: 'Overall Skin Health & Improvement',
+            results: [
+                'Improved overall skin health and appearance',
+                'Enhanced skin hydration and nourishment',
+                'Smoother, more refined skin texture',
+                'Brighter, more radiant complexion',
+                'Better skin tone and evenness',
+                'Healthier-looking, more vibrant skin',
+                'Improved skin comfort and feel'
+            ],
+            timeframe: 'Results vary by product type and individual factors | Consistent use is essential for optimal benefits'
+        }
+    };
+    
+    function populateExpectedResults() {
+        const resultsDiv = document.getElementById('productExpectedResults');
+        if (!resultsDiv) return;
+        
+        const categoryData = expectedResultsByCategory[productCategory] || expectedResultsByCategory['default'];
+        
+        let html = `<h4 style="font-size: 1.05rem; font-weight: 700; color: #0b3b17; margin: 0 0 0.75rem;">${categoryData.title}</h4>`;
+        html += '<p style="margin: 0 0 1rem; font-size: 0.9rem; color: #166534; line-height: 1.6;">When used as directed and consistently, this product is expected to provide the following benefits:</p>';
+        html += '<ul style="margin: 0; padding-left: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">';
+        
+        categoryData.results.forEach(result => {
+            html += `<li style="font-size: 0.88rem; color: #374151; line-height: 1.6;">${result}</li>`;
+        });
+        
+        html += '</ul>';
+        html += `<div style="margin-top: 1rem; padding: 0.75rem; background: rgba(22, 163, 74, 0.05); border-radius: 8px; border: 1px solid rgba(22, 163, 74, 0.2);">`;
+        html += `<p style="margin: 0; font-size: 0.85rem; color: #166534; line-height: 1.5;"><strong>⏱️ Expected Timeframe:</strong> ${categoryData.timeframe}</p>`;
+        html += '</div>';
+        
+        resultsDiv.innerHTML = html;
+    }
+    
+    // Populate on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', populateExpectedResults);
+    } else {
+        populateExpectedResults();
+    }
+})();
+
 // Add to Shelf
 document.querySelectorAll('.add-to-shelf-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -435,7 +661,7 @@ document.querySelectorAll('.add-to-shelf-btn').forEach(function(btn) {
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            window.location.href = '/my-shelf/';
+            window.location.href = '/shop/my-orders/';
         })
         .catch(function() {
             btn.textContent = 'Error — try again';
@@ -464,7 +690,7 @@ document.querySelectorAll('.add-to-shelf-btn').forEach(function(btn) {
         // Disable button
         tryonBtn.disabled = true;
         const originalHTML = tryonBtn.innerHTML;
-        tryonBtn.innerHTML = '<span>⏳</span> Loading...';
+        tryonBtn.innerHTML = '<span></span> Loading...';
 
         fetch('/recommendations/tryon-zones/', {
             method: 'POST',

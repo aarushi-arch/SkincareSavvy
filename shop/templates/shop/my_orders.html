@@ -337,7 +337,38 @@
     <div class="orders-layout">
       <!-- Sidebar: Order List -->
       <div class="order-list">
+        {% if shelf_items or orders %}
+        
+        <!-- Shelf Items (Recently Added) -->
+        {% if shelf_items %}
+        {% for item in shelf_items %}
+        <div class="order-card-item">
+          {% if item.product.image_url %}
+          <img class="order-thumb" src="{{ item.product.image_url }}" alt="{{ item.product.name }}">
+          {% else %}
+          <div class="order-thumb d-flex align-items-center justify-content-center">
+            <i class="fas fa-box" style="color: #cbd5e0;"></i>
+          </div>
+          {% endif %}
+
+          <div class="order-meta">
+            <p class="pname">{{ item.product.name|truncatechars:20 }}</p>
+            <div class="oid">{{ item.added_at|date:"M d, Y" }}</div>
+          </div>
+
+          <div class="order-amount">₹{{ item.product.price }}</div>
+        </div>
+        {% endfor %}
+        
+        <!-- Divider between shelf items and orders -->
         {% if orders %}
+        <div style="border-top: 2px solid #eaefeb; margin: 15px 0; padding-top: 10px;">
+          <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #7a8b81; text-align: center; margin: 0;">Past Orders</p>
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        <!-- Orders -->
         {% for order in orders %}
         {% with first_item=order.items.all|first %}
         <div class="order-card-item {% if selected_order and selected_order.id == order.id %}active{% endif %}"
@@ -404,7 +435,7 @@
                 <h5 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--primary-green);">{{ item.product.name }}</h5>
                 <p class="text-muted small mb-3">Quantity: {{ item.quantity }}</p>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap" style="gap: 8px;">
                   <form method="post" action="{% url 'order-item-checkout' selected_order.id item.id %}"
                     style="display:inline">
                     {% csrf_token %}
@@ -413,7 +444,7 @@
 
                   {% if esewa_available %}
                   <a href="{% url 'esewa-checkout' item.product.id %}"
-                    class="btn btn-sm btn-outline-success btn-action ml-2" id="esewa-btn-{{ item.id }}">Pay with eSewa</a>
+                    class="btn btn-sm btn-outline-success btn-action">Pay with eSewa</a>
 
                   <!-- PayPal button rendered by JS SDK -->
                   <span class="paypal-btn-wrap" id="paypal-btn-{{ item.id }}"

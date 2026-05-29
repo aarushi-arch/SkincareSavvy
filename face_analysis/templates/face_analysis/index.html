@@ -653,10 +653,10 @@
                 </div>
 
                 <!-- Side-by-side: Camera | Upload -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+                <div id="upload-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
 
                     <!-- Camera pane -->
-                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    <div id="camera-pane" style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                                 border:2px dashed var(--border);border-radius:var(--radius-sm);
                                 padding:2rem 1rem;min-height:180px;background:var(--primary-soft);
                                 cursor:pointer;transition:border-color .2s,background .2s;"
@@ -695,8 +695,12 @@
                             <img id="preview-img" src="" alt="Preview" style="max-width:100%;max-height:320px;border-radius:12px;
                                         margin-bottom:.75rem;box-shadow:0 4px 16px rgba(0,0,0,.1);">
                             <p class="muted" id="file-name" style="font-size:.8rem;"></p>
-                            <button type="button" id="remove-image" class="btn ghost"
-                                style="margin-top:.4rem;font-size:.8rem;">Remove</button>
+                            <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:.4rem;">
+                                <button type="button" id="remove-image" class="btn ghost"
+                                    style="font-size:.8rem;">Remove</button>
+                                <button type="submit" class="btn primary" id="scan-button"
+                                    style="font-size:.8rem;">Scan Photo</button>
+                            </div>
                         </div>
                     </label>
 
@@ -728,9 +732,6 @@
                 </div>
 
                 <div class="upload-actions">
-                    <button type="button" class="btn primary" id="scan-button"
-                        {% if not analysis_result %}disabled{% endif %}
-                        onclick="openAllergyModal()">Scan Photo</button>
                     <input type="hidden" name="allergies" id="allergies-input" value="">
                     <div id="loading-indicator"
                         style="display: none; margin-left: 1rem; color: var(--primary); font-weight: 600; align-items: center;">
@@ -861,33 +862,15 @@
                     <!-- Primary concern -->
                     <div class="rc-concern-header">
                         <div>
-                            <p class="rc-detected-label">Detected Concern</p>
                             <h2 class="rc-concern-title">
                                 {% if top.explanation %}{{ top.explanation.title }}
                                 {% else %}{{ top.name|title }}{% endif %}
                             </h2>
-                            <!-- Confidence bar -->
-                            <div class="rc-conf-track">
-                                <div class="rc-conf-fill" style="width:{{ top.confidence }}%"></div>
-                            </div>
-                        </div>
-                        <div class="rc-conf-score">
-                            <div style="display:flex;align-items:center;gap:.4rem;justify-content:flex-end;">
-                                <span class="rc-conf-num">{{ top.confidence|floatformat:0 }}%</span>
-                                <button type="button" class="conf-info-btn" id="confInfoBtn" aria-label="Confidence score information" onclick="toggleConfidenceInfo(this);">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                            <span class="rc-conf-lbl">Confidence</span>
                         </div>
                     </div>
 
                     <!-- Collapsible Confidence Explanation -->
-                    <div class="confidence-explanation" id="confidenceExplanation">
+                    <div class="confidence-explanation" id="confidenceExplanation" style="display:none;">
                         <div class="conf-exp-content">
                             <p class="conf-exp-text">
                                 The <strong>confidence score</strong> represents how certain our AI model is about detecting this skin concern. It's calculated using advanced machine learning algorithms that analyze facial features and patterns.
@@ -945,9 +928,9 @@
                     <div class="rc-concern-selection">
                         <p class="rc-section-label">
                             {% if analysis_result.all_detected_concerns|length > 1 %}
-                            All Detected Concerns - Select to View Recommendations
+                            All Concerns - Select to View Recommendations
                             {% else %}
-                            Detected Concern
+                            Concern
                             {% endif %}
                         </p>
                         <div class="concern-cards">
@@ -1086,53 +1069,185 @@
                                     return;
                                 }
                                 
-                                let html = '<div style="margin-bottom:1.5rem;padding:1.5rem;background:#fff;border-radius:12px;"><h3 style="font-size:1.25rem;font-weight:700;color:#0b3b17;margin:0 0 .5rem;">Recommended Products for ' + concern.charAt(0).toUpperCase() + concern.slice(1) + '</h3><p style="font-size:.85rem;color:#64748b;margin:0;">Found ' + products.length + ' products tailored to your needs</p></div>';
+                                // Store all products for filtering
+                                window.allProducts = products;
+                                window.currentConcern = concern;
                                 
-                                html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:1rem;">';
+                                let html = '<div style="margin-bottom:1.5rem;padding:1.5rem;background:#fff;border-radius:12px;">';
+                                html += '<h3 style="font-size:1.25rem;font-weight:700;color:#0b3b17;margin:0 0 .5rem;">Recommended Products for ' + concern.charAt(0).toUpperCase() + concern.slice(1) + '</h3>';
+                                html += '<p style="font-size:.85rem;color:#64748b;margin:0 0 1rem;">Found ' + products.length + ' products tailored to your needs</p>';
                                 
-                                products.slice(0, 12).forEach(function(product) {
-                                    const imageUrl = product.image_url || 'https://via.placeholder.com/300x300?text=No+Image';
-                                    const brand = product.brand || 'Skincare';
-                                    const name = product.name || 'Product';
-                                    const price = product.price || 'N/A';
-                                    const matchScore = product.match_score || 0;
-                                    const matchReason = product.match_reason || '';
-                                    const productId = product.id || '';
-                                    const link = product.link || '#';
-                                    const category = product.category || 'Skincare';
-                                    const rating = product.rating || product.rate || 0;
-                                    
-                                    html += '<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.06);transition:all .3s;cursor:pointer;border:1px solid #f1f5f9;" onmouseover="this.style.transform=\'translateY(-8px)\';this.style.boxShadow=\'0 12px 24px rgba(0,0,0,.12)\';this.style.borderColor=\'#16a34a\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.06)\';this.style.borderColor=\'#f1f5f9\'">';
-                                    
-                                    // Image
-                                    html += '<div style="position:relative;width:100%;padding-top:85%;background:linear-gradient(135deg,#f8fafc,#f1f5f9);overflow:hidden;">';
-                                    html += '<img src="' + imageUrl + '" alt="' + name + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/300x300?text=No+Image\'">';
-                                    html += '<div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;padding:6px 12px;border-radius:20px;font-size:.8rem;font-weight:700;box-shadow:0 4px 12px rgba(22,163,74,.4);">' + matchScore + '%</div>';
-                                    html += '<div style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.98);color:#0f172a;padding:6px 12px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:capitalize;box-shadow:0 4px 12px rgba(0,0,0,.15);">' + category + '</div>';
-                                    html += '</div>';
-                                    
-                                    // Info
-                                    html += '<div style="padding:1.25rem;">';
-                                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">';
-                                    html += '<p style="font-size:.75rem;color:#64748b;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:1px;">' + brand + '</p>';
-                                    if (rating > 0) {
-                                        html += '<div style="display:flex;align-items:center;gap:.3rem;background:#fffbeb;padding:4px 8px;border-radius:12px;"><span style="color:#f59e0b;font-size:.9rem;">★</span><span style="font-size:.8rem;font-weight:700;color:#92400e;">' + rating.toFixed(1) + '</span></div>';
-                                    }
-                                    html += '</div>';
-                                    html += '<h4 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 .5rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em;">' + name + '</h4>';
-                                    html += '<p style="font-size:1.25rem;font-weight:800;color:#16a34a;margin:0 0 .75rem;">' + price + '</p>';
-                                    html += '<p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;background:#f8fafc;padding:.75rem;border-radius:8px;">' + matchReason + '</p>';
+                                // Allergy Filter Section
+                                html += '<div style="border-top:1px solid #e5e7eb;padding-top:1rem;margin-top:1rem;">';
+                                html += '<button onclick="toggleAllergyFilter()" style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;cursor:pointer;font-size:.9rem;font-weight:600;color:#334155;transition:all .2s;" onmouseover="this.style.background=\'#f1f5f9\'" onmouseout="this.style.background=\'#f8fafc\'">';
+                                html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+                                html += '<span>Filter by Ingredient Allergies</span>';
+                                html += '<svg id="filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>';
+                                html += '</button>';
+                                
+                                html += '<div id="allergy-filter-panel" style="display:none;margin-top:1rem;padding:1rem;background:#fafafa;border-radius:12px;">';
+                                html += '<p style="font-size:.85rem;color:#64748b;margin:0 0 1rem;">Select ingredients to exclude from recommendations:</p>';
+                                
+                                // Allergy chips
+                                html += '<div style="display:flex;flex-direction:column;gap:1rem;">';
+                                
+                                const allergyGroups = [
+                                    {label: 'Acne / Exfoliants', items: ['salicylic acid', 'benzoyl peroxide', 'glycolic acid', 'lactic acid', 'azelaic acid']},
+                                    {label: 'Retinoids', items: ['retinol', 'retinyl palmitate', 'tretinoin', 'adapalene']},
+                                    {label: 'Vitamins & Actives', items: ['vitamin c', 'niacinamide', 'vitamin e', 'kojic acid', 'alpha arbutin']},
+                                    {label: 'Fragrances & Preservatives', items: ['fragrance', 'alcohol', 'phenoxyethanol', 'parabens', 'formaldehyde']},
+                                    {label: 'Essential Oils', items: ['lavender oil', 'tea tree oil', 'peppermint oil', 'eucalyptus oil']},
+                                    {label: 'Sun Filters', items: ['oxybenzone', 'avobenzone', 'octinoxate']}
+                                ];
+                                
+                                allergyGroups.forEach(group => {
                                     html += '<div>';
-                                    if (productId) {
-                                        html += '<a href="/recommendations/product/' + productId + '/" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Details →</a>';
-                                    } else {
-                                        html += '<a href="' + link + '" target="_blank" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Product →</a>';
-                                    }
-                                    html += '</div></div></div>';
+                                    html += '<p style="font-size:.7rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin:0 0 .6rem;">' + group.label + '</p>';
+                                    html += '<div style="display:flex;flex-wrap:wrap;gap:.4rem;">';
+                                    group.items.forEach(item => {
+                                        html += '<button type="button" class="allergy-chip" data-allergen="' + item + '" onclick="toggleAllergen(this)" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e2e8f0;background:#fff;font-size:.8rem;color:#334155;cursor:pointer;transition:all .15s;font-family:inherit;">' + item.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') + '</button>';
+                                    });
+                                    html += '</div></div>';
                                 });
                                 
-                                html += '</div><style>@media(max-width:1200px){[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr!important;}}</style>';
+                                html += '</div>';
+                                html += '<div style="margin-top:1rem;display:flex;gap:.5rem;">';
+                                html += '<button onclick="applyAllergyFilter()" style="flex:1;padding:.75rem;border-radius:12px;border:none;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;">Apply Filter</button>';
+                                html += '<button onclick="clearAllergyFilter()" style="padding:.75rem 1rem;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;font-size:.9rem;cursor:pointer;">Clear</button>';
+                                html += '</div>';
+                                html += '</div>';
+                                html += '</div>';
+                                html += '</div>';
+                                
+                                html += '<div id="products-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:1rem;">';
+                                
+                                products.slice(0, 12).forEach(function(product) {
+                                    html += generateProductCard(product);
+                                });
+                                
+                                html += '</div><style>@media(max-width:1200px){#products-grid{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){#products-grid{grid-template-columns:1fr!important;}}</style>';
                                 productsSection.innerHTML = html;
+                            }
+                            
+                            function generateProductCard(product) {
+                                const imageUrl = product.image_url || 'https://via.placeholder.com/300x300?text=No+Image';
+                                const brand = product.brand || 'Skincare';
+                                const name = product.name || 'Product';
+                                const price = product.price || 'N/A';
+                                const matchScore = product.match_score || 0;
+                                const matchReason = product.match_reason || '';
+                                const productId = product.id || '';
+                                const link = product.link || '#';
+                                const category = product.category || 'Skincare';
+                                const rating = product.rating || product.rate || 0;
+                                
+                                let html = '<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.06);transition:all .3s;cursor:pointer;border:1px solid #f1f5f9;" onmouseover="this.style.transform=\'translateY(-8px)\';this.style.boxShadow=\'0 12px 24px rgba(0,0,0,.12)\';this.style.borderColor=\'#16a34a\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.06)\';this.style.borderColor=\'#f1f5f9\'">';
+                                
+                                // Image
+                                html += '<div style="position:relative;width:100%;padding-top:85%;background:linear-gradient(135deg,#f8fafc,#f1f5f9);overflow:hidden;">';
+                                html += '<img src="' + imageUrl + '" alt="' + name + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/300x300?text=No+Image\'">';
+                                html += '<div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;padding:6px 12px;border-radius:20px;font-size:.8rem;font-weight:700;box-shadow:0 4px 12px rgba(22,163,74,.4);">' + matchScore + '%</div>';
+                                html += '<div style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.98);color:#0f172a;padding:6px 12px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:capitalize;box-shadow:0 4px 12px rgba(0,0,0,.15);">' + category + '</div>';
+                                html += '</div>';
+                                
+                                // Info
+                                html += '<div style="padding:1.25rem;">';
+                                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">';
+                                html += '<p style="font-size:.75rem;color:#64748b;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:1px;">' + brand + '</p>';
+                                if (rating > 0) {
+                                    html += '<div style="display:flex;align-items:center;gap:.3rem;background:#fffbeb;padding:4px 8px;border-radius:12px;"><span style="color:#f59e0b;font-size:.9rem;">★</span><span style="font-size:.8rem;font-weight:700;color:#92400e;">' + rating.toFixed(1) + '</span></div>';
+                                }
+                                html += '</div>';
+                                html += '<h4 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 .5rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em;">' + name + '</h4>';
+                                html += '<p style="font-size:1.25rem;font-weight:800;color:#16a34a;margin:0 0 .75rem;">' + price + '</p>';
+                                html += '<p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;background:#f8fafc;padding:.75rem;border-radius:8px;">' + matchReason + '</p>';
+                                html += '<div>';
+                                if (productId) {
+                                    html += '<a href="/recommendations/product/' + productId + '/" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Details →</a>';
+                                } else {
+                                    html += '<a href="' + link + '" target="_blank" style="display:block;text-align:center;padding:.75rem;background:linear-gradient(135deg,#0b3b17,#16a34a);color:#fff;text-decoration:none;border-radius:12px;font-size:.9rem;font-weight:700;box-shadow:0 4px 12px rgba(11,59,23,.3);" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'\'">View Product →</a>';
+                                }
+                                html += '</div></div></div>';
+                                return html;
+                            }
+                            
+                            function toggleAllergyFilter() {
+                                const panel = document.getElementById('allergy-filter-panel');
+                                const chevron = document.getElementById('filter-chevron');
+                                if (panel.style.display === 'none') {
+                                    panel.style.display = 'block';
+                                    chevron.style.transform = 'rotate(180deg)';
+                                } else {
+                                    panel.style.display = 'none';
+                                    chevron.style.transform = 'rotate(0deg)';
+                                }
+                            }
+                            
+                            function toggleAllergen(btn) {
+                                btn.classList.toggle('selected');
+                                if (btn.classList.contains('selected')) {
+                                    btn.style.borderColor = '#dc2626';
+                                    btn.style.background = '#fef2f2';
+                                    btn.style.color = '#991b1b';
+                                    btn.style.fontWeight = '600';
+                                } else {
+                                    btn.style.borderColor = '#e2e8f0';
+                                    btn.style.background = '#fff';
+                                    btn.style.color = '#334155';
+                                    btn.style.fontWeight = '400';
+                                }
+                            }
+                            
+                            function applyAllergyFilter() {
+                                const selectedChips = document.querySelectorAll('.allergy-chip.selected');
+                                const allergens = Array.from(selectedChips).map(chip => chip.dataset.allergen.toLowerCase());
+                                
+                                if (allergens.length === 0) {
+                                    // No filter, show all products
+                                    updateProductGrid(window.allProducts);
+                                    return;
+                                }
+                                
+                                // Filter products that don't contain any of the selected allergens
+                                const filtered = window.allProducts.filter(product => {
+                                    const ingredients = (product.ingredients || '').toLowerCase();
+                                    return !allergens.some(allergen => ingredients.includes(allergen));
+                                });
+                                
+                                updateProductGrid(filtered);
+                                
+                                // Show feedback
+                                const panel = document.getElementById('allergy-filter-panel');
+                                const originalDisplay = panel.style.display;
+                                panel.style.display = 'none';
+                                document.getElementById('filter-chevron').style.transform = 'rotate(0deg)';
+                            }
+                            
+                            function clearAllergyFilter() {
+                                document.querySelectorAll('.allergy-chip.selected').forEach(chip => {
+                                    chip.classList.remove('selected');
+                                    chip.style.borderColor = '#e2e8f0';
+                                    chip.style.background = '#fff';
+                                    chip.style.color = '#334155';
+                                    chip.style.fontWeight = '400';
+                                });
+                                updateProductGrid(window.allProducts);
+                            }
+                            
+                            function updateProductGrid(products) {
+                                const grid = document.getElementById('products-grid');
+                                if (!grid) return;
+                                
+                                if (products.length === 0) {
+                                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:#64748b;"><p style="font-size:1.1rem;margin:0 0 .5rem;">No products match your filter</p><p style="font-size:.9rem;margin:0;">Try removing some allergen filters</p></div>';
+                                    return;
+                                }
+                                
+                                let html = '';
+                                products.slice(0, 12).forEach(function(product) {
+                                    html += generateProductCard(product);
+                                });
+                                grid.innerHTML = html;
                             }
                         </script>
                         
@@ -1169,11 +1284,11 @@
                     <!-- No concerns -->
                     <div class="rc-no-concerns">
                         <p class="rc-detected-label">Result</p>
-                        <h2 class="rc-concern-title" style="color:#16a34a;">✓ No Concerns Detected</h2>
+                        <h2 class="rc-concern-title" style="color:#16a34a;">No Concerns Detected</h2>
                         <p class="rc-ai-msg" style="margin-bottom:1rem;">Great news! Our AI analysis didn't detect any significant skin concerns in your image.</p>
                         
                         <div class="rc-explanation-box">
-                            <h4 class="rc-explanation-title">🔍 Why No Concerns Were Detected:</h4>
+                            <h4 class="rc-explanation-title">Why No Concerns Were Detected:</h4>
                             <ul class="rc-explanation-list">
                                 <li><strong>Dual AI Analysis:</strong> Your image was analyzed by two advanced AI models:
                                     <ul style="margin-top:.4rem;padding-left:1.2rem;">
@@ -1196,7 +1311,7 @@
                         </div>
                         
                         <div class="rc-healthy-tips">
-                            <h4 class="rc-tips-title">💚 Keep Your Skin Healthy:</h4>
+                            <h4 class="rc-tips-title">Keep Your Skin Healthy:</h4>
                             <ul class="rc-tips-list">
                                 <li><strong>Daily Sunscreen:</strong> Use SPF 30+ every day, even indoors</li>
                                 <li><strong>Consistent Routine:</strong> Maintain your current skincare regimen</li>
@@ -1207,7 +1322,6 @@
                         </div>
                         
                         <div class="rc-disclaimer-box">
-                            <div class="rc-disclaimer-icon">⚕️</div>
                             <div>
                                 <p class="rc-disclaimer-text">
                                     <strong>Medical Disclaimer:</strong> This AI analysis is for informational and educational purposes only. It does not constitute medical advice, diagnosis, or treatment. Even with no detected concerns, we strongly recommend regular consultations with a licensed dermatologist for comprehensive skin health monitoring and professional evaluation.
@@ -1219,24 +1333,11 @@
 
                     <!-- Note box -->
                     <div class="rc-note">
-                        <span class="rc-note-icon">ℹ</span>
                         <p><strong>Note:</strong> This assessment is AI-generated for informational purposes.
                            Select a concern above to view personalized product recommendations.</p>
                     </div>
 
                 </div>
-            </div>
-
-            <!-- Re-analyse button -->
-            <div style="text-align:center;margin-top:1.5rem;">
-                <a href="{% url 'face_analysis:face_analysis_index' %}"
-                   style="display:inline-flex;align-items:center;gap:.5rem;
-                          padding:10px 24px;border-radius:50px;
-                          border:1.5px solid #d1fae5;background:#fff;
-                          color:#166534;font-weight:600;font-size:.85rem;
-                          text-decoration:none;transition:background .15s,border-color .15s;">
-                    &#8635; Analyse Another Photo
-                </a>
             </div>
 
             {% endwith %}
@@ -2439,6 +2540,8 @@
 
             // Camera elements
             const startCameraBtn = document.getElementById('start-camera');
+            const cameraPane = document.getElementById('camera-pane');
+            const uploadGrid = document.getElementById('upload-grid');
             const cameraContainer = document.getElementById('camera-container');
             const video = document.getElementById('camera-stream');
             const canvas = document.getElementById('camera-canvas');
@@ -2475,14 +2578,8 @@
                         uploadDrop.classList.add('has-image');
 
                         // Hide camera pane, expand upload pane to full width
-                        const grid = uploadDrop.closest('[style*="grid-template-columns"]')
-                            || uploadDrop.parentElement;
-                        const cameraPaneWrapper = document.getElementById('start-camera')
-                            .closest('[onclick]');
-                        if (cameraPaneWrapper) cameraPaneWrapper.style.display = 'none';
-                        if (grid && grid.style.gridTemplateColumns) {
-                            grid.style.gridTemplateColumns = '1fr';
-                        }
+                        if (cameraPane) cameraPane.style.display = 'none';
+                        if (uploadGrid) uploadGrid.style.gridTemplateColumns = '1fr';
                     };
                     reader.readAsDataURL(file);
                 }
@@ -2497,14 +2594,8 @@
                 uploadDrop.classList.remove('has-image');
 
                 // Restore camera pane and grid
-                const cameraPaneWrapper = document.getElementById('start-camera')
-                    .closest('[onclick]');
-                if (cameraPaneWrapper) cameraPaneWrapper.style.display = '';
-                const grid = uploadDrop.closest('[style*="grid-template-columns"]')
-                    || uploadDrop.parentElement;
-                if (grid && grid.style.gridTemplateColumns !== undefined) {
-                    grid.style.gridTemplateColumns = '1fr 1fr';
-                }
+                if (cameraPane) cameraPane.style.display = 'flex';
+                if (uploadGrid) uploadGrid.style.gridTemplateColumns = '1fr 1fr';
             });
 
             // Re-analyse: just scroll back up — uploader is already reset on page load
@@ -2589,14 +2680,8 @@
 
             // Restore two-column camera/upload grid
             (function () {
-                const cameraPaneWrapper = document.getElementById('start-camera')
-                    ? document.getElementById('start-camera').closest('[onclick]') : null;
-                if (cameraPaneWrapper) cameraPaneWrapper.style.display = '';
-                const grid = uploadDrop.closest('[style*="grid-template-columns"]')
-                    || uploadDrop.parentElement;
-                if (grid && grid.style.gridTemplateColumns !== undefined) {
-                    grid.style.gridTemplateColumns = '1fr 1fr';
-                }
+                if (cameraPane) cameraPane.style.display = 'flex';
+                if (uploadGrid) uploadGrid.style.gridTemplateColumns = '1fr 1fr';
             })();
 
             // Scroll to results if they exist
@@ -2899,7 +2984,9 @@
                 };
                 cameraContainer.style.display = 'flex';
                 uploadDrop.style.display = 'none';
+                cameraPane.style.display = 'none';
                 startCameraBtn.style.display = 'none';
+                if (uploadGrid) uploadGrid.style.gridTemplateColumns = '1fr';
             } catch (err) { alert("Could not access camera. Please check permissions."); }
         });
 
@@ -2919,7 +3006,9 @@
             }
             cameraContainer.style.display = 'none';
             uploadDrop.style.display = 'block';
+            if (cameraPane) cameraPane.style.display = 'flex';
             startCameraBtn.style.display = 'inline-block';
+            if (uploadGrid) uploadGrid.style.gridTemplateColumns = '1fr 1fr';
         }
 
         captureBtn.addEventListener('click', function () {

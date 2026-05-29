@@ -149,14 +149,14 @@ def add_to_shelf(request, product_id):
             'status': 'success' if created else 'info', 
             'message': msg, 
             'created': created,
-            'redirect_url': '/my-shelf/'
+            'redirect_url': '/shop/my-orders/'
         }
         print(f"DEBUG: Returning JSON response: {response_data}")
         return JsonResponse(response_data)
 
-    # Redirect to my_shelf page
-    print(f"DEBUG: Redirecting to my_shelf")
-    return redirect('my_shelf')
+    # Redirect to my_orders page
+    print(f"DEBUG: Redirecting to my_orders")
+    return redirect('my_orders')
 
 
 @login_required
