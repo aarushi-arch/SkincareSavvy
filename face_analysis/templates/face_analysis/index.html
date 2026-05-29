@@ -2633,34 +2633,10 @@
 
             if (form) {
                 form.addEventListener('submit', function (e) {
-                    loadingIndicator.style.display = 'inline-flex';
                     scanButton.disabled = true;
                     scanButton.style.opacity = '0.6';
                     scanButton.textContent = 'Analysing...';
-
-                    const statusText = document.getElementById('loading-status-text');
-                    const messages = [
-                        "Initializing MediaPipe...",
-                        "Detecting face in image...",
-                        "Face detected and validated",
-                        "Applying skin extraction...",
-                        "Predicting skin type...",
-                        "Identifying skin concerns...",
-                        "Finalizing expert picks..."
-                    ];
-
-                    let currentStep = 0;
-                    statusText.textContent = messages[0];
-
-                    const interval = setInterval(() => {
-                        currentStep++;
-                        if (currentStep < messages.length) {
-                            statusText.textContent = messages[currentStep];
-                        } else {
-                            // If it's taking too long, stay on the last message
-                            clearInterval(interval);
-                        }
-                    }, 1200); // Rotate every 1.2s for a smooth visual experience
+                    showAnalysisLoader();
                 });
             }
 
@@ -2671,6 +2647,7 @@
             scanButton.style.opacity = '1';
             scanButton.textContent = originalButtonText || 'Scan Photo';
             loadingIndicator.style.display = 'none';
+            document.getElementById('analysis-loader').style.display = 'none';
 
             // After a POST the file input is always empty (browser security).
             // Reset the uploader so the user can pick a new file immediately.
